@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <OutputType>Library</OutputType>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- SPT DLL references -->
+    <Reference Include="SPTarkov.Common">
+      <HintPath>..\SPTarkov.Server\bin\Debug\net9.0\SPTarkov.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="SPTarkov.Reflection">
+      <HintPath>..\SPTarkov.Server\bin\Debug\net9.0\SPTarkov.Reflection.dll</HintPath>
+    </Reference>
+    <Reference Include="SPTarkov.Server.Core">
+      <HintPath>..\SPTarkov.Server\bin\Debug\net9.0\SPTarkov.Server.Core.dll</HintPath>
+    </Reference>
+    <Reference Include="SPTarkov.DI">
+      <HintPath>..\SPTarkov.Server\bin\Debug\net9.0\SPTarkov.DI.dll</HintPath>
+    </Reference>
+    <Reference Include="SPTarkov.Server.Web">
+      <HintPath>..\SPTarkov.Server\bin\Debug\net9.0\SPTarkov.Server.Web.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- NuGet packages -->
+    <PackageReference Include="SemanticVersioning" Version="3.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+
+    <!-- Add these ASP.NET Core references -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="copy &quot;$(TargetPath)&quot; &quot;D:\Escape From Tarkov.main\SPT\user\mods\JiangHu.Server\JiangHu.Server.dll&quot;" />
+  </Target>
+
+</Project>
