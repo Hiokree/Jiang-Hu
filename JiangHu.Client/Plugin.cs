@@ -1,5 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
+using HarmonyLib;
+using JiangHu.Patches;
 using UnityEngine;
 
 namespace JiangHu
@@ -52,6 +54,10 @@ namespace JiangHu
 
             descriptionLoader = pluginObj.AddComponent<DescriptionLoader>();
             descriptionLoader.SetConfig(ShowDescription);
+
+            PatchUseRepairKitInRaid.Enable();
+
+
         }
 
         void Update()

@@ -44,6 +44,7 @@ namespace JiangHu.Server
         private bool _Add_HideoutProduction_Labryskeycard = false;
         private bool _Unlock_All_Labrys_Quests = false;
 
+
         private readonly ConfigServer _configServer;
 
         public RuleSettings(SaveServer saveServer, DatabaseServer databaseServer, ConfigServer configServer, FenceService fenceService)
@@ -108,6 +109,7 @@ namespace JiangHu.Server
 
                 if (config.TryGetValue("Unlock_All_Labrys_Quests", out var labrysQuestsValue))
                     _Unlock_All_Labrys_Quests = labrysQuestsValue.GetBoolean();
+
 
             }
             catch (Exception ex)

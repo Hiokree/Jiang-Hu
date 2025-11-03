@@ -1,10 +1,12 @@
 ﻿using System.Reflection;
+using Microsoft.Extensions.Logging;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.Helpers;
 using SPTarkov.Server.Core.Models.Common;
 using SPTarkov.Server.Core.Models.Eft.Common;
 using SPTarkov.Server.Core.Models.Eft.Common.Tables;
 using SPTarkov.Server.Core.Models.Enums;
+using SPTarkov.Server.Core.Models.Spt.Bots;
 using SPTarkov.Server.Core.Models.Spt.Config;
 using SPTarkov.Server.Core.Models.Spt.Mod;
 using SPTarkov.Server.Core.Models.Utils;
@@ -57,8 +59,10 @@ public class NewItemModule
         CreateBaiyaoItem();
         CreateRepairKitItem();
         CreateMaotaiItem();
-        AddItemsToFleaBlacklist();
+        CreateArmorRepairCat();
+        CreateWeaponRepairCat();
 
+        AddItemsToFleaBlacklist();
         await Task.CompletedTask;
     }
 
@@ -300,6 +304,82 @@ public class NewItemModule
         _CustomItemService.CreateItemFromClone(newItemFromCloneDetails);
     }
 
+    private void CreateArmorRepairCat()
+    {
+        NewItemFromCloneDetails armorRepairCat = new NewItemFromCloneDetails
+        {
+            ItemTplToClone = "591094e086f7747caa7bb2ef",
+            NewId = "e983002c4ab4d99999889005",
+            ParentId = "616eb7aea207f41933308f46",
+            FleaPriceRoubles = 100000,
+            HandbookPriceRoubles = 80000,
+            HandbookParentId = "5b47574386f77428ca22b33a",
+            Locales = GetLocales(),
+            OverrideProperties = new TemplateItemProperties
+            {
+                Prefab = new Prefab
+                {
+                    Path = "assets/content/items/barter/item_barter_mr_kerman/item_barter_mr_kerman.bundle",
+                    Rcid = ""
+                },
+                DiscardLimit = -1,
+                Weight = 2,
+                BackgroundColor = "tracerGreen",
+                Height = 2,
+                Width = 1,
+                ItemSound = "spec_armorrep",
+                Name = "armor repair cat",
+                ShortName = "armor repair cat",
+                Description = "Armor repair cat",
+                MaxRepairResource = 50,
+                RepairCost = 1,
+                RepairQuality = 1
+            }
+        };
+
+        _CustomItemService.CreateItemFromClone(armorRepairCat);
+
+        _databaseService.GetTables().Templates.Items["e983002c4ab4d99999889005"].Properties.RepairType = "Armor";
+    }
+
+    private void CreateWeaponRepairCat()
+    {
+        NewItemFromCloneDetails weaponRepairCat = new NewItemFromCloneDetails
+        {
+            ItemTplToClone = "5910968f86f77425cf569c32",
+            NewId = "e983002c4ab4d99999889006",
+            ParentId = "616eb7aea207f41933308f46",
+            FleaPriceRoubles = 100000,
+            HandbookPriceRoubles = 80000,
+            HandbookParentId = "5b47574386f77428ca22b33a",
+            Locales = GetLocales(),
+            OverrideProperties = new TemplateItemProperties
+            {
+                Prefab = new Prefab
+                {
+                    Path = "assets/content/items/barter/item_barter_mr_kerman/item_barter_mr_kerman.bundle",
+                    Rcid = ""
+                },
+                DiscardLimit = -1,
+                Weight = 2,
+                BackgroundColor = "tracerYellow",
+                Height = 2,
+                Width = 1,
+                ItemSound = "spec_weaprep",
+                Name = "weapon repair cat",
+                ShortName = "weapon repair cat",
+                Description = "Weapon repair cat",
+                MaxRepairResource = 50,
+                RepairCost = 1,
+                RepairQuality = 1
+            }
+        };
+
+        _CustomItemService.CreateItemFromClone(weaponRepairCat);
+        _databaseService.GetTables().Templates.Items["e983002c4ab4d99999889006"].Properties.RepairType = "Firearms";
+    }
+
+
     private void AddItemsToFleaBlacklist()
     {
         var ragfairConfig = _configServer.GetConfig<RagfairConfig>();
@@ -311,7 +391,9 @@ public class NewItemModule
             "e983002c4ab4d99999889001",
             "e983002c4ab4d99999889002",
             "e983002c4ab4d99999889003",
-            "e983002c4ab4d99999889004"
+            "e983002c4ab4d99999889004",
+            "e983002c4ab4d99999889005",
+            "e983002c4ab4d99999889006"
         };
 
         foreach (var itemId in itemIds)
