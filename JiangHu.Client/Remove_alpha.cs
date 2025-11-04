@@ -7,19 +7,25 @@ namespace JiangHu
 {
     public class RemoveAlpha : MonoBehaviour
     {
-        private bool _removed = false;
-
-        void Update()
+        private void Start()
         {
-            if (_removed) return;
+            CurrentScreenSingletonClass.Instance.OnScreenChanged += OnScreenChanged;
+        }
 
-            if (CurrentScreenSingletonClass.Instance?.RootScreenType == EEftScreenType.MainMenu)
+        private void OnScreenChanged(EEftScreenType screenType)
+        {
+            if (screenType == EEftScreenType.MainMenu)
             {
-                MenuScreen menuScreen = FindObjectOfType<MenuScreen>();
-                if (menuScreen != null)
-                {
-                    RemoveAlphaWarning(menuScreen);
-                }
+                Invoke(nameof(RemoveAlphaInstant), 0.05f);
+            }
+        }
+
+        private void RemoveAlphaInstant()
+        {
+            MenuScreen menuScreen = FindObjectOfType<MenuScreen>();
+            if (menuScreen != null)
+            {
+                RemoveAlphaWarning(menuScreen);
             }
         }
 
@@ -48,6 +54,12 @@ namespace JiangHu
             catch (System.Exception)
             {
             }
+        }
+
+        private void OnDestroy()
+        {
+            if (CurrentScreenSingletonClass.Instance != null)
+                CurrentScreenSingletonClass.Instance.OnScreenChanged -= OnScreenChanged;
         }
     }
 }

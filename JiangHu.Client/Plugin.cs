@@ -23,6 +23,7 @@ namespace JiangHu
         private ConfigEntry<KeyboardShortcut> ShowDebugToolHotkey;
         private ConfigEntry<bool> ShowDebugTool;
         private DebugTool debugTool;
+        private ConfigEntry<bool> BackgroundEnabled;
 
         void Awake()
         {
@@ -40,11 +41,15 @@ namespace JiangHu
 
             pluginObj.AddComponent<RemoveAlpha>();
 
+            BackgroundEnabled = Config.Bind("Jiang Hu World Shaper", "Background Enabled", true, "Enable/disable custom background");
+
             changeBackground = pluginObj.AddComponent<ChangeBackground>();
+            changeBackground.SetConfig(BackgroundEnabled);
             changeBackground.Init();
 
+
             musicPlayer = pluginObj.AddComponent<MusicPlayer>();
-            musicPlayer.SetConfig(ShowPlayerHotkey, ShowMusicPlayer, changeBackground);
+            musicPlayer.SetConfig(ShowPlayerHotkey, ShowMusicPlayer, changeBackground, BackgroundEnabled);
 
             ruleSettingsManager = pluginObj.AddComponent<RuleSettingsManager>();
             ruleSettingsManager.SetConfig(ShowSettingsManager);

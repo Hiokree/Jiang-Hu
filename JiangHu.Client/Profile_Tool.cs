@@ -128,7 +128,7 @@ namespace JiangHu
 
             // Enable Debug Tool
             GUILayout.BeginVertical("box");
-            bool newEnableDebug = GUILayout.Toggle(enableDebugTool, " Enable Profile Tool");
+            bool newEnableDebug = GUILayout.Toggle(enableDebugTool, " Enable Profile Tool  启用存档修改器");
             if (newEnableDebug != enableDebugTool)
             {
                 enableDebugTool = newEnableDebug;
@@ -140,7 +140,7 @@ namespace JiangHu
 
             // Quest Status
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Set Final Quest Status");
+            GUILayout.Label("Set Bounty Quest Status 悬赏任务进展度");
             GUILayout.Label("(0=Locked, 2=Started, 3=AvailableForFinish, 4=Success)");
             string questStatusStr = GUILayout.TextField(finalQueststatus.ToString());
             if (int.TryParse(questStatusStr, out int newQuestStatus) && newQuestStatus != finalQueststatus)
@@ -154,7 +154,7 @@ namespace JiangHu
 
             // Player XP
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Player XP:");
+            GUILayout.Label("Player XP 经验:");
             string xpStr = GUILayout.TextField(playerXP.ToString());
             if (int.TryParse(xpStr, out int newXP) && newXP != playerXP)
             {
@@ -167,7 +167,7 @@ namespace JiangHu
 
             // Add Rouble
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Auto-adds Roubles at startup:");
+            GUILayout.Label("Auto-adds Roubles at startup 服务器启动自动加卢布:");
             string rubStr = GUILayout.TextField(addRouble.ToString());
             if (int.TryParse(rubStr, out int newRub) && newRub != addRouble)
             {
@@ -180,7 +180,7 @@ namespace JiangHu
 
             // Hideout Level
             GUILayout.BeginVertical("box");
-            bool newHideout = GUILayout.Toggle(allHideoutLevel, " All Hideout Level 1");
+            bool newHideout = GUILayout.Toggle(allHideoutLevel, " All Hideout Level 1  所有藏身处单元1级");
             if (newHideout != allHideoutLevel)
             {
                 allHideoutLevel = newHideout;

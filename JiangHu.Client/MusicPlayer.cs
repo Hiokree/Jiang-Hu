@@ -26,12 +26,14 @@ namespace JiangHu
         private ConfigEntry<bool> _showGUI;
         private Rect windowRect = new Rect(20, 20, 280, 250);
         private bool showGUI = false;
+        private ConfigEntry<bool> _backgroundEnabledConfig;
 
-        public void SetConfig(ConfigEntry<KeyboardShortcut> hotkey, ConfigEntry<bool> showGUIConfig, ChangeBackground changeBackground)
+        public void SetConfig(ConfigEntry<KeyboardShortcut> hotkey, ConfigEntry<bool> showGUIConfig, ChangeBackground changeBackground, ConfigEntry<bool> backgroundEnabled)
         {
             _hotkey = hotkey;
             _showGUI = showGUIConfig;
             _changeBackground = changeBackground;
+            _backgroundEnabledConfig = backgroundEnabled;
         }
 
         void Awake()
@@ -315,7 +317,7 @@ namespace JiangHu
             GUILayout.Space(10);
             if (_changeBackground != null)
             {
-                bool newBackgroundEnabled = GUILayout.Toggle(_changeBackground.GetBackgroundEnabled(), " Enable Background");
+                bool newBackgroundEnabled = GUILayout.Toggle(_backgroundEnabledConfig.Value, " Enable Background");
                 if (newBackgroundEnabled != _changeBackground.GetBackgroundEnabled())
                 {
                     _changeBackground.SetBackgroundEnabled(newBackgroundEnabled);

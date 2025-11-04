@@ -1,4 +1,5 @@
-﻿using EFT.UI;
+﻿using BepInEx.Configuration;
+using EFT.UI;
 using EFT.UI.Screens;
 using EFT.UI.WeaponModding;
 using System.Collections.Generic;
@@ -19,6 +20,7 @@ namespace JiangHu
         private EEftScreenType _lastScreenType;
         private bool _backgroundEnabled = true;
         private string _selectedBackgroundName;
+        private ConfigEntry<bool> _backgroundEnabledConfig;
 
         public void Init()
         {
@@ -29,6 +31,8 @@ namespace JiangHu
             {
                 _selectedBackgroundName = _availableBackgrounds[0];
             }
+
+            _backgroundEnabled = _backgroundEnabledConfig?.Value ?? true;
 
             if (!LoadBackgroundTexture(_selectedBackgroundName)) return;
             Invoke(nameof(CreateBackgroundSystem), 2f);
@@ -72,6 +76,7 @@ namespace JiangHu
  
         public void SetBackgroundEnabled(bool enabled)
         {
+            _backgroundEnabledConfig.Value = enabled;
             _backgroundEnabled = enabled;
             if (_backgroundCanvas != null)
             {
@@ -205,6 +210,10 @@ namespace JiangHu
         public string GetCurrentBackground()
         {
             return _currentBackground;
+        }
+        public void SetConfig(ConfigEntry<bool> config)
+        {
+            _backgroundEnabledConfig = config;
         }
 
         void OnDestroy()

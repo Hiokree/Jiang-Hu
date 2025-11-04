@@ -180,11 +180,11 @@ namespace JiangHu
 
             if (showSettingsGuide)
             {
-                guideWindowRect = GUI.Window(12348, guideWindowRect, DrawSettingsGuideWindow, "Settings Guide");
+                guideWindowRect = GUI.Window(12348, guideWindowRect, DrawSettingsGuideWindow, "Settings Guide  设置指南");
             }
             else
             {
-                windowRect = GUI.Window(12349, windowRect, DrawSettingsWindow, "Game Rule Settings");
+                windowRect = GUI.Window(12349, windowRect, DrawSettingsWindow, "Game Rule Settings  玩法设置");
             }
         }
 
@@ -204,7 +204,7 @@ namespace JiangHu
             GUILayout.Space(10);
 
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Quest Generator", GUIStyle.none);
+            GUILayout.Label("Quest Generator  任务生成器", GUIStyle.none);
             GUILayout.Space(5);
 
             bool newQuestGen = GUILayout.Toggle(enableQuestGenerator, " Enable Quest Generator   (requires Disable Vanilla Quests)");
@@ -223,7 +223,7 @@ namespace JiangHu
             // Preset section
             GUILayout.BeginVertical("box");
 
-            bool newUsePreset = GUILayout.Toggle(usePreset, " Use Preset Configuration");
+            bool newUsePreset = GUILayout.Toggle(usePreset, " Use Preset Configuration  使用预设");
             if (newUsePreset != usePreset)
             {
                 usePreset = newUsePreset;
@@ -242,56 +242,56 @@ namespace JiangHu
             GUILayout.Label("Gameplay", GUIStyle.none);
             GUILayout.Space(5);
 
-            bool newDisableQuests = GUILayout.Toggle(disableVanillaQuests, " Disable Vanilla Quests");
+            bool newDisableQuests = GUILayout.Toggle(disableVanillaQuests, " Disable Vanilla Quests  禁原版任务");
             if (newDisableQuests != disableVanillaQuests)
             {
                 disableVanillaQuests = newDisableQuests;
                 SaveSettingsToJson();
             }
 
-            bool newLockFlea = GUILayout.Toggle(lockFlea, " Lock Flea Market");
+            bool newLockFlea = GUILayout.Toggle(lockFlea, " Lock Flea Market  锁跳蚤市场");
             if (newLockFlea != lockFlea)
             {
                 lockFlea = newLockFlea;
                 SaveSettingsToJson();
             }
 
-            bool newNoInsurance = GUILayout.Toggle(enableNoInsurance, " Disable Insurance");
+            bool newNoInsurance = GUILayout.Toggle(enableNoInsurance, " Disable Insurance  禁保险");
             if (newNoInsurance != enableNoInsurance)
             {
                 enableNoInsurance = newNoInsurance;
                 SaveSettingsToJson();
             }
 
-            bool newEmptyShop = GUILayout.Toggle(enableEmptyVanillaShop, " Empty Trader Shops");
+            bool newEmptyShop = GUILayout.Toggle(enableEmptyVanillaShop, " Empty Trader Shops  禁商店");
             if (newEmptyShop != enableEmptyVanillaShop)
             {
                 enableEmptyVanillaShop = newEmptyShop;
                 SaveSettingsToJson();
             }
 
-            bool newCashWipe = GUILayout.Toggle(enableCashWipeAfterDeath, " Cash Wipe on Death");
+            bool newCashWipe = GUILayout.Toggle(enableCashWipeAfterDeath, " Cash Wipe on Death  死亡清空现金");
             if (newCashWipe != enableCashWipeAfterDeath)
             {
                 enableCashWipeAfterDeath = newCashWipe;
                 SaveSettingsToJson();
             }
 
-            bool newHeadHP = GUILayout.Toggle(increaseHeadHP, " Increase Head HP");
+            bool newHeadHP = GUILayout.Toggle(increaseHeadHP, " Increase Head HP  大头");
             if (newHeadHP != increaseHeadHP)
             {
                 increaseHeadHP = newHeadHP;
                 SaveSettingsToJson();
             }
 
-            bool newUnlockLabrysQuests = GUILayout.Toggle(unlockAllLabrysQuests, " Unlock All Labrys Quests");
+            bool newUnlockLabrysQuests = GUILayout.Toggle(unlockAllLabrysQuests, " Unlock All Labrys Quests  解锁迷宫任务");
             if (newUnlockLabrysQuests != unlockAllLabrysQuests)
             {
                 unlockAllLabrysQuests = newUnlockLabrysQuests;
                 SaveSettingsToJson();
             }
 
-            bool newLabKey = GUILayout.Toggle(addHideoutProductionLabryskeycard, " Hideout Recipe: Labrys Keycard");
+            bool newLabKey = GUILayout.Toggle(addHideoutProductionLabryskeycard, " Hideout Recipe: Labrys Keycard  制造迷宫钥匙");
             if (newLabKey != addHideoutProductionLabryskeycard)
             {
                 addHideoutProductionLabryskeycard = newLabKey;
@@ -307,21 +307,21 @@ namespace JiangHu
             GUILayout.Space(5);
 
 
-            bool newUnlockItems = GUILayout.Toggle(unlockAllItemsByNewQuest, " Unlock Items by 1 New Quest");
+            bool newUnlockItems = GUILayout.Toggle(unlockAllItemsByNewQuest, " Unlock Items by 1 New Quest  新任务解锁全部物品");
             if (newUnlockItems != unlockAllItemsByNewQuest)
             {
                 unlockAllItemsByNewQuest = newUnlockItems;
                 SaveSettingsToJson();
             }
 
-            bool newPrestige = GUILayout.Toggle(changePrestigeCondition, " Change Prestige Conditions");
+            bool newPrestige = GUILayout.Toggle(changePrestigeCondition, " Change Prestige Conditions  改变升级荣誉条件");
             if (newPrestige != changePrestigeCondition)
             {
                 changePrestigeCondition = newPrestige;
                 SaveSettingsToJson();
             }
 
-            bool newDSP = GUILayout.Toggle(addHideoutProductionDSP, " Hideout Recipe: encoded DSP");
+            bool newDSP = GUILayout.Toggle(addHideoutProductionDSP, " Hideout Recipe: encoded DSP  制造访问灯塔道具");
             if (newDSP != addHideoutProductionDSP)
             {
                 addHideoutProductionDSP = newDSP;
@@ -333,7 +333,7 @@ namespace JiangHu
             GUILayout.Space(10);
 
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Settings Guide"))
+            if (GUILayout.Button("Settings Guide  设置指南"))
             {
                 LoadSettingsGuide(currentLanguage);
                 showSettingsGuide = true;
