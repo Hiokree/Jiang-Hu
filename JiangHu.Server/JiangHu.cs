@@ -30,6 +30,7 @@ public class JiangHuMod : IOnLoad
     private readonly Preset _Preset;
     private readonly QuestGenerator _questGenerator;
     private readonly ProfileTool _profileTool;
+    private readonly NewDialogueModule _newDialogueModule;
 
     public JiangHuMod(
         DatabaseService databaseService,
@@ -39,6 +40,7 @@ public class JiangHuMod : IOnLoad
         NewTrader traderService,
         NewItemModule newItemModule,
         NewQuestModule newQuestModule,
+        NewDialogueModule newDialogueModule,
         RuleSettings RuleSettings,
         Preset Preset,
         QuestGenerator questGenerator,
@@ -51,6 +53,8 @@ public class JiangHuMod : IOnLoad
         _traderService = traderService;
         _newItemModule = newItemModule;
         _newQuestModule = newQuestModule;
+        _newDialogueModule = newDialogueModule;
+
         _RuleSettings = RuleSettings;
         _Preset = Preset;
         _questGenerator = questGenerator;
@@ -63,7 +67,9 @@ public class JiangHuMod : IOnLoad
         LoadLocales();
         _traderService.SetupJiangHuTrader();
         _newQuestModule.SetupJiangHuQuests();
+
         await _newItemModule.OnLoad();
+        _newDialogueModule.SetupJiangHuDialogues();
 
         await _saveServer.LoadAsync();
         await _RuleSettings.ApplySettings();  

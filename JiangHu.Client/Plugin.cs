@@ -61,8 +61,22 @@ namespace JiangHu
             descriptionLoader.SetConfig(ShowDescription);
 
             PatchUseRepairKitInRaid.Enable();
+        }
 
+        private void UpdateCursorState()
+        {
+            bool anyGUIOpen = ShowMusicPlayer.Value || ShowSettingsManager.Value || ShowDebugTool.Value;
 
+            if (anyGUIOpen)
+            {
+                Cursor.visible = true;
+                Cursor.lockState = CursorLockMode.None;
+            }
+            else
+            {
+                Cursor.visible = false;
+                Cursor.lockState = CursorLockMode.Locked;
+            }
         }
 
         void Update()
@@ -81,6 +95,8 @@ namespace JiangHu
             {
                 ShowDebugTool.Value = !ShowDebugTool.Value;
             }
+
+            UpdateCursorState();
         }
 
         void OnDestroy()

@@ -177,8 +177,8 @@ namespace JiangHu.Server
             "5c0647fdd443bc2504c2d371", // Jaeger
             "6617beeaa9cfa777ca915b7c", // Ref
             "579dc571d53a0658a154fbec",  // Fence
-            "656f0f98d80a697f855d34b1", // Lightkeeper
-            "638f541a29ffd1183d187f57" // BTR Driver
+            "656f0f98d80a697f855d34b1", // BTR Driver
+            "638f541a29ffd1183d187f57" // Lightkeeper
         };
 
         private void DisableVanillaQuests(DatabaseTables tables)
@@ -217,11 +217,11 @@ namespace JiangHu.Server
                     VisibilityConditions = new List<VisibilityCondition>()
                 };
 
-                quest.Conditions.AvailableForStart = new List<QuestCondition> { condition }; // REPLACES all conditions
+                quest.Conditions.AvailableForStart = new List<QuestCondition> { condition }; 
                 modifiedCount++;
             }
 
-            Console.WriteLine($"\x1b[36m⚙️ [Jiang Hu] Disabled {modifiedCount} vanilla quests and changed {traderChangedCount} trader IDs \x1b[0m");
+            Console.WriteLine($"\x1b[36m⚙️ [Jiang Hu] Disabled and moved {traderChangedCount} vanilla quests to Loong Gate Inn \x1b[0m");
         }
 
 
