@@ -72,11 +72,6 @@ namespace JiangHu
                 Cursor.visible = true;
                 Cursor.lockState = CursorLockMode.None;
             }
-            else
-            {
-                Cursor.visible = false;
-                Cursor.lockState = CursorLockMode.Locked;
-            }
         }
 
         void Update()
