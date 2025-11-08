@@ -21,10 +21,14 @@ namespace JiangHu
         private bool unlockAllLabrysQuests = true;
         private bool usePreset = true;
         private bool enableQuestGenerator = true;
+        private bool enableJianghuBot = true;
+        private bool enableJianghuBotName = true;
+        private bool showBotNameGUI = false;
+        private Rect botNameWindowRect = new Rect(250, 150, 400, 300);
 
         private ConfigEntry<bool> showSettingsManager;
 
-        private Rect windowRect = new Rect(300, 100, 400, 550);
+        private Rect windowRect = new Rect(300, 100, 400, 700);
         private bool showGUI = false;
         private Vector2 scrollPosition = Vector2.zero;
 
@@ -93,6 +97,25 @@ namespace JiangHu
                             usePreset = configDict["Use_Preset"];
                         if (configDict.ContainsKey("Enable_Quest_Generator"))
                             enableQuestGenerator = configDict["Enable_Quest_Generator"];
+                        if (configDict.ContainsKey("Enable_Jianghu_Bot"))
+                            enableJianghuBot = configDict["Enable_Jianghu_Bot"];
+                        if (configDict.ContainsKey("Enable_Jianghu_BotName"))
+                            enableJianghuBotName = configDict["Enable_Jianghu_BotName"];
+                        // Bot name language settings
+                        if (configDict.ContainsKey("Enable_Jianghu_BotName_ch"))
+                            botNameLanguageSettings["ch"] = configDict["Enable_Jianghu_BotName_ch"];
+                        if (configDict.ContainsKey("Enable_Jianghu_BotName_en"))
+                            botNameLanguageSettings["en"] = configDict["Enable_Jianghu_BotName_en"];
+                        if (configDict.ContainsKey("Enable_Jianghu_BotName_es"))
+                            botNameLanguageSettings["es"] = configDict["Enable_Jianghu_BotName_es"];
+                        if (configDict.ContainsKey("Enable_Jianghu_BotName_fr"))
+                            botNameLanguageSettings["fr"] = configDict["Enable_Jianghu_BotName_fr"];
+                        if (configDict.ContainsKey("Enable_Jianghu_BotName_jp"))
+                            botNameLanguageSettings["jp"] = configDict["Enable_Jianghu_BotName_jp"];
+                        if (configDict.ContainsKey("Enable_Jianghu_BotName_po"))
+                            botNameLanguageSettings["po"] = configDict["Enable_Jianghu_BotName_po"];
+                        if (configDict.ContainsKey("Enable_Jianghu_BotName_ru"))
+                            botNameLanguageSettings["ru"] = configDict["Enable_Jianghu_BotName_ru"];
 
                         Debug.Log("✅ [JiangHu] Settings loaded from JSON");
                     }
@@ -122,7 +145,16 @@ namespace JiangHu
                     { "Add_HideoutProduction_Labryskeycard", addHideoutProductionLabryskeycard },
                     { "Unlock_All_Labrys_Quests", unlockAllLabrysQuests },
                     { "Use_Preset", usePreset },
-                    { "Enable_Quest_Generator", enableQuestGenerator }
+                    { "Enable_Quest_Generator", enableQuestGenerator },
+                    { "Enable_Jianghu_Bot", enableJianghuBot },
+                    { "Enable_Jianghu_BotName", enableJianghuBotName },
+                    { "Enable_Jianghu_BotName_ch", botNameLanguageSettings["ch"] },
+                    { "Enable_Jianghu_BotName_en", botNameLanguageSettings["en"] },
+                    { "Enable_Jianghu_BotName_es", botNameLanguageSettings["es"] },
+                    { "Enable_Jianghu_BotName_fr", botNameLanguageSettings["fr"] },
+                    { "Enable_Jianghu_BotName_jp", botNameLanguageSettings["jp"] },
+                    { "Enable_Jianghu_BotName_po", botNameLanguageSettings["po"] },
+                    { "Enable_Jianghu_BotName_ru", botNameLanguageSettings["ru"] }
                 };
 
                 string modPath = Path.GetDirectoryName(Application.dataPath);
@@ -139,6 +171,12 @@ namespace JiangHu
                 Debug.LogError($"❌ [JiangHu] Error saving settings: {ex.Message}");
             }
         }
+
+        private Dictionary<string, bool> botNameLanguageSettings = new Dictionary<string, bool>
+        {
+            { "ch", false }, { "en", false }, { "es", false }, { "fr", false }, 
+            { "jp", false }, { "po", false }, { "ru", false }
+        };
 
         private void LoadSettingsGuide(string languageCode)
         {
@@ -182,6 +220,10 @@ namespace JiangHu
             {
                 guideWindowRect = GUI.Window(12348, guideWindowRect, DrawSettingsGuideWindow, "Settings Guide  设置指南");
             }
+            else if (showBotNameGUI)
+            {
+                botNameWindowRect = GUI.Window(12350, botNameWindowRect, DrawBotNameSelectionWindow, "Languages  多国语言");
+            }
             else
             {
                 windowRect = GUI.Window(12349, windowRect, DrawSettingsWindow, "Game Rule Settings  玩法设置");
@@ -215,6 +257,33 @@ namespace JiangHu
             }
             GUILayout.EndVertical();
 
+            // Jianghu Bot Settings
+            GUILayout.Space(10);
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Jianghu Bot  江湖人机", GUIStyle.none);
+            GUILayout.Space(5);
+
+            bool newEnableBot = GUILayout.Toggle(enableJianghuBot, " Enable Jianghu Bot  使用江湖人机");
+            if (newEnableBot != enableJianghuBot)
+            {
+                enableJianghuBot = newEnableBot;
+                SaveSettingsToJson();
+            }
+
+            bool newEnableBotName = GUILayout.Toggle(enableJianghuBotName, " Enable Jianghu Bot Names  使用江湖人机名字");
+            if (newEnableBotName != enableJianghuBotName)
+            {
+                enableJianghuBotName = newEnableBotName;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            if (GUILayout.Button("Languages  多国语言"))
+            {
+                showBotNameGUI = true;
+            }
+            GUILayout.EndVertical();
+
+
             GUILayout.Space(10);
 
             GUILayout.Label("PRESET (toggle off to change rule settings)", GUIStyle.none);
@@ -234,8 +303,6 @@ namespace JiangHu
             GUILayout.Space(15);
             GUILayout.Label("RULE SETTINGS (applied at server start)", GUIStyle.none);
             GUILayout.Space(5);
-
-            scrollPosition = GUILayout.BeginScrollView(scrollPosition, GUILayout.Height(300));
 
             // Upper Box
             GUILayout.BeginVertical("box");
@@ -329,7 +396,6 @@ namespace JiangHu
             }
 
             GUILayout.EndVertical();
-            GUILayout.EndScrollView();
             GUILayout.Space(10);
 
             GUILayout.BeginHorizontal();
@@ -406,6 +472,77 @@ namespace JiangHu
             GUILayout.Label(settingsGuideContent);
             GUILayout.EndScrollView();
             GUILayout.EndArea();
+        }
+
+        void DrawBotNameSelectionWindow(int windowID)
+        {
+            if (GUI.Button(new Rect(botNameWindowRect.width - 25, 5, 20, 20), "X"))
+            {
+                showBotNameGUI = false;
+                return;
+            }
+
+            GUI.DragWindow(new Rect(0, 0, botNameWindowRect.width - 25, 20));
+            GUILayout.Space(10);
+
+            GUILayout.BeginVertical("box");
+
+            bool newChinese = GUILayout.Toggle(botNameLanguageSettings["ch"], " 使用中文名字");
+            if (newChinese != botNameLanguageSettings["ch"])
+            {
+                botNameLanguageSettings["ch"] = newChinese;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(10);
+
+            bool newEnglish = GUILayout.Toggle(botNameLanguageSettings["en"], " Use English Bot Names");
+            if (newEnglish != botNameLanguageSettings["en"])
+            {
+                botNameLanguageSettings["en"] = newEnglish;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(10);
+
+            bool newSpanish = GUILayout.Toggle(botNameLanguageSettings["es"], " usar nombres de bot en español");
+            if (newSpanish != botNameLanguageSettings["es"])
+            {
+                botNameLanguageSettings["es"] = newSpanish;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(10);
+
+            bool newFrench = GUILayout.Toggle(botNameLanguageSettings["fr"], " utiliser des noms de bot en français");
+            if (newFrench != botNameLanguageSettings["fr"])
+            {
+                botNameLanguageSettings["fr"] = newFrench;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(10);
+
+            bool newJapanese = GUILayout.Toggle(botNameLanguageSettings["jp"], " 日本語のボット名を使用する");
+            if (newJapanese != botNameLanguageSettings["jp"])
+            {
+                botNameLanguageSettings["jp"] = newJapanese;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(10);
+
+            bool newPortuguese = GUILayout.Toggle(botNameLanguageSettings["po"], " usar nomes de bot em português");
+            if (newPortuguese != botNameLanguageSettings["po"])
+            {
+                botNameLanguageSettings["po"] = newPortuguese;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(10);
+
+            bool newRussian = GUILayout.Toggle(botNameLanguageSettings["ru"], " использовать русские имена ботов");
+            if (newRussian != botNameLanguageSettings["ru"])
+            {
+                botNameLanguageSettings["ru"] = newRussian;
+                SaveSettingsToJson();
+            }
+
+            GUILayout.EndVertical();
         }
     }
 }

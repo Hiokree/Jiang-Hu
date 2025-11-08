@@ -31,6 +31,8 @@ public class JiangHuMod : IOnLoad
     private readonly QuestGenerator _questGenerator;
     private readonly ProfileTool _profileTool;
     private readonly NewDialogueModule _newDialogueModule;
+    private readonly EnableJianghuBot _enableJianghuBot;
+    private readonly JianghuBotName _jianghuBotName;
 
     public JiangHuMod(
         DatabaseService databaseService,
@@ -44,7 +46,9 @@ public class JiangHuMod : IOnLoad
         RuleSettings RuleSettings,
         Preset Preset,
         QuestGenerator questGenerator,
-        ProfileTool profileTool)
+        ProfileTool profileTool,
+        EnableJianghuBot enableJianghuBot,
+        JianghuBotName jianghuBotName)
     {
         _databaseService = databaseService;
         _imageRouterService = imageRouterService;
@@ -59,6 +63,8 @@ public class JiangHuMod : IOnLoad
         _Preset = Preset;
         _questGenerator = questGenerator;
         _profileTool = profileTool;
+        _enableJianghuBot = enableJianghuBot;
+        _jianghuBotName = jianghuBotName;
     }
 
     public async Task OnLoad()
@@ -72,13 +78,17 @@ public class JiangHuMod : IOnLoad
         _newDialogueModule.SetupJiangHuDialogues();
 
         await _saveServer.LoadAsync();
-        await _RuleSettings.ApplySettings();  
+        await _RuleSettings.ApplySettings();
+
+        _enableJianghuBot.ApplyBotSettings();
+        _jianghuBotName.SetupJianghuBotNames();
+
         _questGenerator.GenerateQuestChain(); 
         await Task.Delay(100);
 
         _Preset.ApplyPreset();
-
         await _profileTool.ApplyProfileSettings();
+
         await _saveServer.SaveAsync();
         Log.PrintBanner();
         await Task.CompletedTask;

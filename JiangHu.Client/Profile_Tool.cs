@@ -188,7 +188,7 @@ namespace JiangHu
             }
             GUILayout.EndVertical();
 
-            GUILayout.Label("Restart server to apply changes");
+            GUILayout.Label("Restart server to apply changes  重启服务器后生效");
 
             GUILayout.EndScrollView();
         }
