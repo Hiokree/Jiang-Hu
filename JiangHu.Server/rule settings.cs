@@ -30,7 +30,6 @@ namespace JiangHu.Server
         private readonly SaveServer _saveServer;
         private readonly DatabaseServer _databaseServer;
         private readonly FenceService _fenceService;
-        private string ConfigPath => System.IO.Path.Combine(System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "config", "config.json");
 
         // Config flags
         private bool _Disable_Vanilla_Quests = false;
@@ -43,7 +42,7 @@ namespace JiangHu.Server
         private bool _Add_HideoutProduction_DSP = false;
         private bool _Add_HideoutProduction_Labryskeycard = false;
         private bool _Unlock_All_Labrys_Quests = false;
-
+        private bool _Enable_Replace_OneRaid_with_OneLife = false;
 
         private readonly ConfigServer _configServer;
 
@@ -110,6 +109,8 @@ namespace JiangHu.Server
                 if (config.TryGetValue("Unlock_All_Labrys_Quests", out var labrysQuestsValue))
                     _Unlock_All_Labrys_Quests = labrysQuestsValue.GetBoolean();
 
+                if (config.TryGetValue("Enable_Replace_OneRaid_with_OneLife", out var oneLifeValue))
+                    _Enable_Replace_OneRaid_with_OneLife = oneLifeValue.GetBoolean();
 
             }
             catch (Exception ex)
@@ -154,6 +155,8 @@ namespace JiangHu.Server
                 if (_Unlock_All_Labrys_Quests)
                     UnlockLabrysQuests(tables);
 
+                if (_Enable_Replace_OneRaid_with_OneLife)
+                    ReplaceOneRaidWithOneLife(tables);
 
                 Console.WriteLine("\x1b[36m🎮 [Jiang Hu] All rules applied successfully\x1b[0m");
             }
@@ -746,5 +749,143 @@ namespace JiangHu.Server
             }
         }
 
+        private void ReplaceOneRaidWithOneLife(DatabaseTables tables)
+        {
+            try
+            {
+                if (!_Enable_Replace_OneRaid_with_OneLife)
+                    return;
+
+                var quests = tables.Templates.Quests;
+                int modifiedCount = 0;
+
+                // Quest e983002c4ab4d229af888700
+                if (quests.TryGetValue("e983002c4ab4d229af888700", out var quest700))
+                {
+                    if (quest700.Conditions?.AvailableForFinish != null)
+                    {
+                        foreach (var condition in quest700.Conditions.AvailableForFinish)
+                        {
+                            if (condition.OneSessionOnly == true)
+                            {
+                                condition.OneSessionOnly = false;
+                            }
+                        }
+                    }
+
+                    if (quest700.Conditions?.AvailableForFinish != null)
+                    {
+                        quest700.Conditions.AvailableForFinish.RemoveAll(condition =>
+                            condition.Counter?.Conditions?.Any(counterCondition =>
+                                counterCondition.ConditionType == "ExitStatus") == true
+                        );
+                    }
+
+                    var failCondition700 = new QuestCondition
+                    {
+                        Id = new MongoId("e983002c4ab4d229af88876d"),
+                        Index = 0,
+                        ConditionType = "CounterCreator",
+                        DynamicLocale = false,
+                        GlobalQuestCounterId = string.Empty,
+                        ParentId = string.Empty,
+                        OneSessionOnly = false,
+                        Value = 1,
+                        Type = "Exploration",
+                        VisibilityConditions = new List<VisibilityCondition>(),
+                        Counter = new QuestConditionCounter
+                        {
+                            Id = "e983002c4ab4d229af88876c",
+                            Conditions = new List<QuestConditionCounterCondition>
+                    {
+                        new QuestConditionCounterCondition
+                        {
+                            Id = new MongoId("e983002c4ab4d229af88876b"),
+                            ConditionType = "ExitStatus",
+                            DynamicLocale = false,
+                            Status = new List<string> { "Killed", "MissingInAction", "Left" }
+                        }
+                    }
+                        }
+                    };
+
+                    if (quest700.Conditions.Fail == null)
+                        quest700.Conditions.Fail = new List<QuestCondition>();
+
+                    quest700.Conditions.Fail.Insert(0, failCondition700);
+
+                    quest700.Restartable = true;
+
+                    modifiedCount++;
+                }
+
+                // Quest e983002c4ab4d229af8882b2
+                if (quests.TryGetValue("e983002c4ab4d229af8882b2", out var quest2b2))
+                {
+                    if (quest2b2.Conditions?.AvailableForFinish != null)
+                    {
+                        foreach (var condition in quest2b2.Conditions.AvailableForFinish)
+                        {
+                            if (condition.OneSessionOnly == true)
+                            {
+                                condition.OneSessionOnly = false;
+                            }
+                        }
+                    }
+
+                    if (quest2b2.Conditions?.AvailableForFinish != null)
+                    {
+                        quest2b2.Conditions.AvailableForFinish.RemoveAll(condition =>
+                            condition.Counter?.Conditions?.Any(counterCondition =>
+                                counterCondition.ConditionType == "ExitStatus") == true
+                        );
+                    }
+
+                    var failCondition2b2 = new QuestCondition
+                    {
+                        Id = new MongoId("e983002c4ab4d229af888317"),
+                        Index = 0,
+                        ConditionType = "CounterCreator",
+                        DynamicLocale = false,
+                        GlobalQuestCounterId = string.Empty,
+                        ParentId = string.Empty,
+                        OneSessionOnly = false,
+                        Value = 1,
+                        Type = "Exploration",
+                        VisibilityConditions = new List<VisibilityCondition>(),
+                        Counter = new QuestConditionCounter
+                        {
+                            Id = "e983002c4ab4d229af888316",
+                            Conditions = new List<QuestConditionCounterCondition>
+                    {
+                        new QuestConditionCounterCondition
+                        {
+                            Id = new MongoId("e983002c4ab4d229af888315"),
+                            ConditionType = "ExitStatus",
+                            DynamicLocale = false,
+                            Status = new List<string> { "Killed", "MissingInAction", "Left" }
+                        }
+                    }
+                        }
+                    };
+
+                    if (quest2b2.Conditions.Fail == null)
+                        quest2b2.Conditions.Fail = new List<QuestCondition>();
+
+                    quest2b2.Conditions.Fail.Insert(0, failCondition2b2);
+                    
+                    quest2b2.Restartable = true;
+
+                    modifiedCount++;
+                }
+
+                if (modifiedCount > 0)
+                    Console.WriteLine($"\x1b[36m🔄 [Jiang Hu] Replaced one-raid requirement with one-life for {modifiedCount} new quests \x1b[0m");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error replacing one-raid with one-life: {ex.Message} \x1b[0m");
+            }
+        }
     }
 }

@@ -25,10 +25,11 @@ namespace JiangHu
         private bool enableJianghuBotName = true;
         private bool showBotNameGUI = false;
         private Rect botNameWindowRect = new Rect(250, 150, 400, 300);
+        private bool enableReplaceOneRaidWithOneLife = true;
 
         private ConfigEntry<bool> showSettingsManager;
 
-        private Rect windowRect = new Rect(300, 100, 400, 700);
+        private Rect windowRect = new Rect(300, 100, 550, 700);
         private bool showGUI = false;
         private Vector2 scrollPosition = Vector2.zero;
 
@@ -101,7 +102,6 @@ namespace JiangHu
                             enableJianghuBot = configDict["Enable_Jianghu_Bot"];
                         if (configDict.ContainsKey("Enable_Jianghu_BotName"))
                             enableJianghuBotName = configDict["Enable_Jianghu_BotName"];
-                        // Bot name language settings
                         if (configDict.ContainsKey("Enable_Jianghu_BotName_ch"))
                             botNameLanguageSettings["ch"] = configDict["Enable_Jianghu_BotName_ch"];
                         if (configDict.ContainsKey("Enable_Jianghu_BotName_en"))
@@ -116,6 +116,8 @@ namespace JiangHu
                             botNameLanguageSettings["po"] = configDict["Enable_Jianghu_BotName_po"];
                         if (configDict.ContainsKey("Enable_Jianghu_BotName_ru"))
                             botNameLanguageSettings["ru"] = configDict["Enable_Jianghu_BotName_ru"];
+                        if (configDict.ContainsKey("Enable_Replace_OneRaid_with_OneLife"))
+                            enableReplaceOneRaidWithOneLife = configDict["Enable_Replace_OneRaid_with_OneLife"];
 
                         Debug.Log("✅ [JiangHu] Settings loaded from JSON");
                     }
@@ -154,7 +156,8 @@ namespace JiangHu
                     { "Enable_Jianghu_BotName_fr", botNameLanguageSettings["fr"] },
                     { "Enable_Jianghu_BotName_jp", botNameLanguageSettings["jp"] },
                     { "Enable_Jianghu_BotName_po", botNameLanguageSettings["po"] },
-                    { "Enable_Jianghu_BotName_ru", botNameLanguageSettings["ru"] }
+                    { "Enable_Jianghu_BotName_ru", botNameLanguageSettings["ru"] },
+                    { "Enable_Replace_OneRaid_with_OneLife", enableReplaceOneRaidWithOneLife }
                 };
 
                 string modPath = Path.GetDirectoryName(Application.dataPath);
@@ -226,7 +229,7 @@ namespace JiangHu
             }
             else
             {
-                windowRect = GUI.Window(12349, windowRect, DrawSettingsWindow, "Game Rule Settings  玩法设置");
+                windowRect = GUI.Window(12349, windowRect, DrawSettingsWindow, "JiangHu Setting Manager  江湖设置管理器");
             }
         }
 
@@ -362,6 +365,13 @@ namespace JiangHu
             if (newLabKey != addHideoutProductionLabryskeycard)
             {
                 addHideoutProductionLabryskeycard = newLabKey;
+                SaveSettingsToJson();
+            }
+
+            bool newOneLife = GUILayout.Toggle(enableReplaceOneRaidWithOneLife, " Replace new quest 1 Raid requirement with 1 Life    新任务的单局完成改为一命完成");
+            if (newOneLife != enableReplaceOneRaidWithOneLife)
+            {
+                enableReplaceOneRaidWithOneLife = newOneLife;
                 SaveSettingsToJson();
             }
 

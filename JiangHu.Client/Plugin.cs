@@ -27,10 +27,10 @@ namespace JiangHu
 
         void Awake()
         {
-            ShowPlayerHotkey = Config.Bind("Jiang Hu World Shaper", "Show Jiang Hu World Shaper Hotkey", new KeyboardShortcut(KeyCode.F4), "Hotkey to show/hide Jiang Hu World Shaper");
-            ShowMusicPlayer = Config.Bind("Jiang Hu World Shaper", "Show Jiang Hu World Shaper", false, "Show/hide Jiang Hu World Shaper GUI");
-            ShowSettingsHotkey = Config.Bind("Rule Settings Manager", "Show Setting Manager Hotkey", new KeyboardShortcut(KeyCode.F5), "Hotkey to show/hide rule settings GUI");
-            ShowSettingsManager = Config.Bind("Rule Settings Manager", "Show Setting Manager", false, "Show/hide rule settings GUI");
+            ShowPlayerHotkey = Config.Bind("JiangHu World Shaper", "Show JiangHu World Shaper Hotkey", new KeyboardShortcut(KeyCode.F4), "Hotkey to show/hide JiangHu World Shaper");
+            ShowMusicPlayer = Config.Bind("JiangHu World Shaper", "Show JiangHu World Shaper", false, "Show/hide JiangHu World Shaper GUI");
+            ShowSettingsHotkey = Config.Bind("JiangHu Settings Manager", "Show Setting Manager Hotkey", new KeyboardShortcut(KeyCode.F5), "Hotkey to show/hide JiangHu settings GUI");
+            ShowSettingsManager = Config.Bind("JiangHu Settings Manager", "Show Setting Manager", false, "Show/hide JiangHu settings GUI");
             ShowDebugToolHotkey = Config.Bind("Debug Tool", "Show Debug Tool Hotkey", new KeyboardShortcut(KeyCode.F6), "Hotkey to show/hide debug tool GUI");
             ShowDebugTool = Config.Bind("Debug Tool", "Show Debug Tool", false, "Show/hide debug tool GUI");
             ShowDescription = Config.Bind("About JiangHu", "Detailed Mod Info", true, "Show detailed mod information");
@@ -40,8 +40,6 @@ namespace JiangHu
             pluginObj.hideFlags = HideFlags.HideAndDontSave;
 
             pluginObj.AddComponent<RemoveAlpha>();
-
-            BackgroundEnabled = Config.Bind("Jiang Hu World Shaper", "Background Enabled", true, "Enable/disable custom background");
 
             changeBackground = pluginObj.AddComponent<ChangeBackground>();
             changeBackground.SetConfig(BackgroundEnabled);

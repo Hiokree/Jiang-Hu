@@ -238,7 +238,7 @@ namespace JiangHu
         void OnGUI()
         {
             if (!_showGUI.Value) return;
-            windowRect = GUI.Window(12345, windowRect, DrawMusicPlayerWindow, "Jiang Hu World Shaper");
+            windowRect = GUI.Window(12345, windowRect, DrawMusicPlayerWindow, "JiangHu World Shaper");
 
             if (_showBackgroundList)
             {
@@ -317,7 +317,7 @@ namespace JiangHu
             GUILayout.Space(10);
             if (_changeBackground != null)
             {
-                bool newBackgroundEnabled = GUILayout.Toggle(_backgroundEnabledConfig.Value, " Enable Background");
+                bool newBackgroundEnabled = GUILayout.Toggle(_changeBackground.GetBackgroundEnabled(), " Enable Background");
                 if (newBackgroundEnabled != _changeBackground.GetBackgroundEnabled())
                 {
                     _changeBackground.SetBackgroundEnabled(newBackgroundEnabled);

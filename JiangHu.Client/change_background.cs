@@ -73,16 +73,19 @@ namespace JiangHu
             bgObject.layer = 2;
             DontDestroyOnLoad(_backgroundCanvas);
         }
- 
+
         public void SetBackgroundEnabled(bool enabled)
         {
-            _backgroundEnabledConfig.Value = enabled;
+            if (_backgroundEnabledConfig != null)
+                _backgroundEnabledConfig.Value = enabled;
+
             _backgroundEnabled = enabled;
             if (_backgroundCanvas != null)
             {
                 _backgroundCanvas.SetActive(enabled && ShouldBackgroundBeActive());
             }
         }
+
         private bool ShouldBackgroundBeActive()
         {
             return !IsInHideout() && !IsInRaid() && !IsInWeaponModding();
