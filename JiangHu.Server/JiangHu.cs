@@ -33,6 +33,7 @@ public class JiangHuMod : IOnLoad
     private readonly NewDialogueModule _newDialogueModule;
     private readonly EnableJianghuBot _enableJianghuBot;
     private readonly JianghuBotName _jianghuBotName;
+    private readonly MovementServerSide _movementServerSide;
 
     public JiangHuMod(
         DatabaseService databaseService,
@@ -48,7 +49,8 @@ public class JiangHuMod : IOnLoad
         QuestGenerator questGenerator,
         ProfileTool profileTool,
         EnableJianghuBot enableJianghuBot,
-        JianghuBotName jianghuBotName)
+        JianghuBotName jianghuBotName,
+        MovementServerSide movementServerSide)
     {
         _databaseService = databaseService;
         _imageRouterService = imageRouterService;
@@ -65,6 +67,7 @@ public class JiangHuMod : IOnLoad
         _profileTool = profileTool;
         _enableJianghuBot = enableJianghuBot;
         _jianghuBotName = jianghuBotName;
+        _movementServerSide = movementServerSide;
     }
 
     public async Task OnLoad()
@@ -85,6 +88,8 @@ public class JiangHuMod : IOnLoad
 
         _questGenerator.GenerateQuestChain(); 
         await Task.Delay(100);
+
+        _movementServerSide.ApplyZeroInertiaSettings();
 
         _Preset.ApplyPreset();
         await _profileTool.ApplyProfileSettings();

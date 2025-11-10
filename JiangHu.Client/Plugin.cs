@@ -35,11 +35,15 @@ namespace JiangHu
             ShowDebugTool = Config.Bind("Debug Tool", "Show Debug Tool", false, "Show/hide debug tool GUI");
             ShowDescription = Config.Bind("About JiangHu", "Detailed Mod Info", true, "Show detailed mod information");
 
+
             pluginObj = new GameObject("JiangHuPlugin");
             DontDestroyOnLoad(pluginObj);
             pluginObj.hideFlags = HideFlags.HideAndDontSave;
 
             pluginObj.AddComponent<RemoveAlpha>();
+
+
+            pluginObj.AddComponent<NewMovement>();
 
             changeBackground = pluginObj.AddComponent<ChangeBackground>();
             changeBackground.SetConfig(BackgroundEnabled);
@@ -74,6 +78,7 @@ namespace JiangHu
 
         void Update()
         {
+
             if (ShowPlayerHotkey.Value.IsDown())
             {
                 ShowMusicPlayer.Value = !ShowMusicPlayer.Value;
