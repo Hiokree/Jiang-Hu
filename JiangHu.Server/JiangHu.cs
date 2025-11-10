@@ -29,7 +29,6 @@ public class JiangHuMod : IOnLoad
     private readonly RuleSettings _RuleSettings;
     private readonly Preset _Preset;
     private readonly QuestGenerator _questGenerator;
-    private readonly ProfileTool _profileTool;
     private readonly NewDialogueModule _newDialogueModule;
     private readonly EnableJianghuBot _enableJianghuBot;
     private readonly JianghuBotName _jianghuBotName;
@@ -47,7 +46,6 @@ public class JiangHuMod : IOnLoad
         RuleSettings RuleSettings,
         Preset Preset,
         QuestGenerator questGenerator,
-        ProfileTool profileTool,
         EnableJianghuBot enableJianghuBot,
         JianghuBotName jianghuBotName,
         MovementServerSide movementServerSide)
@@ -64,7 +62,6 @@ public class JiangHuMod : IOnLoad
         _RuleSettings = RuleSettings;
         _Preset = Preset;
         _questGenerator = questGenerator;
-        _profileTool = profileTool;
         _enableJianghuBot = enableJianghuBot;
         _jianghuBotName = jianghuBotName;
         _movementServerSide = movementServerSide;
@@ -92,7 +89,6 @@ public class JiangHuMod : IOnLoad
         _movementServerSide.ApplyZeroInertiaSettings();
 
         _Preset.ApplyPreset();
-        await _profileTool.ApplyProfileSettings();
 
         await _saveServer.SaveAsync();
         Log.PrintBanner();

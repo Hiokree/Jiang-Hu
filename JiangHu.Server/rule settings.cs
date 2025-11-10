@@ -128,8 +128,7 @@ namespace JiangHu.Server
                 if (_Disable_Vanilla_Quests)
                     DisableVanillaQuests(tables);
 
-                if (_Lock_Flea)
-                    LockFlea(tables);
+                LockFlea(tables);
 
                 if (_Increase_HeadHP)
                     IncreaseHeadHP();
@@ -325,7 +324,7 @@ namespace JiangHu.Server
         "5ac3b934156ae10c4430e83c", // Ragman
         "5c0647fdd443bc2504c2d371", // Jaeger
         "6617beeaa9cfa777ca915b7c"  // Fence
-    };
+            };
 
             var clearedTraders = new List<string>();
 

@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.Reflection;
+using System.Text.Json;
+using System.Threading.Tasks;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
 using SPTarkov.Server.Core.Models.Eft.Common;
@@ -18,10 +20,43 @@ namespace JiangHu.Server
         private readonly DatabaseServer _databaseServer;
         private readonly SaveServer _saveServer;
 
+        private bool _Enable_New_Movement = false;
+
         public MovementServerSide(DatabaseServer databaseServer, SaveServer saveServer)
         {
             _databaseServer = databaseServer;
             _saveServer = saveServer;
+
+            LoadConfig();
+        }
+        
+        private void LoadConfig()
+        {
+            try
+            {
+                var modPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                var configPath = Path.Combine(modPath, "config", "FPSconfig.json");
+
+                if (!File.Exists(configPath))
+                {
+                    Console.WriteLine("⚠️ [Jiang Hu] config.json not found!");
+                    return;
+                }
+
+                var json = File.ReadAllText(configPath);
+                var config = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+
+                if (config == null)
+                    return;
+
+                if (config.TryGetValue("Enable_New_Movement", out var movementValue))
+                    _Enable_New_Movement = movementValue.GetBoolean();
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error loading movement config: {ex.Message} \x1b[0m");
+            }
         }
 
         /// <summary>
@@ -31,14 +66,19 @@ namespace JiangHu.Server
         /// </summary>
         public void ApplyZeroInertiaSettings()
         {
+            if (!_Enable_New_Movement)
+            {
+                return;
+            }
+
             var globalConfig = _databaseServer.GetTables().Globals;
 
             // Get inertia settings from server configuration
             var inertia = globalConfig.Configuration.Inertia;
 
             // INSTANT ACCELERATION - Zero ground inertia
-            inertia.WalkInertia = new XYZ { X = 1000, Y = 1000, Z = 1000 };           // Instant acceleration
-            inertia.SprintBrakeInertia = new XYZ { X = 1000, Y = 1000, Z = 1000 };    // Instant sprint stops
+            inertia.WalkInertia = new XYZ { X = 0.001f, Y = 0.001f, Z = 0 };           // Instant acceleration
+            inertia.SprintBrakeInertia = new XYZ { X = 0.001f, Y = 0.001f, Z = 0 };    // Instant sprint stops
 
             // ZERO JUMP PENALTIES - Perfect momentum preservation
             inertia.SpeedInertiaAfterJump = new XYZ { X = 0, Y = 0, Z = 0 };          // No speed loss after jumps
@@ -56,17 +96,17 @@ namespace JiangHu.Server
             inertia.SprintTransitionMotionPreservation = new XYZ { X = 1, Y = 1, Z = 1 }; // 100% momentum preservation
 
             // INSTANT ROTATION - Zero rotation inertia
-            inertia.TiltAcceleration = new XYZ { X = 1000, Y = 1000, Z = 1000 };      // Instant tilt changes
-            inertia.TiltMaxSideBackSpeed = new XYZ { X = 1000, Y = 1000, Z = 1000 };  // Max tilt speed
+            inertia.TiltAcceleration = new XYZ { X = 0.001f, Y = 0.001f, Z = 0 };      // Instant tilt changes
+            inertia.TiltMaxSideBackSpeed = new XYZ { X = 0.001f, Y = 0.001f, Z = 0 };  // Max tilt speed
 
             // INSTANT SPRINT - Zero sprint inertia
             inertia.SprintSpeedInertiaCurveMin = new XYZ { X = 1, Y = 1, Z = 1 };     // Full sprint control
             inertia.SprintSpeedInertiaCurveMax = new XYZ { X = 1, Y = 1, Z = 1 };     // Full sprint control
 
             // INSTANT MOVEMENT - Zero movement inertia
-            inertia.ProneDirectionAccelerationRange = new XYZ { X = 1000, Y = 1000, Z = 1000 }; // Instant prone direction
-            inertia.ProneSpeedAccelerationRange = new XYZ { X = 1000, Y = 1000, Z = 1000 };     // Instant prone speed
-            inertia.CrouchSpeedAccelerationRange = new XYZ { X = 1000, Y = 1000, Z = 1000 };    // Instant crouch speed
+            inertia.ProneDirectionAccelerationRange = new XYZ { X = 0.001f, Y = 0.001f, Z = 0 }; // Instant prone direction
+            inertia.ProneSpeedAccelerationRange = new XYZ { X = 0.001f, Y = 0.001f, Z = 0 };     // Instant prone speed
+            inertia.CrouchSpeedAccelerationRange = new XYZ { X = 0.001f, Y = 0.001f, Z = 0 };    // Instant crouch speed
 
             // INSTANT INPUT RESPONSE
             inertia.MaxTimeWithoutInput = new XYZ { X = 0, Y = 0, Z = 0 };            // No input delay

@@ -20,35 +20,32 @@ namespace JiangHu
         private ConfigEntry<KeyboardShortcut> ShowSettingsHotkey;
         private ConfigEntry<bool> ShowSettingsManager;
         private ConfigEntry<bool> ShowDescription;
-        private ConfigEntry<KeyboardShortcut> ShowDebugToolHotkey;
-        private ConfigEntry<bool> ShowDebugTool;
-        private DebugTool debugTool;
         private ConfigEntry<bool> BackgroundEnabled;
+        private ConfigEntry<KeyboardShortcut> ShowMovementHotkey;
+        private ConfigEntry<bool> ShowMovementConfig;
 
         void Awake()
         {
             ShowPlayerHotkey = Config.Bind("JiangHu World Shaper", "Show JiangHu World Shaper Hotkey", new KeyboardShortcut(KeyCode.F4), "Hotkey to show/hide JiangHu World Shaper");
-            ShowMusicPlayer = Config.Bind("JiangHu World Shaper", "Show JiangHu World Shaper", false, "Show/hide JiangHu World Shaper GUI");
-            ShowSettingsHotkey = Config.Bind("JiangHu Settings Manager", "Show Setting Manager Hotkey", new KeyboardShortcut(KeyCode.F5), "Hotkey to show/hide JiangHu settings GUI");
-            ShowSettingsManager = Config.Bind("JiangHu Settings Manager", "Show Setting Manager", false, "Show/hide JiangHu settings GUI");
-            ShowDebugToolHotkey = Config.Bind("Debug Tool", "Show Debug Tool Hotkey", new KeyboardShortcut(KeyCode.F6), "Hotkey to show/hide debug tool GUI");
-            ShowDebugTool = Config.Bind("Debug Tool", "Show Debug Tool", false, "Show/hide debug tool GUI");
+            ShowMusicPlayer = Config.Bind("JiangHu World Shaper", "Show JiangHu World Shaper", false, "Show/hide JiangHu World Shaper");
+            ShowSettingsHotkey = Config.Bind("JiangHu Settings Manager", "Show Setting Manager Hotkey", new KeyboardShortcut(KeyCode.F5), "Hotkey to show/hide JiangHu settings manager");
+            ShowSettingsManager = Config.Bind("JiangHu Settings Manager", "Show Setting Manager", false, "Show/hide JiangHu settings manager");
+            ShowMovementHotkey = Config.Bind("Mount Hua Sword Summit", "Show Sword Summit Hotkey", new KeyboardShortcut(KeyCode.F6), "Hotkey to show/hide Mount Hua Sword Summit");
+            ShowMovementConfig = Config.Bind("Mount Hua Sword Summit", "Show Sword Summit", false, "Show/hide Mount Hua Sword Summit");
             ShowDescription = Config.Bind("About JiangHu", "Detailed Mod Info", true, "Show detailed mod information");
-
 
             pluginObj = new GameObject("JiangHuPlugin");
             DontDestroyOnLoad(pluginObj);
             pluginObj.hideFlags = HideFlags.HideAndDontSave;
 
             pluginObj.AddComponent<RemoveAlpha>();
-
-
-            pluginObj.AddComponent<NewMovement>();
+            pluginObj.AddComponent<NewMovement>(); 
+            var newMovement = pluginObj.GetComponent<NewMovement>();
+            newMovement.SetConfig(ShowMovementConfig);
 
             changeBackground = pluginObj.AddComponent<ChangeBackground>();
             changeBackground.SetConfig(BackgroundEnabled);
             changeBackground.Init();
-
 
             musicPlayer = pluginObj.AddComponent<MusicPlayer>();
             musicPlayer.SetConfig(ShowPlayerHotkey, ShowMusicPlayer, changeBackground, BackgroundEnabled);
@@ -56,8 +53,6 @@ namespace JiangHu
             ruleSettingsManager = pluginObj.AddComponent<RuleSettingsManager>();
             ruleSettingsManager.SetConfig(ShowSettingsManager);
 
-            debugTool = pluginObj.AddComponent<DebugTool>();
-            debugTool.SetConfig(ShowDebugTool);
 
             descriptionLoader = pluginObj.AddComponent<DescriptionLoader>();
             descriptionLoader.SetConfig(ShowDescription);
@@ -67,7 +62,7 @@ namespace JiangHu
 
         private void UpdateCursorState()
         {
-            bool anyGUIOpen = ShowMusicPlayer.Value || ShowSettingsManager.Value || ShowDebugTool.Value;
+            bool anyGUIOpen = ShowMusicPlayer.Value || ShowSettingsManager.Value || ShowMovementConfig.Value;
 
             if (anyGUIOpen)
             {
@@ -78,7 +73,6 @@ namespace JiangHu
 
         void Update()
         {
-
             if (ShowPlayerHotkey.Value.IsDown())
             {
                 ShowMusicPlayer.Value = !ShowMusicPlayer.Value;
@@ -89,9 +83,9 @@ namespace JiangHu
                 ShowSettingsManager.Value = !ShowSettingsManager.Value;
             }
 
-            if (ShowDebugToolHotkey.Value.IsDown())
+            if (ShowMovementHotkey.Value.IsDown())
             {
-                ShowDebugTool.Value = !ShowDebugTool.Value;
+                ShowMovementConfig.Value = !ShowMovementConfig.Value;
             }
 
             UpdateCursorState();
