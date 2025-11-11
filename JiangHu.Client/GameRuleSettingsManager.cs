@@ -60,73 +60,60 @@ namespace JiangHu
 
         private void LoadSettingsFromJson()
         {
-            try
+            string modPath = Path.GetDirectoryName(Application.dataPath);
+            string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
+            string json = File.ReadAllText(configPath);
+            var configDict = JsonConvert.DeserializeObject<Dictionary<string, bool>>(json);
+
+            if (configDict != null)
             {
-                string modPath = Path.GetDirectoryName(Application.dataPath);
-                string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
-
-                if (File.Exists(configPath))
-                {
-                    string json = File.ReadAllText(configPath);
-                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, bool>>(json);
-
-                    if (configDict != null)
-                    {
-                        if (configDict.ContainsKey("Disable_Vanilla_Quests"))
-                            disableVanillaQuests = configDict["Disable_Vanilla_Quests"];
-                        if (configDict.ContainsKey("Unlock_AllItems_By_NewQuest"))
-                            unlockAllItemsByNewQuest = configDict["Unlock_AllItems_By_NewQuest"];
-                        if (configDict.ContainsKey("Change_Prestige_Conditions"))
-                            changePrestigeCondition = configDict["Change_Prestige_Conditions"];
-                        if (configDict.ContainsKey("Increase_HeadHP"))
-                            increaseHeadHP = configDict["Increase_HeadHP"];
-                        if (configDict.ContainsKey("Lock_Flea"))
-                            lockFlea = configDict["Lock_Flea"];
-                        if (configDict.ContainsKey("Enable_empty_vanilla_shop"))
-                            enableEmptyVanillaShop = configDict["Enable_empty_vanilla_shop"];
-                        if (configDict.ContainsKey("Enable_No_Insurance"))
-                            enableNoInsurance = configDict["Enable_No_Insurance"];
-                        if (configDict.ContainsKey("Enable_Cash_Wipe"))
-                            enableCashWipeAfterDeath = configDict["Enable_Cash_Wipe"];
-                        if (configDict.ContainsKey("Add_HideoutProduction_DSP"))
-                            addHideoutProductionDSP = configDict["Add_HideoutProduction_DSP"];
-                        if (configDict.ContainsKey("Add_HideoutProduction_Labryskeycard"))
-                            addHideoutProductionLabryskeycard = configDict["Add_HideoutProduction_Labryskeycard"];
-                        if (configDict.ContainsKey("Unlock_All_Labrys_Quests"))
-                            unlockAllLabrysQuests = configDict["Unlock_All_Labrys_Quests"];
-                        if (configDict.ContainsKey("Use_Preset"))
-                            usePreset = configDict["Use_Preset"];
-                        if (configDict.ContainsKey("Enable_Quest_Generator"))
-                            enableQuestGenerator = configDict["Enable_Quest_Generator"];
-                        if (configDict.ContainsKey("Enable_Jianghu_Bot"))
-                            enableJianghuBot = configDict["Enable_Jianghu_Bot"];
-                        if (configDict.ContainsKey("Enable_Jianghu_BotName"))
-                            enableJianghuBotName = configDict["Enable_Jianghu_BotName"];
-                        if (configDict.ContainsKey("Enable_Jianghu_BotName_ch"))
-                            botNameLanguageSettings["ch"] = configDict["Enable_Jianghu_BotName_ch"];
-                        if (configDict.ContainsKey("Enable_Jianghu_BotName_en"))
-                            botNameLanguageSettings["en"] = configDict["Enable_Jianghu_BotName_en"];
-                        if (configDict.ContainsKey("Enable_Jianghu_BotName_es"))
-                            botNameLanguageSettings["es"] = configDict["Enable_Jianghu_BotName_es"];
-                        if (configDict.ContainsKey("Enable_Jianghu_BotName_fr"))
-                            botNameLanguageSettings["fr"] = configDict["Enable_Jianghu_BotName_fr"];
-                        if (configDict.ContainsKey("Enable_Jianghu_BotName_jp"))
-                            botNameLanguageSettings["jp"] = configDict["Enable_Jianghu_BotName_jp"];
-                        if (configDict.ContainsKey("Enable_Jianghu_BotName_po"))
-                            botNameLanguageSettings["po"] = configDict["Enable_Jianghu_BotName_po"];
-                        if (configDict.ContainsKey("Enable_Jianghu_BotName_ru"))
-                            botNameLanguageSettings["ru"] = configDict["Enable_Jianghu_BotName_ru"];
-                        if (configDict.ContainsKey("Enable_Replace_OneRaid_with_OneLife"))
-                            enableReplaceOneRaidWithOneLife = configDict["Enable_Replace_OneRaid_with_OneLife"];
-
-                        Debug.Log("✅ [JiangHu] Settings loaded from JSON");
-                    }
-                }
-            }
-            catch (System.Exception ex)
-            {
-                Debug.LogError($"❌ [JiangHu] Error loading settings: {ex.Message}");
-            }
+                if (configDict.ContainsKey("Disable_Vanilla_Quests"))
+                    disableVanillaQuests = configDict["Disable_Vanilla_Quests"];
+                if (configDict.ContainsKey("Unlock_AllItems_By_NewQuest"))
+                    unlockAllItemsByNewQuest = configDict["Unlock_AllItems_By_NewQuest"];
+                if (configDict.ContainsKey("Change_Prestige_Conditions"))
+                    changePrestigeCondition = configDict["Change_Prestige_Conditions"];
+                if (configDict.ContainsKey("Increase_HeadHP"))
+                    increaseHeadHP = configDict["Increase_HeadHP"];
+                if (configDict.ContainsKey("Lock_Flea"))
+                    lockFlea = configDict["Lock_Flea"];
+                if (configDict.ContainsKey("Enable_empty_vanilla_shop"))
+                    enableEmptyVanillaShop = configDict["Enable_empty_vanilla_shop"];
+                if (configDict.ContainsKey("Enable_No_Insurance"))
+                    enableNoInsurance = configDict["Enable_No_Insurance"];
+                if (configDict.ContainsKey("Enable_Cash_Wipe"))
+                    enableCashWipeAfterDeath = configDict["Enable_Cash_Wipe"];
+                if (configDict.ContainsKey("Add_HideoutProduction_DSP"))
+                    addHideoutProductionDSP = configDict["Add_HideoutProduction_DSP"];
+                if (configDict.ContainsKey("Add_HideoutProduction_Labryskeycard"))
+                    addHideoutProductionLabryskeycard = configDict["Add_HideoutProduction_Labryskeycard"];
+                if (configDict.ContainsKey("Unlock_All_Labrys_Quests"))
+                    unlockAllLabrysQuests = configDict["Unlock_All_Labrys_Quests"];
+                if (configDict.ContainsKey("Use_Preset"))
+                    usePreset = configDict["Use_Preset"];
+                if (configDict.ContainsKey("Enable_Quest_Generator"))
+                    enableQuestGenerator = configDict["Enable_Quest_Generator"];
+                if (configDict.ContainsKey("Enable_Jianghu_Bot"))
+                    enableJianghuBot = configDict["Enable_Jianghu_Bot"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName"))
+                    enableJianghuBotName = configDict["Enable_Jianghu_BotName"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName_ch"))
+                    botNameLanguageSettings["ch"] = configDict["Enable_Jianghu_BotName_ch"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName_en"))
+                    botNameLanguageSettings["en"] = configDict["Enable_Jianghu_BotName_en"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName_es"))
+                    botNameLanguageSettings["es"] = configDict["Enable_Jianghu_BotName_es"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName_fr"))
+                    botNameLanguageSettings["fr"] = configDict["Enable_Jianghu_BotName_fr"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName_jp"))
+                    botNameLanguageSettings["jp"] = configDict["Enable_Jianghu_BotName_jp"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName_po"))
+                    botNameLanguageSettings["po"] = configDict["Enable_Jianghu_BotName_po"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName_ru"))
+                    botNameLanguageSettings["ru"] = configDict["Enable_Jianghu_BotName_ru"];
+                if (configDict.ContainsKey("Enable_Replace_OneRaid_with_OneLife"))
+                    enableReplaceOneRaidWithOneLife = configDict["Enable_Replace_OneRaid_with_OneLife"];
+            }              
         }
 
         private void SaveSettingsToJson()

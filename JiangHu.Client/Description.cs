@@ -1,5 +1,4 @@
 ﻿using System.IO;
-using System.Collections;
 using UnityEngine;
 using BepInEx.Configuration;
 
@@ -27,18 +26,7 @@ namespace JiangHu
 
             if (File.Exists(descriptionPath))
             {
-                try
-                {
                     descriptionText = File.ReadAllText(descriptionPath);
-                }
-                catch (System.Exception e)
-                {
-                    descriptionText = $"Error loading {languageCode} description: {e.Message}";
-                }
-            }
-            else
-            {
-                descriptionText = $"{languageCode.ToUpper()} description file not found: {descriptionPath}";
             }
         }
 

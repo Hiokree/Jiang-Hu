@@ -21,8 +21,7 @@ namespace JiangHu
         private ConfigEntry<bool> ShowSettingsManager;
         private ConfigEntry<bool> ShowDescription;
         private ConfigEntry<bool> BackgroundEnabled;
-        private ConfigEntry<KeyboardShortcut> ShowMovementHotkey;
-        private ConfigEntry<bool> ShowMovementConfig;
+
 
         void Awake()
         {
@@ -30,8 +29,6 @@ namespace JiangHu
             ShowMusicPlayer = Config.Bind("JiangHu World Shaper", "Show JiangHu World Shaper", false, "Show/hide JiangHu World Shaper");
             ShowSettingsHotkey = Config.Bind("JiangHu Settings Manager", "Show Setting Manager Hotkey", new KeyboardShortcut(KeyCode.F5), "Hotkey to show/hide JiangHu settings manager");
             ShowSettingsManager = Config.Bind("JiangHu Settings Manager", "Show Setting Manager", false, "Show/hide JiangHu settings manager");
-            ShowMovementHotkey = Config.Bind("Mount Hua Sword Summit", "Show Sword Summit Hotkey", new KeyboardShortcut(KeyCode.F6), "Hotkey to show/hide Mount Hua Sword Summit");
-            ShowMovementConfig = Config.Bind("Mount Hua Sword Summit", "Show Sword Summit", false, "Show/hide Mount Hua Sword Summit");
             ShowDescription = Config.Bind("About JiangHu", "Detailed Mod Info", true, "Show detailed mod information");
 
             pluginObj = new GameObject("JiangHuPlugin");
@@ -39,9 +36,6 @@ namespace JiangHu
             pluginObj.hideFlags = HideFlags.HideAndDontSave;
 
             pluginObj.AddComponent<RemoveAlpha>();
-            pluginObj.AddComponent<NewMovement>(); 
-            var newMovement = pluginObj.GetComponent<NewMovement>();
-            newMovement.SetConfig(ShowMovementConfig);
 
             changeBackground = pluginObj.AddComponent<ChangeBackground>();
             changeBackground.SetConfig(BackgroundEnabled);
@@ -62,7 +56,7 @@ namespace JiangHu
 
         private void UpdateCursorState()
         {
-            bool anyGUIOpen = ShowMusicPlayer.Value || ShowSettingsManager.Value || ShowMovementConfig.Value;
+            bool anyGUIOpen = ShowMusicPlayer.Value || ShowSettingsManager.Value;
 
             if (anyGUIOpen)
             {
@@ -81,11 +75,6 @@ namespace JiangHu
             if (ShowSettingsHotkey.Value.IsDown())
             {
                 ShowSettingsManager.Value = !ShowSettingsManager.Value;
-            }
-
-            if (ShowMovementHotkey.Value.IsDown())
-            {
-                ShowMovementConfig.Value = !ShowMovementConfig.Value;
             }
 
             UpdateCursorState();

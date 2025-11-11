@@ -1,7 +1,6 @@
 ﻿using BepInEx.Configuration;
 using EFT.UI;
 using EFT.UI.Screens;
-using EFT.UI.WeaponModding;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -17,7 +16,6 @@ namespace JiangHu
         private RawImage _bgImage;
         private List<string> _availableBackgrounds = new List<string>();
         private string _currentBackground;
-        private EEftScreenType _lastScreenType;
         private bool _backgroundEnabled = true;
         private string _selectedBackgroundName;
         private ConfigEntry<bool> _backgroundEnabledConfig;
