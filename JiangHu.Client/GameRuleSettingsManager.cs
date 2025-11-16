@@ -1,8 +1,9 @@
-﻿using UnityEngine;
-using BepInEx.Configuration;
-using System.IO;
+﻿using BepInEx.Configuration;
+using EFT.UI;
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.IO;
+using UnityEngine;
 
 namespace JiangHu
 {
@@ -24,20 +25,30 @@ namespace JiangHu
         private bool enableJianghuBot = true;
         private bool enableJianghuBotName = true;
         private bool showBotNameGUI = false;
-        private Rect botNameWindowRect = new Rect(250, 150, 400, 300);
         private bool enableReplaceOneRaidWithOneLife = true;
+        public bool enableNewMovement = true;
+        private bool enableFastMovement = true;
+        private bool enableFastLeaning = true;
+        private bool enableFastPoseTransition = true;
+        private bool enableJumpHigher = true;
+        private bool enableSlide = true;
+        private bool enableInstantWeapon = true;
+        private bool enableWiderFreelook = true;
+        private bool showMovementSettingsGUI = false;
 
-        private ConfigEntry<bool> showSettingsManager;
-
-        private Rect windowRect = new Rect(300, 100, 550, 700);
+        private Rect windowRect = new Rect(300, 100, 550, 750);
         private bool showGUI = false;
-        private Vector2 scrollPosition = Vector2.zero;
 
         private bool showSettingsGuide = false;
         private Rect guideWindowRect = new Rect(200, 100, 600, 500);
         private Vector2 guideScrollPosition = Vector2.zero;
         private string settingsGuideContent = "";
         private string currentLanguage = "en";
+
+        private Rect botNameWindowRect = new Rect(250, 150, 400, 300);
+        private ConfigEntry<bool> showSettingsManager;
+
+        private Rect movementSettingsWindowRect = new Rect(300, 150, 400, 270);
 
         public void SetConfig(ConfigEntry<bool> showSettingsManager)
         {
@@ -113,6 +124,22 @@ namespace JiangHu
                     botNameLanguageSettings["ru"] = configDict["Enable_Jianghu_BotName_ru"];
                 if (configDict.ContainsKey("Enable_Replace_OneRaid_with_OneLife"))
                     enableReplaceOneRaidWithOneLife = configDict["Enable_Replace_OneRaid_with_OneLife"];
+                if (configDict.ContainsKey("Enable_New_Movement"))
+                    enableNewMovement = configDict["Enable_New_Movement"];
+                if (configDict.ContainsKey("Enable_Fast_Movement"))
+                    enableFastMovement = configDict["Enable_Fast_Movement"];
+                if (configDict.ContainsKey("Enable_Fast_Leaning"))
+                    enableFastLeaning = configDict["Enable_Fast_Leaning"];
+                if (configDict.ContainsKey("Enable_Fast_Pose_Transition"))
+                    enableFastPoseTransition = configDict["Enable_Fast_Pose_Transition"];
+                if (configDict.ContainsKey("Enable_Jump_Higher"))
+                    enableJumpHigher = configDict["Enable_Jump_Higher"];
+                if (configDict.ContainsKey("Enable_Slide"))
+                    enableSlide = configDict["Enable_Slide"];
+                if (configDict.ContainsKey("Enable_Instant_Weapon_Switching"))
+                    enableInstantWeapon = configDict["Enable_Instant_Weapon_Switching"];
+                if (configDict.ContainsKey("Enable_Wider_Freelook_Angle"))
+                    enableWiderFreelook = configDict["Enable_Wider_Freelook_Angle"];
             }              
         }
 
@@ -144,7 +171,15 @@ namespace JiangHu
                     { "Enable_Jianghu_BotName_jp", botNameLanguageSettings["jp"] },
                     { "Enable_Jianghu_BotName_po", botNameLanguageSettings["po"] },
                     { "Enable_Jianghu_BotName_ru", botNameLanguageSettings["ru"] },
-                    { "Enable_Replace_OneRaid_with_OneLife", enableReplaceOneRaidWithOneLife }
+                    { "Enable_Replace_OneRaid_with_OneLife", enableReplaceOneRaidWithOneLife },
+                    { "Enable_New_Movement", enableNewMovement },
+                    { "Enable_Fast_Movement", enableFastMovement },
+                    { "Enable_Fast_Leaning", enableFastLeaning },
+                    { "Enable_Fast_Pose_Transition", enableFastPoseTransition },
+                    { "Enable_Jump_Higher", enableJumpHigher },
+                    { "Enable_Slide", enableSlide },
+                    { "Enable_Instant_Weapon_Switching", enableInstantWeapon },
+                    { "Enable_Wider_Freelook_Angle", enableWiderFreelook }
                 };
 
                 string modPath = Path.GetDirectoryName(Application.dataPath);
@@ -204,7 +239,7 @@ namespace JiangHu
 
         void OnGUI()
         {
-            if (!showGUI) return;
+            if (!showGUI) return; 
 
             if (showSettingsGuide)
             {
@@ -214,6 +249,10 @@ namespace JiangHu
             {
                 botNameWindowRect = GUI.Window(12350, botNameWindowRect, DrawBotNameSelectionWindow, "Languages  多国语言");
             }
+            else if (showMovementSettingsGUI)
+            {
+                movementSettingsWindowRect = GUI.Window(12351, movementSettingsWindowRect, DrawMovementSettingsWindow, "Movement Settings  心法设置");
+            }
             else
             {
                 windowRect = GUI.Window(12349, windowRect, DrawSettingsWindow, "JiangHu Setting Manager  江湖设置管理器");
@@ -222,15 +261,12 @@ namespace JiangHu
 
         void DrawSettingsWindow(int windowID)
         {
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
             if (GUI.Button(new Rect(windowRect.width - 25, 5, 20, 20), "X"))
             {
                 showGUI = false;
                 showSettingsManager.Value = false;
                 return;
             }
-            GUILayout.EndHorizontal();
 
             GUI.DragWindow(new Rect(0, 0, windowRect.width - 25, 20));
             GUILayout.Space(10);
@@ -247,10 +283,11 @@ namespace JiangHu
             }
             GUILayout.EndVertical();
 
-            // Jianghu Bot Settings
             GUILayout.Space(10);
+
+            // Jianghu Bot Settings
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Jianghu Bot  江湖人机", GUIStyle.none);
+            GUILayout.Label("Bot  人机", GUIStyle.none);
             GUILayout.Space(5);
 
             bool newEnableBot = GUILayout.Toggle(enableJianghuBot, " Enable Jianghu Bot  使用江湖人机");
@@ -273,15 +310,31 @@ namespace JiangHu
             }
             GUILayout.EndVertical();
 
-
             GUILayout.Space(10);
 
-            GUILayout.Label("PRESET (toggle off to change rule settings)", GUIStyle.none);
+            // Movement Settings
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Floating Steps Over Ripples  凌波微步", GUIStyle.none);
             GUILayout.Space(5);
+
+            bool newEnableMovement = GUILayout.Toggle(enableNewMovement, " Enable Floating Steps Over Ripples  启用凌波微步");
+            if (newEnableMovement != enableNewMovement)
+            {
+                enableNewMovement = newEnableMovement;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            if (GUILayout.Button("Movement Settings  心法设置"))
+            {
+                showMovementSettingsGUI = true;
+            }
+            GUILayout.EndVertical();
+            GUILayout.Space(10);
 
             // Preset section
             GUILayout.BeginVertical("box");
-
+            GUILayout.Label("Preset for Rules", GUIStyle.none);
+            GUILayout.Space(5);
             bool newUsePreset = GUILayout.Toggle(usePreset, " Use Preset Configuration  使用预设");
             if (newUsePreset != usePreset)
             {
@@ -290,13 +343,10 @@ namespace JiangHu
             }
             GUILayout.EndVertical();
 
-            GUILayout.Space(15);
-            GUILayout.Label("RULE SETTINGS (applied at server start)", GUIStyle.none);
-            GUILayout.Space(5);
 
             // Upper Box
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Gameplay", GUIStyle.none);
+            GUILayout.Label("Gameplay Rules", GUIStyle.none);
             GUILayout.Space(5);
 
             bool newDisableQuests = GUILayout.Toggle(disableVanillaQuests, " Disable Vanilla Quests  禁原版任务");
@@ -363,11 +413,10 @@ namespace JiangHu
             }
 
             GUILayout.EndVertical();
-            GUILayout.Space(10);
 
             // Bottom Box
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Core", GUIStyle.none);
+            GUILayout.Label("Core Rules", GUIStyle.none);
             GUILayout.Space(5);
 
 
@@ -538,6 +587,51 @@ namespace JiangHu
                 botNameLanguageSettings["ru"] = newRussian;
                 SaveSettingsToJson();
             }
+
+            GUILayout.EndVertical();
+        }
+
+        void DrawMovementSettingsWindow(int windowID)
+        {
+            if (GUI.Button(new Rect(movementSettingsWindowRect.width - 25, 5, 20, 20), "X"))
+            {
+                showMovementSettingsGUI = false;
+                return;
+            }
+
+            GUI.DragWindow(new Rect(0, 0, movementSettingsWindowRect.width - 25, 20));
+            GUILayout.Space(5);
+
+            GUILayout.BeginVertical("box");
+            GUILayout.Space(5);
+            // Add 6 toggles for each movement setting
+            bool newFastMove = GUILayout.Toggle(enableFastMovement, " Fast Movement  快速移动");
+            if (newFastMove != enableFastMovement) { enableFastMovement = newFastMove; SaveSettingsToJson(); }
+            GUILayout.Space(10);
+
+            bool newFastLean = GUILayout.Toggle(enableFastLeaning, " Fast Leaning  快速侧身");
+            if (newFastLean != enableFastLeaning) { enableFastLeaning = newFastLean; SaveSettingsToJson(); }
+            GUILayout.Space(10);
+
+            bool newFastPose = GUILayout.Toggle(enableFastPoseTransition, " Fast Pose Transition  快速姿势切换");
+            if (newFastPose != enableFastPoseTransition) { enableFastPoseTransition = newFastPose; SaveSettingsToJson(); }
+            GUILayout.Space(10);
+
+            bool newJumpHigher = GUILayout.Toggle(enableJumpHigher, " Jump Higher  轻功");
+            if (newJumpHigher != enableJumpHigher) { enableJumpHigher = newJumpHigher; SaveSettingsToJson(); }
+            GUILayout.Space(10);
+
+            bool newSlide = GUILayout.Toggle(enableSlide, " Sprint Slide  滑铲");
+            if (newSlide != enableSlide) { enableSlide = newSlide; SaveSettingsToJson(); }
+            GUILayout.Space(10);
+
+            bool newInstantWeapon = GUILayout.Toggle(enableInstantWeapon, " Instant Weapon Switch  快速切枪");
+            if (newInstantWeapon != enableInstantWeapon) { enableInstantWeapon = newInstantWeapon; SaveSettingsToJson(); }
+            GUILayout.Space(10);
+
+            bool newWiderLook = GUILayout.Toggle(enableWiderFreelook, " Wider Freelook  更宽自由视角");
+            if (newWiderLook != enableWiderFreelook) { enableWiderFreelook = newWiderLook; SaveSettingsToJson(); }
+            GUILayout.Space(5);
 
             GUILayout.EndVertical();
         }

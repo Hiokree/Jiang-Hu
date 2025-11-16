@@ -1,5 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
+using EFT;
+using GPUInstancer;
 using HarmonyLib;
 using JiangHu.Patches;
 using UnityEngine;
@@ -22,7 +24,6 @@ namespace JiangHu
         private ConfigEntry<bool> ShowDescription;
         private ConfigEntry<bool> BackgroundEnabled;
 
-
         void Awake()
         {
             ShowPlayerHotkey = Config.Bind("JiangHu World Shaper", "Show JiangHu World Shaper Hotkey", new KeyboardShortcut(KeyCode.F4), "Hotkey to show/hide JiangHu World Shaper");
@@ -31,9 +32,12 @@ namespace JiangHu
             ShowSettingsManager = Config.Bind("JiangHu Settings Manager", "Show Setting Manager", false, "Show/hide JiangHu settings manager");
             ShowDescription = Config.Bind("About JiangHu", "Detailed Mod Info", true, "Show detailed mod information");
 
+
             pluginObj = new GameObject("JiangHuPlugin");
             DontDestroyOnLoad(pluginObj);
             pluginObj.hideFlags = HideFlags.HideAndDontSave;
+
+            pluginObj.AddComponent<NewMovement>();
 
             pluginObj.AddComponent<RemoveAlpha>();
 
@@ -46,7 +50,6 @@ namespace JiangHu
 
             ruleSettingsManager = pluginObj.AddComponent<RuleSettingsManager>();
             ruleSettingsManager.SetConfig(ShowSettingsManager);
-
 
             descriptionLoader = pluginObj.AddComponent<DescriptionLoader>();
             descriptionLoader.SetConfig(ShowDescription);

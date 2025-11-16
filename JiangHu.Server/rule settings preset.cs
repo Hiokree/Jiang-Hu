@@ -55,6 +55,7 @@ namespace JiangHu.Server
                         WriteConfigSetting("Add_HideoutProduction_DSP", true);
                         WriteConfigSetting("Add_HideoutProduction_Labryskeycard", true);
                         WriteConfigSetting("Unlock_All_Labrys_Quests", true);
+                        WriteConfigSetting("Enable_Replace_OneRaid_with_OneLife", false);
                     }
 
                     if (CheckQuestCompleted(pmc, "e983002c4ab4d229af8896a0")) // "Home In Tarkov - Part 1"
