@@ -95,12 +95,31 @@ namespace JiangHu.Server
         private List<string> BuildQuestPool()
         {
             var questPool = new List<string>();
+            var profiles = _saveServer.GetProfiles();
             foreach (var kvp in _databaseServer.GetTables().Templates.Quests)
             {
                 var levelCond = kvp.Value.Conditions.AvailableForStart?
                     .Find(c => c.ConditionType == "Level");
                 if (levelCond?.Value == 99)
-                    questPool.Add(kvp.Key);
+                    continue;
+
+                string questId = kvp.Key.ToString();
+                bool isCompleted = false;
+
+                foreach (var profile in profiles.Values)
+                {
+                    var questState = profile.CharacterData?.PmcData?.Quests?
+                        .FirstOrDefault(q => q.QId == questId);
+
+                    if (questState?.Status == QuestStatusEnum.Success)
+                    {
+                        isCompleted = true;
+                        break;
+                    }
+                }
+                if (!isCompleted)
+                    questPool.Add(questId);
+
             }
 
             if (_databaseServer.GetTables().Templates.Quests.TryGetValue("e993002c4ab4d99999999999", out var dummyQuest))
@@ -135,6 +154,7 @@ namespace JiangHu.Server
 
                 if (_databaseServer.GetTables().Templates.Quests.TryGetValue(currentQuestId, out var quest))
                 {
+
                     quest.Conditions.AvailableForStart = new List<QuestCondition>();
 
                     quest.Conditions.AvailableForStart.Add(new QuestCondition
