@@ -1,5 +1,6 @@
 ﻿using BepInEx.Configuration;
 using EFT;
+using EFT.Animations;
 using HarmonyLib;
 using Newtonsoft.Json.Linq;
 using System;
@@ -13,7 +14,7 @@ namespace JiangHu
     public class NewMovement : MonoBehaviour
     {
         private Player player;
-        private static bool EnableAll, EnableFastMovement, EnableFastLeaning, EnableFastPoseTransition, EnableJumpHigher, EnableInstantWeapon, EnableWiderFreelook;
+        private static bool EnableAll, EnableFastMovement, EnableFastLeaning, EnableFastPoseTransition, EnableJumpHigher, EnableFastWeapon, EnableWiderFreelook;
         private Harmony harmony;
 
         void Start()
@@ -30,7 +31,7 @@ namespace JiangHu
             if (EnableFastLeaning) PatchFastLeaning();
             if (EnableFastPoseTransition) PatchFastPoseTransition();
             if (EnableJumpHigher) PatchJumpHigher();
-            if (EnableInstantWeapon) PatchInstantWeapon();
+            if (EnableFastWeapon) PatchFastWeapon();
             if (EnableWiderFreelook) PatchWiderFreelook();
         }
 
@@ -48,7 +49,7 @@ namespace JiangHu
             EnableFastLeaning = config["Enable_Fast_Leaning"]?.Value<bool>() ?? true;
             EnableFastPoseTransition = config["Enable_Fast_Pose_Transition"]?.Value<bool>() ?? true;
             EnableJumpHigher = config["Enable_Jump_Higher"]?.Value<bool>() ?? true;
-            EnableInstantWeapon = config["Enable_Instant_Weapon_Switching"]?.Value<bool>() ?? true;
+            EnableFastWeapon = config["Enable_Fast_Weapon_Switching"]?.Value<bool>() ?? true;
             EnableWiderFreelook = config["Enable_Wider_Freelook_Angle"]?.Value<bool>() ?? true;
         }
         #endregion
@@ -94,7 +95,7 @@ namespace JiangHu
 
         #endregion
 
-        #region Fast Leaning (Fixed - Accelerate Inertia System)
+        #region Fast Leaning
         private void PatchFastLeaning()
         {
             harmony.Patch(AccessTools.Method(typeof(MovementContext), "method_15"),
@@ -151,7 +152,7 @@ namespace JiangHu
         }
         #endregion
 
-        #region Fast Pose Transition (Simple - Very Fast)
+        #region Fast Pose Transition
         private void PatchFastPoseTransition()
         {
             harmony.Patch(AccessTools.Method(typeof(MovementContext), "SmoothPoseLevel"),
@@ -181,7 +182,7 @@ namespace JiangHu
         }
         #endregion
 
-        #region Jump Higher (Optimized - Single Postfix)
+        #region Jump Higher
         private void PatchJumpHigher()
         {
             harmony.Patch(AccessTools.Method(typeof(JumpStateClass), "Enter"),
@@ -195,8 +196,8 @@ namespace JiangHu
         }
         #endregion
 
-        #region Instant Weapon (Optimized - Single Prefix)
-        private void PatchInstantWeapon()
+        #region Fast Weapon
+        private void PatchFastWeapon()
         {
             harmony.Patch(AccessTools.Method(typeof(FirearmsAnimator), "SetSpeedParameters"),
                 prefix: new HarmonyMethod(AccessTools.Method(typeof(NewMovement), "WeaponPrefix")));
@@ -204,8 +205,8 @@ namespace JiangHu
 
         static bool WeaponPrefix(ref float reload, ref float draw)
         {
-            if (!EnableInstantWeapon) return true;
-            draw = 10f; 
+            if (!EnableFastWeapon) return true;
+            draw = 7f; 
             return true;
         }
         #endregion

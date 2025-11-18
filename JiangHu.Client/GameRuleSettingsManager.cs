@@ -32,11 +32,14 @@ namespace JiangHu
         private bool enableFastPoseTransition = true;
         private bool enableJumpHigher = true;
         private bool enableSlide = true;
-        private bool enableInstantWeapon = true;
+        private bool enableFastWeapon = true;
         private bool enableWiderFreelook = true;
         private bool showMovementSettingsGUI = false;
+        private bool enableMinimalAimpunch = true;
+        private bool enableFastAiming = true;
 
-        private Rect windowRect = new Rect(300, 100, 550, 750);
+
+        private Rect windowRect = new Rect(300, 100, 550, 850);
         private bool showGUI = false;
 
         private bool showSettingsGuide = false;
@@ -48,7 +51,7 @@ namespace JiangHu
         private Rect botNameWindowRect = new Rect(250, 150, 400, 300);
         private ConfigEntry<bool> showSettingsManager;
 
-        private Rect movementSettingsWindowRect = new Rect(300, 150, 400, 270);
+        private Rect movementSettingsWindowRect = new Rect(300, 150, 400, 480);
 
         public void SetConfig(ConfigEntry<bool> showSettingsManager)
         {
@@ -136,8 +139,12 @@ namespace JiangHu
                     enableJumpHigher = configDict["Enable_Jump_Higher"];
                 if (configDict.ContainsKey("Enable_Slide"))
                     enableSlide = configDict["Enable_Slide"];
-                if (configDict.ContainsKey("Enable_Instant_Weapon_Switching"))
-                    enableInstantWeapon = configDict["Enable_Instant_Weapon_Switching"];
+                if (configDict.ContainsKey("Enable_Fast_Weapon_Switching"))
+                    enableFastWeapon = configDict["Enable_Fast_Weapon_Switching"];
+                if (configDict.ContainsKey("Enable_Minimal_Aimpunch"))
+                    enableMinimalAimpunch = configDict["Enable_Minimal_Aimpunch"];
+                if (configDict.ContainsKey("Enable_Fast_Aiming"))
+                    enableFastAiming = configDict["Enable_Fast_Aiming"];
                 if (configDict.ContainsKey("Enable_Wider_Freelook_Angle"))
                     enableWiderFreelook = configDict["Enable_Wider_Freelook_Angle"];
             }              
@@ -178,8 +185,10 @@ namespace JiangHu
                     { "Enable_Fast_Pose_Transition", enableFastPoseTransition },
                     { "Enable_Jump_Higher", enableJumpHigher },
                     { "Enable_Slide", enableSlide },
-                    { "Enable_Instant_Weapon_Switching", enableInstantWeapon },
-                    { "Enable_Wider_Freelook_Angle", enableWiderFreelook }
+                    { "Enable_Fast_Weapon_Switching", enableFastWeapon },
+                    { "Enable_Minimal_Aimpunch", enableMinimalAimpunch },
+                    { "Enable_Fast_Aiming", enableFastAiming },
+                    { "Enable_Wider_Freelook_Angle", enableWiderFreelook },
                 };
 
                 string modPath = Path.GetDirectoryName(Application.dataPath);
@@ -251,11 +260,11 @@ namespace JiangHu
             }
             else if (showMovementSettingsGUI)
             {
-                movementSettingsWindowRect = GUI.Window(12351, movementSettingsWindowRect, DrawMovementSettingsWindow, "Movement Settings  心法设置");
+                movementSettingsWindowRect = GUI.Window(12351, movementSettingsWindowRect, DrawMovementSettingsWindow, "Mode Settings  心法设置");
             }
             else
             {
-                windowRect = GUI.Window(12349, windowRect, DrawSettingsWindow, "JiangHu Setting Manager  江湖设置管理器");
+                windowRect = GUI.Window(12349, windowRect, DrawSettingsWindow, "Game Setting Manager  江湖设置管理器");
             }
         }
 
@@ -296,7 +305,7 @@ namespace JiangHu
                 enableJianghuBot = newEnableBot;
                 SaveSettingsToJson();
             }
-
+            GUILayout.Space(5);
             bool newEnableBotName = GUILayout.Toggle(enableJianghuBotName, " Enable Jianghu Bot Names  使用江湖人机名字");
             if (newEnableBotName != enableJianghuBotName)
             {
@@ -312,9 +321,8 @@ namespace JiangHu
 
             GUILayout.Space(10);
 
-            // Movement Settings
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Floating Steps Over Ripples  凌波微步", GUIStyle.none);
+            GUILayout.Label("Competitive FPS Mode  竞技射击模式", GUIStyle.none);
             GUILayout.Space(5);
 
             bool newEnableMovement = GUILayout.Toggle(enableNewMovement, " Enable Floating Steps Over Ripples  启用凌波微步");
@@ -324,7 +332,7 @@ namespace JiangHu
                 SaveSettingsToJson();
             }
             GUILayout.Space(5);
-            if (GUILayout.Button("Movement Settings  心法设置"))
+            if (GUILayout.Button("Mode Settings  心法设置"))
             {
                 showMovementSettingsGUI = true;
             }
@@ -341,6 +349,7 @@ namespace JiangHu
                 usePreset = newUsePreset;
                 SaveSettingsToJson();
             }
+            GUILayout.Space(5);
             GUILayout.EndVertical();
 
 
@@ -355,63 +364,63 @@ namespace JiangHu
                 disableVanillaQuests = newDisableQuests;
                 SaveSettingsToJson();
             }
-
+            GUILayout.Space(5);
             bool newLockFlea = GUILayout.Toggle(lockFlea, " Lock Flea Market  锁跳蚤市场");
             if (newLockFlea != lockFlea)
             {
                 lockFlea = newLockFlea;
                 SaveSettingsToJson();
             }
-
+            GUILayout.Space(5);
             bool newNoInsurance = GUILayout.Toggle(enableNoInsurance, " Disable Insurance  禁保险");
             if (newNoInsurance != enableNoInsurance)
             {
                 enableNoInsurance = newNoInsurance;
                 SaveSettingsToJson();
             }
-
+            GUILayout.Space(5);
             bool newEmptyShop = GUILayout.Toggle(enableEmptyVanillaShop, " Empty Trader Shops  禁商店");
             if (newEmptyShop != enableEmptyVanillaShop)
             {
                 enableEmptyVanillaShop = newEmptyShop;
                 SaveSettingsToJson();
             }
-
+            GUILayout.Space(5);
             bool newCashWipe = GUILayout.Toggle(enableCashWipeAfterDeath, " Cash Wipe on Death  死亡清空现金");
             if (newCashWipe != enableCashWipeAfterDeath)
             {
                 enableCashWipeAfterDeath = newCashWipe;
                 SaveSettingsToJson();
             }
-
+            GUILayout.Space(5);
             bool newHeadHP = GUILayout.Toggle(increaseHeadHP, " Increase Head HP  大头");
             if (newHeadHP != increaseHeadHP)
             {
                 increaseHeadHP = newHeadHP;
                 SaveSettingsToJson();
             }
-
+            GUILayout.Space(5);
             bool newUnlockLabrysQuests = GUILayout.Toggle(unlockAllLabrysQuests, " Unlock All Labrys Quests  解锁迷宫任务");
             if (newUnlockLabrysQuests != unlockAllLabrysQuests)
             {
                 unlockAllLabrysQuests = newUnlockLabrysQuests;
                 SaveSettingsToJson();
             }
-
+            GUILayout.Space(5);
             bool newLabKey = GUILayout.Toggle(addHideoutProductionLabryskeycard, " Hideout Recipe: Labrys Keycard  制造迷宫钥匙");
             if (newLabKey != addHideoutProductionLabryskeycard)
             {
                 addHideoutProductionLabryskeycard = newLabKey;
                 SaveSettingsToJson();
             }
-
+            GUILayout.Space(5);
             bool newOneLife = GUILayout.Toggle(enableReplaceOneRaidWithOneLife, " Replace new quest 1 Raid requirement with 1 Life    新任务的单局完成改为一命完成");
             if (newOneLife != enableReplaceOneRaidWithOneLife)
             {
                 enableReplaceOneRaidWithOneLife = newOneLife;
                 SaveSettingsToJson();
             }
-
+            GUILayout.Space(5);
             GUILayout.EndVertical();
 
             // Bottom Box
@@ -426,21 +435,21 @@ namespace JiangHu
                 unlockAllItemsByNewQuest = newUnlockItems;
                 SaveSettingsToJson();
             }
-
+            GUILayout.Space(5);
             bool newPrestige = GUILayout.Toggle(changePrestigeCondition, " Change Prestige Conditions  改变升级荣誉条件");
             if (newPrestige != changePrestigeCondition)
             {
                 changePrestigeCondition = newPrestige;
                 SaveSettingsToJson();
             }
-
+            GUILayout.Space(5);
             bool newDSP = GUILayout.Toggle(addHideoutProductionDSP, " Hideout Recipe: encoded DSP  制造访问灯塔道具");
             if (newDSP != addHideoutProductionDSP)
             {
                 addHideoutProductionDSP = newDSP;
                 SaveSettingsToJson();
             }
-
+            GUILayout.Space(5);
             GUILayout.EndVertical();
             GUILayout.Space(10);
 
@@ -464,7 +473,6 @@ namespace JiangHu
                 return;
             }
 
-            // Updated to 7 buttons for the new layout
             float buttonWidth = (guideWindowRect.width - 40) / 7f;
             float buttonY = 40f;
 
@@ -600,39 +608,70 @@ namespace JiangHu
             }
 
             GUI.DragWindow(new Rect(0, 0, movementSettingsWindowRect.width - 25, 20));
+            GUILayout.Space(10);
+
+            GUIStyle whiteLabelStyle = new GUIStyle(GUI.skin.label);
+            whiteLabelStyle.normal.textColor = Color.white;
+
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Basic movement (default on)    基础身法（默认开启）", GUIStyle.none);
+            GUILayout.Space(5);
+            GUILayout.Label("Clean & Smooth, Bunny Hopping, no inertia, etc.", whiteLabelStyle);
+            GUILayout.Space(5);
+            GUILayout.Label("干净、流畅，可连跳，去除惯性等", whiteLabelStyle);
+            GUILayout.EndVertical();         
             GUILayout.Space(5);
 
             GUILayout.BeginVertical("box");
+            GUILayout.Label("Fast Pace Movement  快速身法", GUIStyle.none);
             GUILayout.Space(5);
-            // Add 6 toggles for each movement setting
+
             bool newFastMove = GUILayout.Toggle(enableFastMovement, " Fast Movement  快速移动");
             if (newFastMove != enableFastMovement) { enableFastMovement = newFastMove; SaveSettingsToJson(); }
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             bool newFastLean = GUILayout.Toggle(enableFastLeaning, " Fast Leaning  快速侧身");
             if (newFastLean != enableFastLeaning) { enableFastLeaning = newFastLean; SaveSettingsToJson(); }
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             bool newFastPose = GUILayout.Toggle(enableFastPoseTransition, " Fast Pose Transition  快速姿势切换");
             if (newFastPose != enableFastPoseTransition) { enableFastPoseTransition = newFastPose; SaveSettingsToJson(); }
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             bool newJumpHigher = GUILayout.Toggle(enableJumpHigher, " Jump Higher  轻功");
             if (newJumpHigher != enableJumpHigher) { enableJumpHigher = newJumpHigher; SaveSettingsToJson(); }
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             bool newSlide = GUILayout.Toggle(enableSlide, " Sprint Slide  滑铲");
             if (newSlide != enableSlide) { enableSlide = newSlide; SaveSettingsToJson(); }
-            GUILayout.Space(10);
+            GUILayout.Space(5);
+            GUILayout.EndVertical();
+            GUILayout.Space(5);
 
-            bool newInstantWeapon = GUILayout.Toggle(enableInstantWeapon, " Instant Weapon Switch  快速切枪");
-            if (newInstantWeapon != enableInstantWeapon) { enableInstantWeapon = newInstantWeapon; SaveSettingsToJson(); }
-            GUILayout.Space(10);
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Weapon Handling  武器操控", GUIStyle.none);
+            GUILayout.Space(5);
+            bool newFastWeapon = GUILayout.Toggle(enableFastWeapon, " Fast Weapon Switch  快速切枪");
+            if (newFastWeapon != enableFastWeapon) { enableFastWeapon = newFastWeapon; SaveSettingsToJson(); }
+            GUILayout.Space(5);
 
+            bool newFastAiming = GUILayout.Toggle(enableFastAiming, " Fast Aiming  快速瞄准");
+            if (newFastAiming != enableFastAiming) { enableFastAiming = newFastAiming; SaveSettingsToJson(); }
+            GUILayout.Space(5);
+
+            bool newMinimalAimpunch = GUILayout.Toggle(enableMinimalAimpunch, " Minimal Aimpunch  减少被击中晃动");
+            if (newMinimalAimpunch != enableMinimalAimpunch) { enableMinimalAimpunch = newMinimalAimpunch; SaveSettingsToJson(); }
+            GUILayout.Space(5);
+
+            GUILayout.EndVertical();
+            GUILayout.Space(5);
+
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("View  视野", GUIStyle.none);
+            GUILayout.Space(5);
             bool newWiderLook = GUILayout.Toggle(enableWiderFreelook, " Wider Freelook  更宽自由视角");
             if (newWiderLook != enableWiderFreelook) { enableWiderFreelook = newWiderLook; SaveSettingsToJson(); }
             GUILayout.Space(5);
-
             GUILayout.EndVertical();
         }
     }

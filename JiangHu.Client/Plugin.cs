@@ -26,10 +26,10 @@ namespace JiangHu
 
         void Awake()
         {
-            ShowPlayerHotkey = Config.Bind("JiangHu World Shaper", "Show JiangHu World Shaper Hotkey", new KeyboardShortcut(KeyCode.F4), "Hotkey to show/hide JiangHu World Shaper");
-            ShowMusicPlayer = Config.Bind("JiangHu World Shaper", "Show JiangHu World Shaper", false, "Show/hide JiangHu World Shaper");
-            ShowSettingsHotkey = Config.Bind("JiangHu Settings Manager", "Show Setting Manager Hotkey", new KeyboardShortcut(KeyCode.F5), "Hotkey to show/hide JiangHu settings manager");
-            ShowSettingsManager = Config.Bind("JiangHu Settings Manager", "Show Setting Manager", false, "Show/hide JiangHu settings manager");
+            ShowPlayerHotkey = Config.Bind("JiangHu World Shaper", "Show World Shaper Hotkey", new KeyboardShortcut(KeyCode.F4), "Hotkey to show/hide World Shaper");
+            ShowMusicPlayer = Config.Bind("JiangHu World Shaper", "Show World Shaper", false, "Show/hide World Shaper");
+            ShowSettingsHotkey = Config.Bind("Game Settings Manager", "Show Setting Manager Hotkey", new KeyboardShortcut(KeyCode.F5), "Hotkey to show/hide Game settings manager");
+            ShowSettingsManager = Config.Bind("Game Settings Manager", "Show Setting Manager", false, "Show/hide Game settings manager");
             ShowDescription = Config.Bind("About JiangHu", "Detailed Mod Info", true, "Show detailed mod information");
 
 

@@ -21,10 +21,11 @@ namespace JiangHu
         private Vector2 _scrollPosition;
         private bool _showMusicList = false;
         private Vector2 _musicScrollPosition;
+        private Vector2 _backgroundScrollPosition;
 
         private ConfigEntry<KeyboardShortcut> _hotkey;
         private ConfigEntry<bool> _showGUI;
-        private Rect windowRect = new Rect(20, 20, 280, 250);
+        private Rect windowRect = new Rect(20, 20, 360, 270);
         private bool showGUI = false;
         private ConfigEntry<bool> _backgroundEnabledConfig;
 
@@ -67,6 +68,7 @@ namespace JiangHu
                 {
                     string typeName = behaviour.GetType().Name.ToLower();
                     if ((typeName.Contains("music") || typeName.Contains("ambient") || typeName.Contains("bgm") || typeName.Contains("background"))
+                        && !typeName.Contains("changebackground")
                         && behaviour.enabled)
                     {
                         behaviour.enabled = false;
@@ -238,17 +240,17 @@ namespace JiangHu
         void OnGUI()
         {
             if (!_showGUI.Value) return;
-            windowRect = GUI.Window(12345, windowRect, DrawMusicPlayerWindow, "JiangHu World Shaper");
+            windowRect = GUI.Window(12345, windowRect, DrawMusicPlayerWindow, "World Shaper 世界塑造器");
 
             if (_showBackgroundList)
             {
-                Rect bgListRect = new Rect(windowRect.x + windowRect.width + 10, windowRect.y, 200, 300);
+                Rect bgListRect = new Rect(windowRect.x + windowRect.width + 10, windowRect.y, 360, 480);
                 bgListRect = GUI.Window(12346, bgListRect, DrawBackgroundListWindow, "Backgrounds");
             }
 
             if (_showMusicList)
             {
-                Rect musicListRect = new Rect(windowRect.x - 250, windowRect.y, 240, 300);
+                Rect musicListRect = new Rect(windowRect.x - 360, windowRect.y, 360, 480);
                 musicListRect = GUI.Window(12347, musicListRect, DrawMusicListWindow, "Music Files");
             }
         }
@@ -266,8 +268,10 @@ namespace JiangHu
             GUI.DragWindow(new Rect(0, 0, windowRect.width - 25, 20));
 
             GUILayout.BeginVertical();
+            GUILayout.Space(5);
 
-            // Music Player Section
+            // Now Playing Box
+            GUILayout.BeginVertical("box");
             GUILayout.Label("Now Playing:", GUIStyle.none);
             GUILayout.Space(5);
             if (shuffledSongs.Length > 0 && currentSongIndex < shuffledSongs.Length)
@@ -280,8 +284,12 @@ namespace JiangHu
             {
                 GUILayout.Label("No songs");
             }
+            GUILayout.EndVertical();
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
+
+            // Controls Box
+            GUILayout.BeginVertical("box");
 
             // Volume slider
             GUILayout.BeginHorizontal();
@@ -290,7 +298,7 @@ namespace JiangHu
             if (Mathf.Abs(newVolume - volume) > 0.01f) SetVolume(newVolume);
             GUILayout.EndHorizontal();
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             // Music controls
             GUILayout.BeginHorizontal();
@@ -305,41 +313,46 @@ namespace JiangHu
             if (GUILayout.Button("▶▶", GUILayout.Height(25), GUILayout.Width(50))) PlayNextSong();
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
+            GUILayout.EndVertical();
+            GUILayout.Space(5);
 
             // Music Selection Section
-            GUILayout.Space(10);
-            if (shuffledSongs.Length > 0 && GUILayout.Button(" ◄ Select Music ", GUILayout.Height(20)))
+            if (shuffledSongs.Length > 0 && GUILayout.Button(" ◄ Select Music       选择音乐", GUILayout.Height(20)))
             {
                 _showMusicList = !_showMusicList;
             }
+            GUILayout.Space(20);
 
-            // Background Section
-            GUILayout.Space(10);
+            // Background Box
+            GUILayout.BeginVertical("box");
             if (_changeBackground != null)
             {
-                bool newBackgroundEnabled = GUILayout.Toggle(_changeBackground.GetBackgroundEnabled(), " Enable Background");
+                bool newBackgroundEnabled = GUILayout.Toggle(_changeBackground.GetBackgroundEnabled(), " Enable Background  开启背景", GUIStyle.none);
                 if (newBackgroundEnabled != _changeBackground.GetBackgroundEnabled())
                 {
                     _changeBackground.SetBackgroundEnabled(newBackgroundEnabled);
                 }
+                GUILayout.Space(5);
 
                 var backgrounds = _changeBackground.GetAvailableBackgrounds();
-                if (backgrounds.Count > 0 && GUILayout.Button(" Select Background ► ", GUILayout.Height(20)))
+                if (backgrounds.Count > 0 && GUILayout.Button(" Select Background       选择背景 ► ", GUILayout.Height(20)))
                 {
                     _showBackgroundList = !_showBackgroundList;
                 }
             }
-
+            GUILayout.EndVertical();
             GUILayout.EndVertical();
         }
+
         void DrawBackgroundListWindow(int windowID)
         {
-            GUI.DragWindow(new Rect(0, 0, 200, 25)); 
+            GUI.DragWindow(new Rect(0, 0, windowRect.width - 25, 20));
 
             var backgrounds = _changeBackground.GetAvailableBackgrounds();
 
-            GUILayout.BeginArea(new Rect(10, 30, 180, 270)); 
-            _scrollPosition = GUILayout.BeginScrollView(_scrollPosition, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            _backgroundScrollPosition = GUILayout.BeginScrollView(_backgroundScrollPosition, GUILayout.Width(340), GUILayout.Height(450));
+
+
 
             foreach (var background in backgrounds)
             {
@@ -349,15 +362,14 @@ namespace JiangHu
                 }
             }
 
-            GUILayout.EndScrollView();
-            GUILayout.EndArea();
+            GUILayout.EndScrollView(); 
         }
+
         void DrawMusicListWindow(int windowID)
         {
-            GUI.DragWindow(new Rect(0, 0, 240, 25));
+            GUI.DragWindow(new Rect(0, 0, windowRect.width - 25, 20));
 
-            GUILayout.BeginArea(new Rect(10, 30, 220, 270));
-            _musicScrollPosition = GUILayout.BeginScrollView(_musicScrollPosition, GUILayout.Width(220), GUILayout.Height(270));
+            _musicScrollPosition = GUILayout.BeginScrollView(_musicScrollPosition, GUILayout.Width(340), GUILayout.Height(450));
 
             foreach (var song in shuffledSongs)
             {
@@ -376,8 +388,7 @@ namespace JiangHu
                 }
             }
 
-            GUILayout.EndScrollView();
-            GUILayout.EndArea();
+            GUILayout.EndScrollView(); 
         }
     }
 }

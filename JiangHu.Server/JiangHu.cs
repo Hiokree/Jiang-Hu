@@ -83,7 +83,7 @@ public class JiangHuMod : IOnLoad
         _enableJianghuBot.ApplyBotSettings();
         _jianghuBotName.SetupJianghuBotNames();
 
-        _movementServerSide.ApplyNewMovementSettings();
+        _movementServerSide.ApplyAllSettings();
 
         _questGenerator.GenerateQuestChain(); 
         await Task.Delay(100);
