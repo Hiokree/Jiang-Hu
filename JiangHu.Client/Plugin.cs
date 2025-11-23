@@ -5,6 +5,7 @@ using GPUInstancer;
 using HarmonyLib;
 using JiangHu.Patches;
 using UnityEngine;
+using System.Reflection;
 
 namespace JiangHu
 {
@@ -17,12 +18,11 @@ namespace JiangHu
         private RuleSettingsManager ruleSettingsManager;
         private GameObject pluginObj;
 
-        private ConfigEntry<KeyboardShortcut> ShowPlayerHotkey;
-        private ConfigEntry<bool> ShowMusicPlayer;
         private ConfigEntry<KeyboardShortcut> ShowSettingsHotkey;
         private ConfigEntry<bool> ShowSettingsManager;
         private ConfigEntry<bool> ShowDescription;
-        private ConfigEntry<bool> BackgroundEnabled;
+        private ConfigEntry<KeyboardShortcut> ShowPlayerHotkey;
+        private ConfigEntry<bool> ShowMusicPlayer;
 
         void Awake()
         {
@@ -37,16 +37,17 @@ namespace JiangHu
             DontDestroyOnLoad(pluginObj);
             pluginObj.hideFlags = HideFlags.HideAndDontSave;
 
+            pluginObj.AddComponent<XPConditionManager>();
             pluginObj.AddComponent<NewMovement>();
-
             pluginObj.AddComponent<RemoveAlpha>();
 
             changeBackground = pluginObj.AddComponent<ChangeBackground>();
-            changeBackground.SetConfig(BackgroundEnabled);
             changeBackground.Init();
 
             musicPlayer = pluginObj.AddComponent<MusicPlayer>();
-            musicPlayer.SetConfig(ShowPlayerHotkey, ShowMusicPlayer, changeBackground, BackgroundEnabled);
+
+            var worldShaper = pluginObj.AddComponent<WorldShaper>();
+            worldShaper.SetConfig(ShowPlayerHotkey, ShowMusicPlayer, musicPlayer, changeBackground);
 
             ruleSettingsManager = pluginObj.AddComponent<RuleSettingsManager>();
             ruleSettingsManager.SetConfig(ShowSettingsManager);
@@ -59,7 +60,7 @@ namespace JiangHu
 
         private void UpdateCursorState()
         {
-            bool anyGUIOpen = ShowMusicPlayer.Value || ShowSettingsManager.Value;
+            bool anyGUIOpen = ShowSettingsManager.Value;
 
             if (anyGUIOpen)
             {
@@ -70,11 +71,6 @@ namespace JiangHu
 
         void Update()
         {
-            if (ShowPlayerHotkey.Value.IsDown())
-            {
-                ShowMusicPlayer.Value = !ShowMusicPlayer.Value;
-            }
-
             if (ShowSettingsHotkey.Value.IsDown())
             {
                 ShowSettingsManager.Value = !ShowSettingsManager.Value;

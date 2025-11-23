@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.Helpers;
@@ -20,32 +21,26 @@ namespace JiangHu.Server;
 [Injectable]
 public class NewItemModule
 {
-    private readonly FixedCustomItemService _CustomItemService;
+    private readonly CustomItemService _CustomItemService;
     private readonly DatabaseService _databaseService;
     private readonly ConfigServer _configServer;
+    private bool _Enable_New_Item = false;
 
-    public NewItemModule(FixedCustomItemService CustomItemService, DatabaseService databaseService, ConfigServer configServer)
+    public NewItemModule(CustomItemService CustomItemService, DatabaseService databaseService, ConfigServer configServer)
     {
         _CustomItemService = CustomItemService;
         _databaseService = databaseService;
         _configServer = configServer;
+        LoadConfig();
     }
 
-    private Dictionary<string, LocaleDetails> GetLocales()
+    public void OnLoad()
     {
-        return new Dictionary<string, LocaleDetails>
+        if (!_Enable_New_Item)
         {
-            ["en"] = new LocaleDetails
-            {
-                Name = "1",
-                ShortName = "1",
-                Description = "1"
-            }
-        };
-    }
+            return;
+        }
 
-    public async Task OnLoad()
-    {
         var existingItems = _databaseService.GetTables().Templates.Items;
         if (existingItems.ContainsKey("e983002c4ab4d99999889000"))  // Mixue
         {
@@ -63,7 +58,35 @@ public class NewItemModule
         CreateWeaponRepairCat();
 
         AddItemsToFleaBlacklist();
-        await Task.CompletedTask;
+
+        Console.WriteLine($"\x1b[90m♻️ [Jiang Hu] Core Modules New Items Loaded    基础构件：新物品 \x1b[0m");
+    }
+
+    private void LoadConfig()
+    {
+        try
+        {
+            var modPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
+            var configPath = System.IO.Path.Combine(modPath, "config", "config.json");
+
+            if (!System.IO.File.Exists(configPath))
+            {
+                Console.WriteLine("⚠️ [New Item] config.json not found!");
+                return;
+            }
+
+            var json = System.IO.File.ReadAllText(configPath);
+            var config = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+
+            if (config != null && config.TryGetValue("Enable_New_Item", out var itemValue))
+            {
+                _Enable_New_Item = itemValue.GetBoolean();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ [New Item] Error loading config: {ex.Message}");
+        }
     }
 
     private void DefineCustomBuffs()
@@ -144,7 +167,15 @@ public class NewItemModule
             FleaPriceRoubles = 35000,
             HandbookPriceRoubles = 30000,
             HandbookParentId = "5b47574386f77428ca22b335",
-            Locales = GetLocales(),
+            Locales = new Dictionary<string, LocaleDetails>
+            {
+                ["en"] = new LocaleDetails
+                {
+                    Name = "",
+                    ShortName = "",
+                    Description = ""
+                }
+            },
             OverrideProperties = new TemplateItemProperties
             {
                 Prefab = new Prefab
@@ -178,7 +209,15 @@ public class NewItemModule
             FleaPriceRoubles = 60000,
             HandbookPriceRoubles = 50000,
             HandbookParentId = "5b47574386f77428ca22b336",
-            Locales = GetLocales(),
+            Locales = new Dictionary<string, LocaleDetails>
+            {
+                ["en"] = new LocaleDetails
+                {
+                    Name = "",
+                    ShortName = "",
+                    Description = ""
+                }
+            },
             OverrideProperties = new TemplateItemProperties
             {
                 Prefab = new Prefab
@@ -212,7 +251,15 @@ public class NewItemModule
             FleaPriceRoubles = 180000,
             HandbookPriceRoubles = 150000,
             HandbookParentId = "5b47574386f77428ca22b337",
-            Locales = GetLocales(),
+            Locales = new Dictionary<string, LocaleDetails>
+            {
+                ["en"] = new LocaleDetails
+                {
+                    Name = "1",
+                    ShortName = "1",
+                    Description = "1"
+                }
+            },
             OverrideProperties = new TemplateItemProperties
             {
                 Prefab = new Prefab
@@ -246,7 +293,15 @@ public class NewItemModule
             FleaPriceRoubles = 150000,
             HandbookPriceRoubles = 100000,
             HandbookParentId = "5b47574386f77428ca22b339",
-            Locales = GetLocales(),
+            Locales = new Dictionary<string, LocaleDetails>
+            {
+                ["en"] = new LocaleDetails
+                {
+                    Name = "1",
+                    ShortName = "1",
+                    Description = "1"
+                }
+            },
             OverrideProperties = new TemplateItemProperties
             {
                 Prefab = new Prefab
@@ -280,7 +335,15 @@ public class NewItemModule
             FleaPriceRoubles = 100000,
             HandbookPriceRoubles = 80000,
             HandbookParentId = "5b47574386f77428ca22b33a",
-            Locales = GetLocales(),
+            Locales = new Dictionary<string, LocaleDetails>
+            {
+                ["en"] = new LocaleDetails
+                {
+                    Name = "1",
+                    ShortName = "1",
+                    Description = "1"
+                }
+            },
             OverrideProperties = new TemplateItemProperties
             {
                 Prefab = new Prefab
@@ -314,7 +377,15 @@ public class NewItemModule
             FleaPriceRoubles = 100000,
             HandbookPriceRoubles = 80000,
             HandbookParentId = "5b47574386f77428ca22b33a",
-            Locales = GetLocales(),
+            Locales = new Dictionary<string, LocaleDetails>
+            {
+                ["en"] = new LocaleDetails
+                {
+                    Name = "1",
+                    ShortName = "1",
+                    Description = "1"
+                }
+            },
             OverrideProperties = new TemplateItemProperties
             {
                 Prefab = new Prefab
@@ -328,9 +399,6 @@ public class NewItemModule
                 Height = 2,
                 Width = 1,
                 ItemSound = "spec_armorrep",
-                Name = "armor repair cat",
-                ShortName = "armor repair cat",
-                Description = "Armor repair cat",
                 MaxRepairResource = 50,
                 RepairCost = 1,
                 RepairQuality = 1
@@ -352,7 +420,15 @@ public class NewItemModule
             FleaPriceRoubles = 100000,
             HandbookPriceRoubles = 80000,
             HandbookParentId = "5b47574386f77428ca22b33a",
-            Locales = GetLocales(),
+            Locales = new Dictionary<string, LocaleDetails>
+            {
+                ["en"] = new LocaleDetails
+                {
+                    Name = "1",
+                    ShortName = "1",
+                    Description = "1"
+                }
+            },
             OverrideProperties = new TemplateItemProperties
             {
                 Prefab = new Prefab
@@ -366,9 +442,6 @@ public class NewItemModule
                 Height = 2,
                 Width = 1,
                 ItemSound = "spec_weaprep",
-                Name = "weapon repair cat",
-                ShortName = "weapon repair cat",
-                Description = "Weapon repair cat",
                 MaxRepairResource = 50,
                 RepairCost = 1,
                 RepairQuality = 1

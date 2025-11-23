@@ -7,6 +7,37 @@ namespace JiangHu.Server
 {
     public static class Log
     {
+
+
+        private static bool LoadGreetingConfig()
+        {
+            try
+            {
+                var modPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                var configPath = Path.Combine(modPath, "config", "config.json");
+
+                if (!File.Exists(configPath))
+                {
+                    Console.WriteLine("⚠️ [Greeting Log] config.json not found!");
+                    return true; 
+                }
+
+                var json = File.ReadAllText(configPath);
+                var config = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+
+                if (config != null && config.TryGetValue("Enable_Greeting_Log", out var greetingValue))
+                {
+                    return greetingValue.GetBoolean();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [Greeting Log] Error loading config: {ex.Message}");
+            }
+
+            return true; 
+        }
+
         private static readonly string[] Colors =
         {
             "\x1b[38;2;0;255;0m",
@@ -61,6 +92,11 @@ namespace JiangHu.Server
 
         public static void PrintBanner()
         {
+            if (!LoadGreetingConfig())
+            {
+                return;
+            }
+
             var greetingsFile = GetLocalizedFilePath("greeting.json");
             var loadingFile = GetLocalizedFilePath("loading.json");
 

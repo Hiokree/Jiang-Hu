@@ -1,6 +1,7 @@
 ﻿using BepInEx.Configuration;
 using EFT.UI;
 using EFT.UI.Screens;
+using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -19,25 +20,52 @@ namespace JiangHu
         private string _currentBackground;
         private bool _backgroundEnabled = true;
         private string _selectedBackgroundName;
-        private ConfigEntry<bool> _backgroundEnabledConfig;
         private VideoPlayer _videoPlayer;
         private RenderTexture _currentRenderTexture;
         private bool _isVideoPrepared = false;
 
         public void Init()
         {
+            LoadBackgroundConfig();
             ScanBackgroundFiles();
 
-            _selectedBackgroundName = LoadSavedBackgroundName();
-            if (string.IsNullOrEmpty(_selectedBackgroundName) && _availableBackgrounds.Count > 0)
+            if (_backgroundEnabled)
             {
-                _selectedBackgroundName = _availableBackgrounds[0];
+                _selectedBackgroundName = LoadSavedBackgroundName();
+                if (string.IsNullOrEmpty(_selectedBackgroundName) && _availableBackgrounds.Count > 0)
+                {
+                    _selectedBackgroundName = _availableBackgrounds[0];
+                }
+
+                LoadBackgroundTexture(_selectedBackgroundName);
+                Invoke(nameof(CreateBackgroundSystem), 2f);
             }
+            else
+            {
+                enabled = false;
+            }
+        }
 
-            _backgroundEnabled = _backgroundEnabledConfig?.Value ?? true;
-
-            LoadBackgroundTexture(_selectedBackgroundName);
-            Invoke(nameof(CreateBackgroundSystem), 2f);
+        private void LoadBackgroundConfig()
+        {
+            try
+            {
+                string modPath = Path.GetDirectoryName(Application.dataPath);
+                string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
+                if (File.Exists(configPath))
+                {
+                    string json = File.ReadAllText(configPath);
+                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, bool>>(json);
+                    if (configDict != null && configDict.ContainsKey("Enable_Change_Background"))
+                    {
+                        _backgroundEnabled = configDict["Enable_Change_Background"];
+                    }
+                }
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"Error loading background config: {ex.Message}");
+            }
         }
 
         private void CreateBackgroundSystem()
@@ -100,9 +128,6 @@ namespace JiangHu
 
         public void SetBackgroundEnabled(bool enabled)
         {
-            if (_backgroundEnabledConfig != null)
-                _backgroundEnabledConfig.Value = enabled;
-
             _backgroundEnabled = enabled;
             if (_backgroundCanvas != null)
             {
@@ -340,11 +365,6 @@ namespace JiangHu
         public string GetCurrentBackground()
         {
             return _currentBackground;
-        }
-
-        public void SetConfig(ConfigEntry<bool> config)
-        {
-            _backgroundEnabledConfig = config;
         }
 
         void OnDestroy()

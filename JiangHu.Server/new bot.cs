@@ -162,7 +162,7 @@ namespace JiangHu.Server
                     }
                 }
 
-                Console.WriteLine($"\x1b[36m🤖 [Jiang Hu] Jianghu Bot activated, PMCs now use randomly selected brain from {_bossBrains.Count} bosses \x1b[0m");
+                Console.WriteLine($"\x1b[92m🤖 [Jiang Hu] Jianghu Bot activated, PMCs now use randomly selected brain from {_bossBrains.Count} bosses    使用boss大脑的新人机\x1b[0m");
             }
         }
     }

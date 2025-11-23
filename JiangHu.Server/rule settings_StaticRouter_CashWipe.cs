@@ -29,7 +29,10 @@ namespace JiangHu.Server
                 )
             })
         {
-            Console.WriteLine($"\x1b[36m🟢 [CashWipeStaticRouter] Router registered \x1b[0m");
+            if (IsCashWipeEnabled())
+            {
+                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Cash Wipe Enabled    死亡清空现金\x1b[0m");
+            }
         }
 
         private static async Task<string> HandleCashWipe(string url, EndLocalRaidRequestData info, MongoId sessionId, string output, SaveServer saveServer)

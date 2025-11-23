@@ -156,8 +156,6 @@ namespace JiangHu.Server
 
                 if (_Enable_Replace_OneRaid_with_OneLife)
                     ReplaceOneRaidWithOneLife(tables);
-
-                Console.WriteLine("\x1b[36m🎮 [Jiang Hu] All rules applied successfully\x1b[0m");
             }
             catch (Exception ex)
             {
@@ -223,7 +221,7 @@ namespace JiangHu.Server
                 modifiedCount++;
             }
 
-            Console.WriteLine($"\x1b[36m⚙️ [Jiang Hu] Disabled and moved {traderChangedCount} vanilla quests to Loong Gate Inn \x1b[0m");
+            Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Disabled and moved {traderChangedCount} vanilla quests to Loong Gate Inn    锁定原版任务并移至龙门客栈\x1b[0m");
         }
 
 
@@ -236,13 +234,13 @@ namespace JiangHu.Server
             if (_Lock_Flea)
             {
                 ragfair.MinUserLevel = 99;
-                Console.WriteLine("\x1b[36m🔒 [Jiang Hu] Flea Market locked \x1b[0m");
+                Console.WriteLine("\x1b[36m🎮 [Jiang Hu] Flea Market locked    锁定跳蚤市场\x1b[0m");
 
             }
             else
             {
                 ragfair.MinUserLevel = 1;
-                Console.WriteLine("\x1b[36m🟢 [Jiang Hu] Flea Market unlocked \x1b[0m");
+                Console.WriteLine("\x1b[36m🎮 [Jiang Hu] Flea Market unlocked    解锁跳蚤市场\x1b[0m");
             }
         }
 
@@ -273,7 +271,7 @@ namespace JiangHu.Server
                     head.Health.Maximum = newMax;
                     if (head.Health.Current > newMax)
                         head.Health.Current = newMax;
-                    Console.WriteLine($"\x1b[36m🧠 [Jiang Hu] Increased {pmc.Info.Nickname}'s Head HP to {newMax} (+{newMax - 35}) \x1b[0m");
+                    Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Increased {pmc.Info.Nickname}'s Head HP to {newMax} (+{newMax - 35})    头变大啦\x1b[0m");
                     modifiedCount++;
                 }
             }
@@ -308,7 +306,7 @@ namespace JiangHu.Server
             }
             if (disabledTraders.Count > 0)
             {
-                Console.WriteLine($"\x1b[36m🖐️ [Jiang Hu] Insurance disabled for traders: {string.Join(", ", disabledTraders)}  \x1b[0m");
+                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Insurance disabled for traders: {string.Join(", ", disabledTraders)}    禁保险\x1b[0m");
             }
         }
 
@@ -344,7 +342,7 @@ namespace JiangHu.Server
 
             DisableFenceAssort(tables, true);
             if (clearedTraders.Count > 0)
-                Console.WriteLine($"\x1b[36m🧩 [Jiang Hu] Vanilla shops cleared \x1b[0m");
+                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Vanilla shops cleared    禁商店\x1b[0m");
         }
 
         public void DisableFenceAssort(DatabaseTables tables, bool enableEmptyVanillaShop)
@@ -377,7 +375,7 @@ namespace JiangHu.Server
                 _fenceService.SetFenceAssort(CreateEmptyAssort());
                 _fenceService.SetFenceDiscountAssort(CreateEmptyAssort());
 
-                Console.WriteLine($"\x1b[36m🛡️ [Jiang Hu] Fence disabled \x1b[0m");
+                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Fence disabled    禁倒爷\x1b[0m");
             }
             catch (Exception ex)
             {
@@ -426,7 +424,7 @@ namespace JiangHu.Server
                     if (traderModified)
                         modifiedTraders++;
                 }
-                Console.WriteLine($"\x1b[36m📌 [Jiang Hu] Items unlock requirement changed \x1b[0m");
+                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Items unlock requirement changed    新任务解锁全部物品\x1b[0m");
             }
             catch (Exception ex)
             {
@@ -538,7 +536,7 @@ namespace JiangHu.Server
                         element.Conditions.Clear();
                     }
                 }
-                Console.WriteLine($"\x1b[36m🛠️ [Jiang Hu] Prestige conditions replaced for {originalPrestige.Elements.Count} levels \x1b[0m");
+                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Prestige conditions replaced for {originalPrestige.Elements.Count} levels    新声望条件\x1b[0m");
             }
             catch (Exception ex)
             {
@@ -584,7 +582,7 @@ namespace JiangHu.Server
                 };
 
                 tables.Hideout.Production.Recipes.Add(newRecipe);
-                Console.WriteLine($"\x1b[36m🎁 [Jiang Hu] DSP production recipe added \x1b[0m");
+                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] DSP production recipe added    灯塔道具制作蓝图\x1b[0m");
             }
             catch (Exception ex)
             {
@@ -681,7 +679,7 @@ namespace JiangHu.Server
                 };
 
                 tables.Hideout.Production.Recipes.Add(newRecipe);
-                Console.WriteLine("\x1b[36m🎁 [Jiang Hu] Lab keycard production added \x1b[0m");
+                Console.WriteLine("\x1b[36m🎮 [Jiang Hu] Lab keycard production added    迷宫钥匙制作蓝图\x1b[0m");
             }
             catch (Exception ex)
             {
@@ -740,7 +738,7 @@ namespace JiangHu.Server
 
                     quest.Conditions.AvailableForStart.Add(condition);
                 }
-                Console.WriteLine($"\x1b[36m🔓 [Jiang Hu] Unlocked {matchingQuests.Count} Labrys quests \x1b[0m");
+                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Unlocked {matchingQuests.Count} Labrys quests    解锁迷宫任务\x1b[0m");
             }
             catch (Exception ex)
             {
@@ -879,7 +877,7 @@ namespace JiangHu.Server
                 }
 
                 if (modifiedCount > 0)
-                    Console.WriteLine($"\x1b[36m🔄 [Jiang Hu] Replaced one-raid requirement with one-life for {modifiedCount} new quests \x1b[0m");
+                    Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Replaced one-raid requirement with one-life for {modifiedCount} new quests    一次战局完成的新任务降为一命完成\x1b[0m");
             }
             catch (Exception ex)
             {

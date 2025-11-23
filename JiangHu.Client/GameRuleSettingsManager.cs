@@ -37,18 +37,28 @@ namespace JiangHu
         private bool showMovementSettingsGUI = false;
         private bool enableMinimalAimpunch = true;
         private bool enableFastAiming = true;
+        private bool enableNewTrader = true;
+        private bool enableNewQuest = true;
+        private bool enableNewItem = true;
+        private bool enableNewRaidMode = true;
+        private bool restartNewRaidMode = false;
+        private bool enableGreetingLog = true;
+        private bool showCoreModulesGUI = false;
 
+        private Rect coreModulesWindowRect = new Rect(350, 150, 360, 160);
 
-        private Rect windowRect = new Rect(300, 100, 550, 850);
+        private bool showRuleSettingsGUI = false;
+        private Rect ruleSettingsWindowRect = new Rect(350, 150, 550, 420);
+        private Rect windowRect = new Rect(300, 100, 500, 620);
         private bool showGUI = false;
 
         private bool showSettingsGuide = false;
-        private Rect guideWindowRect = new Rect(200, 100, 600, 500);
+        private Rect guideWindowRect = new Rect(200, 100, 1000, 800);
         private Vector2 guideScrollPosition = Vector2.zero;
         private string settingsGuideContent = "";
         private string currentLanguage = "en";
 
-        private Rect botNameWindowRect = new Rect(250, 150, 400, 300);
+        private Rect botNameWindowRect = new Rect(250, 150, 400, 270);
         private ConfigEntry<bool> showSettingsManager;
 
         private Rect movementSettingsWindowRect = new Rect(300, 150, 400, 480);
@@ -147,6 +157,18 @@ namespace JiangHu
                     enableFastAiming = configDict["Enable_Fast_Aiming"];
                 if (configDict.ContainsKey("Enable_Wider_Freelook_Angle"))
                     enableWiderFreelook = configDict["Enable_Wider_Freelook_Angle"];
+                if (configDict.ContainsKey("Enable_New_Trader"))
+                    enableNewTrader = configDict["Enable_New_Trader"];
+                if (configDict.ContainsKey("Enable_New_Quest"))
+                    enableNewQuest = configDict["Enable_New_Quest"];
+                if (configDict.ContainsKey("Enable_New_Item"))
+                    enableNewItem = configDict["Enable_New_Item"];
+                if (configDict.ContainsKey("Enable_New_RaidMode"))
+                    enableNewRaidMode = configDict["Enable_New_RaidMode"];
+                if (configDict.ContainsKey("Restart_New_RaidMode"))
+                    restartNewRaidMode = configDict["Restart_New_RaidMode"];
+                if (configDict.ContainsKey("Enable_Greeting_Log"))
+                    enableGreetingLog = configDict["Enable_Greeting_Log"];
             }              
         }
 
@@ -189,6 +211,12 @@ namespace JiangHu
                     { "Enable_Minimal_Aimpunch", enableMinimalAimpunch },
                     { "Enable_Fast_Aiming", enableFastAiming },
                     { "Enable_Wider_Freelook_Angle", enableWiderFreelook },
+                    { "Enable_New_Trader", enableNewTrader },
+                    { "Enable_New_Quest", enableNewQuest },
+                    { "Enable_New_Item", enableNewItem },
+                    { "Enable_New_RaidMode", enableNewRaidMode },
+                    { "Restart_New_RaidMode", restartNewRaidMode },
+                    { "Enable_Greeting_Log", enableGreetingLog },
                 };
 
                 string modPath = Path.GetDirectoryName(Application.dataPath);
@@ -262,6 +290,14 @@ namespace JiangHu
             {
                 movementSettingsWindowRect = GUI.Window(12351, movementSettingsWindowRect, DrawMovementSettingsWindow, "Mode Settings  心法设置");
             }
+            else if (showRuleSettingsGUI)
+            {
+                ruleSettingsWindowRect = GUI.Window(12352, ruleSettingsWindowRect, DrawRuleSettingsWindow, "Rule Settings  规则设置");
+            }
+            else if (showCoreModulesGUI)
+            {
+                coreModulesWindowRect = GUI.Window(12353, coreModulesWindowRect, DrawCoreModulesWindow, "Core Modules  核心模块");
+            }
             else
             {
                 windowRect = GUI.Window(12349, windowRect, DrawSettingsWindow, "Game Setting Manager  江湖设置管理器");
@@ -278,13 +314,61 @@ namespace JiangHu
             }
 
             GUI.DragWindow(new Rect(0, 0, windowRect.width - 25, 20));
+
             GUILayout.Space(10);
 
+            // Core Modules Box
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Quest Generator  任务生成器", GUIStyle.none);
+            GUILayout.Label("Core Modules", GUIStyle.none);
             GUILayout.Space(5);
 
-            bool newQuestGen = GUILayout.Toggle(enableQuestGenerator, " Enable Quest Generator   (requires Disable Vanilla Quests)");
+            if (GUILayout.Button("Core Modules Settings  核心模块设置"))
+            {
+                showCoreModulesGUI = true;
+            }
+            GUILayout.EndVertical();
+
+            GUILayout.Space(10);
+
+            // FPS Mode Box
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Competitive FPS Mode    竞技射击模式", GUIStyle.none);
+            GUILayout.Space(5);
+
+            bool newEnableMovement = GUILayout.Toggle(enableNewMovement, " Enable Floating Steps Over Ripples    开启凌波微步");
+            if (newEnableMovement != enableNewMovement)
+            {
+                enableNewMovement = newEnableMovement;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            if (GUILayout.Button("Mode Settings    心法设置"))
+            {
+                showMovementSettingsGUI = true;
+            }
+            GUILayout.EndVertical();
+            GUILayout.Space(10);
+
+            // Dance on the Razor's Edge Box
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("New Arena    惊鸿猎", GUIStyle.none);
+            GUILayout.Space(5);
+
+            bool newRaidMode = GUILayout.Toggle(enableNewRaidMode, " Enable Arena    开启惊鸿猎");
+            if (newRaidMode != enableNewRaidMode) { enableNewRaidMode = newRaidMode; SaveSettingsToJson(); }
+            GUILayout.Space(5);
+            bool restartRaidMode = GUILayout.Toggle(restartNewRaidMode, " Restart Arena    重置惊鸿猎");
+            if (restartRaidMode != restartNewRaidMode) { restartNewRaidMode = restartRaidMode; SaveSettingsToJson(); }
+
+            GUILayout.EndVertical();
+            GUILayout.Space(10);
+
+            // Quest Generator Box
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Quest Generator    任务生成器", GUIStyle.none);
+            GUILayout.Space(5);
+
+            bool newQuestGen = GUILayout.Toggle(enableQuestGenerator, " Enable (Disable Vanilla Quests FIRST)    开启。需先禁用原版任务");   
             if (newQuestGen != enableQuestGenerator)
             {
                 enableQuestGenerator = newQuestGen;
@@ -294,26 +378,26 @@ namespace JiangHu
 
             GUILayout.Space(10);
 
-            // Jianghu Bot Settings
+            // Bot Box
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Bot  人机", GUIStyle.none);
+            GUILayout.Label("Bot    人机", GUIStyle.none);
             GUILayout.Space(5);
 
-            bool newEnableBot = GUILayout.Toggle(enableJianghuBot, " Enable Jianghu Bot  使用江湖人机");
+            bool newEnableBot = GUILayout.Toggle(enableJianghuBot, " Enable Jianghu Bot    使用江湖人机");
             if (newEnableBot != enableJianghuBot)
             {
                 enableJianghuBot = newEnableBot;
                 SaveSettingsToJson();
             }
             GUILayout.Space(5);
-            bool newEnableBotName = GUILayout.Toggle(enableJianghuBotName, " Enable Jianghu Bot Names  使用江湖人机名字");
+            bool newEnableBotName = GUILayout.Toggle(enableJianghuBotName, " Enable Jianghu Bot Names    使用江湖人机名字");
             if (newEnableBotName != enableJianghuBotName)
             {
                 enableJianghuBotName = newEnableBotName;
                 SaveSettingsToJson();
             }
             GUILayout.Space(5);
-            if (GUILayout.Button("Languages  多国语言"))
+            if (GUILayout.Button("Languages    多国语言"))
             {
                 showBotNameGUI = true;
             }
@@ -321,140 +405,24 @@ namespace JiangHu
 
             GUILayout.Space(10);
 
+            // Game Rules Box
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Competitive FPS Mode  竞技射击模式", GUIStyle.none);
+            GUILayout.Label("Game Rules    游戏规则", GUIStyle.none);
             GUILayout.Space(5);
-
-            bool newEnableMovement = GUILayout.Toggle(enableNewMovement, " Enable Floating Steps Over Ripples  启用凌波微步");
-            if (newEnableMovement != enableNewMovement)
-            {
-                enableNewMovement = newEnableMovement;
-                SaveSettingsToJson();
-            }
+            bool newUsePreset = GUILayout.Toggle(usePreset, " Use Preset Configuration    使用预设");
+            if (newUsePreset != usePreset) { usePreset = newUsePreset; SaveSettingsToJson(); }
             GUILayout.Space(5);
-            if (GUILayout.Button("Mode Settings  心法设置"))
+            if (GUILayout.Button("Rule Settings    规则设置"))
             {
-                showMovementSettingsGUI = true;
+                showRuleSettingsGUI = true;
             }
             GUILayout.EndVertical();
+
             GUILayout.Space(10);
 
-            // Preset section
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Preset for Rules", GUIStyle.none);
-            GUILayout.Space(5);
-            bool newUsePreset = GUILayout.Toggle(usePreset, " Use Preset Configuration  使用预设");
-            if (newUsePreset != usePreset)
-            {
-                usePreset = newUsePreset;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            GUILayout.EndVertical();
-
-
-            // Upper Box
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Gameplay Rules", GUIStyle.none);
-            GUILayout.Space(5);
-
-            bool newDisableQuests = GUILayout.Toggle(disableVanillaQuests, " Disable Vanilla Quests  禁原版任务");
-            if (newDisableQuests != disableVanillaQuests)
-            {
-                disableVanillaQuests = newDisableQuests;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            bool newLockFlea = GUILayout.Toggle(lockFlea, " Lock Flea Market  锁跳蚤市场");
-            if (newLockFlea != lockFlea)
-            {
-                lockFlea = newLockFlea;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            bool newNoInsurance = GUILayout.Toggle(enableNoInsurance, " Disable Insurance  禁保险");
-            if (newNoInsurance != enableNoInsurance)
-            {
-                enableNoInsurance = newNoInsurance;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            bool newEmptyShop = GUILayout.Toggle(enableEmptyVanillaShop, " Empty Trader Shops  禁商店");
-            if (newEmptyShop != enableEmptyVanillaShop)
-            {
-                enableEmptyVanillaShop = newEmptyShop;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            bool newCashWipe = GUILayout.Toggle(enableCashWipeAfterDeath, " Cash Wipe on Death  死亡清空现金");
-            if (newCashWipe != enableCashWipeAfterDeath)
-            {
-                enableCashWipeAfterDeath = newCashWipe;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            bool newHeadHP = GUILayout.Toggle(increaseHeadHP, " Increase Head HP  大头");
-            if (newHeadHP != increaseHeadHP)
-            {
-                increaseHeadHP = newHeadHP;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            bool newUnlockLabrysQuests = GUILayout.Toggle(unlockAllLabrysQuests, " Unlock All Labrys Quests  解锁迷宫任务");
-            if (newUnlockLabrysQuests != unlockAllLabrysQuests)
-            {
-                unlockAllLabrysQuests = newUnlockLabrysQuests;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            bool newLabKey = GUILayout.Toggle(addHideoutProductionLabryskeycard, " Hideout Recipe: Labrys Keycard  制造迷宫钥匙");
-            if (newLabKey != addHideoutProductionLabryskeycard)
-            {
-                addHideoutProductionLabryskeycard = newLabKey;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            bool newOneLife = GUILayout.Toggle(enableReplaceOneRaidWithOneLife, " Replace new quest 1 Raid requirement with 1 Life    新任务的单局完成改为一命完成");
-            if (newOneLife != enableReplaceOneRaidWithOneLife)
-            {
-                enableReplaceOneRaidWithOneLife = newOneLife;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            GUILayout.EndVertical();
-
-            // Bottom Box
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Core Rules", GUIStyle.none);
-            GUILayout.Space(5);
-
-
-            bool newUnlockItems = GUILayout.Toggle(unlockAllItemsByNewQuest, " Unlock Items by 1 New Quest  新任务解锁全部物品");
-            if (newUnlockItems != unlockAllItemsByNewQuest)
-            {
-                unlockAllItemsByNewQuest = newUnlockItems;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            bool newPrestige = GUILayout.Toggle(changePrestigeCondition, " Change Prestige Conditions  改变升级荣誉条件");
-            if (newPrestige != changePrestigeCondition)
-            {
-                changePrestigeCondition = newPrestige;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            bool newDSP = GUILayout.Toggle(addHideoutProductionDSP, " Hideout Recipe: encoded DSP  制造访问灯塔道具");
-            if (newDSP != addHideoutProductionDSP)
-            {
-                addHideoutProductionDSP = newDSP;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            GUILayout.EndVertical();
-            GUILayout.Space(10);
-
+            // Guide
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Settings Guide  设置指南"))
+            if (GUILayout.Button("Settings Guide    设置指南"))
             {
                 LoadSettingsGuide(currentLanguage);
                 showSettingsGuide = true;
@@ -672,6 +640,148 @@ namespace JiangHu
             bool newWiderLook = GUILayout.Toggle(enableWiderFreelook, " Wider Freelook  更宽自由视角");
             if (newWiderLook != enableWiderFreelook) { enableWiderFreelook = newWiderLook; SaveSettingsToJson(); }
             GUILayout.Space(5);
+            GUILayout.EndVertical();
+        }
+
+        void DrawRuleSettingsWindow(int windowID)
+        {
+            if (GUI.Button(new Rect(ruleSettingsWindowRect.width - 25, 5, 20, 20), "X"))
+            {
+                showRuleSettingsGUI = false;
+                return;
+            }
+
+            GUI.DragWindow(new Rect(0, 0, ruleSettingsWindowRect.width - 25, 20));
+
+
+            // Upper Box
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Gameplay Rules", GUIStyle.none);
+            GUILayout.Space(5);
+
+            bool newDisableQuests = GUILayout.Toggle(disableVanillaQuests, " Disable Vanilla Quests  禁原版任务");
+            if (newDisableQuests != disableVanillaQuests)
+            {
+                disableVanillaQuests = newDisableQuests;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            bool newLockFlea = GUILayout.Toggle(lockFlea, " Lock Flea Market  锁跳蚤市场");
+            if (newLockFlea != lockFlea)
+            {
+                lockFlea = newLockFlea;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            bool newNoInsurance = GUILayout.Toggle(enableNoInsurance, " Disable Insurance  禁保险");
+            if (newNoInsurance != enableNoInsurance)
+            {
+                enableNoInsurance = newNoInsurance;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            bool newEmptyShop = GUILayout.Toggle(enableEmptyVanillaShop, " Empty Trader Shops  禁商店");
+            if (newEmptyShop != enableEmptyVanillaShop)
+            {
+                enableEmptyVanillaShop = newEmptyShop;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            bool newCashWipe = GUILayout.Toggle(enableCashWipeAfterDeath, " Cash Wipe on Death  死亡清空现金");
+            if (newCashWipe != enableCashWipeAfterDeath)
+            {
+                enableCashWipeAfterDeath = newCashWipe;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            bool newHeadHP = GUILayout.Toggle(increaseHeadHP, " Increase Head HP  大头");
+            if (newHeadHP != increaseHeadHP)
+            {
+                increaseHeadHP = newHeadHP;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            bool newUnlockLabrysQuests = GUILayout.Toggle(unlockAllLabrysQuests, " Unlock All Labrys Quests  解锁迷宫任务");
+            if (newUnlockLabrysQuests != unlockAllLabrysQuests)
+            {
+                unlockAllLabrysQuests = newUnlockLabrysQuests;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            bool newLabKey = GUILayout.Toggle(addHideoutProductionLabryskeycard, " Hideout Recipe: Labrys Keycard  制造迷宫钥匙");
+            if (newLabKey != addHideoutProductionLabryskeycard)
+            {
+                addHideoutProductionLabryskeycard = newLabKey;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            bool newOneLife = GUILayout.Toggle(enableReplaceOneRaidWithOneLife, " Replace new quest 1 Raid requirement with 1 Life    新任务的单局完成改为一命完成");
+            if (newOneLife != enableReplaceOneRaidWithOneLife)
+            {
+                enableReplaceOneRaidWithOneLife = newOneLife;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            GUILayout.EndVertical();
+
+            // Bottom Box
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Core Rules", GUIStyle.none);
+            GUILayout.Space(5);
+
+
+            bool newUnlockItems = GUILayout.Toggle(unlockAllItemsByNewQuest, " Unlock Items by 1 New Quest  新任务解锁全部物品");
+            if (newUnlockItems != unlockAllItemsByNewQuest)
+            {
+                unlockAllItemsByNewQuest = newUnlockItems;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            bool newPrestige = GUILayout.Toggle(changePrestigeCondition, " Change Prestige Conditions  改变升级荣誉条件");
+            if (newPrestige != changePrestigeCondition)
+            {
+                changePrestigeCondition = newPrestige;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            bool newDSP = GUILayout.Toggle(addHideoutProductionDSP, " Hideout Recipe: encoded DSP  制造访问灯塔道具");
+            if (newDSP != addHideoutProductionDSP)
+            {
+                addHideoutProductionDSP = newDSP;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            GUILayout.EndVertical();
+        }
+
+        void DrawCoreModulesWindow(int windowID)
+        {
+            if (GUI.Button(new Rect(coreModulesWindowRect.width - 25, 5, 20, 20), "X"))
+            {
+                showCoreModulesGUI = false;
+                return;
+            }
+
+            GUI.DragWindow(new Rect(0, 0, coreModulesWindowRect.width - 25, 20));
+            GUILayout.Space(10);
+
+            GUILayout.BeginVertical("box");
+
+            bool newTrader = GUILayout.Toggle(enableNewTrader, " Enable New Trader  启用新商人");
+            if (newTrader != enableNewTrader) { enableNewTrader = newTrader; SaveSettingsToJson(); }
+            GUILayout.Space(5);
+
+            bool newQuest = GUILayout.Toggle(enableNewQuest, " Enable New Quest  启用新任务");
+            if (newQuest != enableNewQuest) { enableNewQuest = newQuest; SaveSettingsToJson(); }
+            GUILayout.Space(5);
+
+            bool newItem = GUILayout.Toggle(enableNewItem, " Enable New Item  启用新物品");
+            if (newItem != enableNewItem) { enableNewItem = newItem; SaveSettingsToJson(); }
+            GUILayout.Space(5);
+
+            bool newGreetingLog = GUILayout.Toggle(enableGreetingLog, " Enable Greeting Log  启用问候日志");
+            if (newGreetingLog != enableGreetingLog) { enableGreetingLog = newGreetingLog; SaveSettingsToJson(); }
+
             GUILayout.EndVertical();
         }
     }

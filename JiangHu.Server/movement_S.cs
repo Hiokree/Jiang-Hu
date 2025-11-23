@@ -16,9 +16,15 @@ namespace JiangHu.Server
         private readonly SaveServer _saveServer;
 
         private bool _Enable_New_Movement = false;
+        private bool _Enable_Fast_Movement = false;
+        private bool _Enable_Fast_Leaning = false;
+        private bool _Enable_Fast_Pose_Transition = false;
+        private bool _Enable_Jump_Higher = false;
         private bool _Enable_Slide = false;
+        private bool _Enable_Fast_Weapon_Switching = false;
         private bool _Enable_Minimal_Aimpunch = false;
         private bool _Enable_Fast_Aiming = false;
+        private bool _Enable_Wider_Freelook_Angle = false;
 
         public MovementServerSide(DatabaseServer databaseServer, SaveServer saveServer)
         {
@@ -48,12 +54,24 @@ namespace JiangHu.Server
 
                 if (config.TryGetValue("Enable_New_Movement", out var movementValue))
                     _Enable_New_Movement = movementValue.GetBoolean();
+                if (config.TryGetValue("Enable_Fast_Movement", out var fastMovementValue))
+                    _Enable_Fast_Movement = fastMovementValue.GetBoolean();
+                if (config.TryGetValue("Enable_Fast_Leaning", out var leaningValue))
+                    _Enable_Fast_Leaning = leaningValue.GetBoolean();
+                if (config.TryGetValue("Enable_Fast_Pose_Transition", out var poseValue))
+                    _Enable_Fast_Pose_Transition = poseValue.GetBoolean();
+                if (config.TryGetValue("Enable_Jump_Higher", out var jumpValue))
+                    _Enable_Jump_Higher = jumpValue.GetBoolean();
                 if (config.TryGetValue("Enable_Slide", out var slideValue))
                     _Enable_Slide = slideValue.GetBoolean();
+                if (config.TryGetValue("Enable_Fast_Weapon_Switching", out var weaponSwitchValue))
+                    _Enable_Fast_Weapon_Switching = weaponSwitchValue.GetBoolean();
                 if (config.TryGetValue("Enable_Minimal_Aimpunch", out var aimpunchValue))
                     _Enable_Minimal_Aimpunch = aimpunchValue.GetBoolean();
                 if (config.TryGetValue("Enable_Fast_Aiming", out var aimingValue))
                     _Enable_Fast_Aiming = aimingValue.GetBoolean();
+                if (config.TryGetValue("Enable_Wider_Freelook_Angle", out var freelookValue))
+                    _Enable_Wider_Freelook_Angle = freelookValue.GetBoolean();
             }
             catch (Exception ex)
             {
@@ -68,13 +86,18 @@ namespace JiangHu.Server
                 Console.WriteLine("🔄 [Jiang Hu] New Movement disabled - skipping all modifications");
                 return;
             }
+            Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Floating Steps Over Ripples enabled    凌波微步\x1b[0m");
 
             ApplyMovementSettings();
-            ApplySlideSettings();
-            ApplyMinimalAimpunch();
+            ApplyFastMovement();
+            ApplyFastLeaning();
+            ApplyFastPoseTransition();
+            ApplyJumpHigher();
+            ApplySlide();
+            ApplyFastWeaponSwitching();
             ApplyFastAiming();
-
-            Console.WriteLine($"\x1b[93m🪽 [Jiang Hu] Floating Steps Over Ripples enabled 凌波微步心法\x1b[0m");
+            ApplyMinimalAimpunch();
+            ApplyWiderFreelookAngle();            
         }
 
         private void ApplyMovementSettings()
@@ -122,14 +145,14 @@ namespace JiangHu.Server
             inertia.WeaponFlipSpeed = new XYZ { X = 1f, Y = 1f, Z = 0f };
         }
 
-        private void ApplySlideSettings()
+        private void ApplySlide()
         {
             if (!_Enable_Slide) return;
 
             var globalConfig = _databaseServer.GetTables().Globals;
             var inertia = globalConfig.Configuration.Inertia;
             inertia.SprintTransitionMotionPreservation = new XYZ { X = 1, Y = 1, Z = 0 };
-            Console.WriteLine("🎯 [Jiang Hu] Slide enabled");
+            Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Slide enabled    滑铲\x1b[0m");
         }
 
         private void ApplyMinimalAimpunch()
@@ -138,7 +161,7 @@ namespace JiangHu.Server
 
             var globalConfig = _databaseServer.GetTables().Globals;
             globalConfig.Configuration.AimPunchMagnitude = 0.001f;
-            Console.WriteLine("🎯 [Jiang Hu] Minimal Aimpunch applied");
+            Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] MinimalAimpunch enabled    瞄准无被击干扰\x1b[0m");
         }
 
         private void ApplyFastAiming()
@@ -155,9 +178,45 @@ namespace JiangHu.Server
             aiming.MinTimeHeavy = 0.3f;
             aiming.MaxTimeHeavy = 1.0f;
             aiming.AimProceduralIntensity = 0.3f;
-            aiming.CameraSnapGlobalMult = 4f;
-
-            Console.WriteLine("🎯 [Jiang Hu] Fast Aiming applied");
+            aiming.CameraSnapGlobalMult = 2f;
+            Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Fast Aiming enabled    快速瞄准\x1b[0m");
         }
+
+        private void ApplyFastMovement()
+        {
+            if (!_Enable_Fast_Movement) return;
+            Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Fast Movement enabled    快速移动\x1b[0m");
+        }
+
+        private void ApplyFastLeaning()
+        {
+            if (!_Enable_Fast_Leaning) return;
+            Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Fast Leaning enabled    快速侧身\x1b[0m");
+        }
+
+        private void ApplyFastPoseTransition()
+        {
+            if (!_Enable_Fast_Pose_Transition) return;
+            Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Fast Pose Transition enabled    快速姿态切换\x1b[0m");
+        }
+
+        private void ApplyJumpHigher()
+        {
+            if (!_Enable_Jump_Higher) return;
+            Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Jump Higher enabled    跳得更高\x1b[0m");
+        }
+
+        private void ApplyFastWeaponSwitching()
+        {
+            if (!_Enable_Fast_Weapon_Switching) return;
+            Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Fast Weapon Switching enabled    快速切枪\x1b[0m");
+        }
+
+        private void ApplyWiderFreelookAngle()
+        {
+            if (!_Enable_Wider_Freelook_Angle) return;
+            Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Wider Freelook Angle enabled    自由视角更广\x1b[0m");
+        }
+
     }
 }

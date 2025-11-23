@@ -49,7 +49,7 @@ public class JianghuBotName
                 replacedCount++;
             }
 
-            Console.WriteLine($"\x1b[36m🤖 [Jiang Hu] {customNames.Count} Jianghu Bot names applied for {replacedCount} bot types \x1b[0m");
+            Console.WriteLine($"\x1b[92m🤖 [Jiang Hu] {customNames.Count} Jianghu Bot names applied for {replacedCount} bot types    新人机名字\x1b[0m");
         }
         catch (Exception ex)
         {

@@ -140,7 +140,7 @@ namespace JiangHu.Server
         {
             try
             {
-                Console.WriteLine("\x1b[36m🧩 [Jiang Hu] Preset applied successfully\x1b[0m");
+                Console.WriteLine("\x1b[36m🎮 [Jiang Hu] Preset applied    应用预设\x1b[0m");
             }
             catch (Exception)
             {

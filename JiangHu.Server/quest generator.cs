@@ -14,7 +14,7 @@ using SPTarkov.Server.Core.Utils.Json;
 
 namespace JiangHu.Server
 {
-    [Injectable] 
+    [Injectable]
     public class QuestGenerator
     {
         private readonly DatabaseServer _databaseServer;
@@ -26,7 +26,7 @@ namespace JiangHu.Server
             _databaseServer = databaseServer;
             _saveServer = saveServer;
             LoadConfig();
-            if (_enableQuestGenerator) 
+            if (_enableQuestGenerator)
             {
                 _saveServer.AddBeforeSaveCallback("jianghu_reset_dummy", (profile) =>
                 {
@@ -54,7 +54,7 @@ namespace JiangHu.Server
 
                 if (config != null && config.TryGetValue("Enable_Quest_Generator", out var questGenValue))
                 {
-                    _enableQuestGenerator = questGenValue.GetBoolean();                
+                    _enableQuestGenerator = questGenValue.GetBoolean();
                 }
             }
             catch (Exception ex)
@@ -84,7 +84,6 @@ namespace JiangHu.Server
                 CreateQuestChain(selectedQuests, dummyQuestId);
 
                 ResetDummyQuest();
-                Console.WriteLine($"\x1b[36m🪄 [Jiang Hu] Quest Generator is On \x1b[0m");
             }
             catch (Exception ex)
             {
@@ -100,7 +99,7 @@ namespace JiangHu.Server
             {
                 var levelCond = kvp.Value.Conditions.AvailableForStart?
                     .Find(c => c.ConditionType == "Level");
-                if (levelCond?.Value == 99)
+                if (levelCond?.Value != 99)
                     continue;
 
                 string questId = kvp.Key.ToString();
@@ -131,9 +130,10 @@ namespace JiangHu.Server
                     levelCond.Value = 1;
                 }
             }
+            Console.WriteLine($"\x1b[95m🪄 [Jiang Hu] Quest Generator is On, Quest pool: {questPool.Count}    随机任务生成器\x1b[0m");
             return questPool;
         }
-
+        
         private static void FisherYatesShuffle<T>(List<T> list, Random random)
         {
             int n = list.Count;
@@ -154,7 +154,6 @@ namespace JiangHu.Server
 
                 if (_databaseServer.GetTables().Templates.Quests.TryGetValue(currentQuestId, out var quest))
                 {
-
                     quest.Conditions.AvailableForStart = new List<QuestCondition>();
 
                     quest.Conditions.AvailableForStart.Add(new QuestCondition
@@ -197,7 +196,7 @@ namespace JiangHu.Server
 
             if (dummyQuest != null)
             {
-                dummyQuest.Status = QuestStatusEnum.Locked;             
+                dummyQuest.Status = QuestStatusEnum.Locked;
             }
         }
     }

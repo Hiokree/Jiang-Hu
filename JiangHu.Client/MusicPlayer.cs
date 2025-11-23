@@ -1,10 +1,11 @@
 ﻿using BepInEx.Configuration;
+using Newtonsoft.Json;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
-using static ScreenshotCreator.CameraObject;
 
 namespace JiangHu
 {
@@ -16,26 +17,7 @@ namespace JiangHu
         private int currentSongIndex = 0;
         private bool isPlaying = false;
         private float volume = 0.2f;
-        private ChangeBackground _changeBackground;
-        private bool _showBackgroundList = false;
-        private Vector2 _scrollPosition;
-        private bool _showMusicList = false;
-        private Vector2 _musicScrollPosition;
-        private Vector2 _backgroundScrollPosition;
-
-        private ConfigEntry<KeyboardShortcut> _hotkey;
-        private ConfigEntry<bool> _showGUI;
-        private Rect windowRect = new Rect(20, 20, 360, 270);
-        private bool showGUI = false;
-        private ConfigEntry<bool> _backgroundEnabledConfig;
-
-        public void SetConfig(ConfigEntry<KeyboardShortcut> hotkey, ConfigEntry<bool> showGUIConfig, ChangeBackground changeBackground, ConfigEntry<bool> backgroundEnabled)
-        {
-            _hotkey = hotkey;
-            _showGUI = showGUIConfig;
-            _changeBackground = changeBackground;
-            _backgroundEnabledConfig = backgroundEnabled;
-        }
+        private bool _musicEnabled = true;
 
         void Awake()
         {
@@ -82,16 +64,84 @@ namespace JiangHu
 
         void Start()
         {
-            StartMusicInternal();
+            LoadMusicConfig();
+            if (_musicEnabled)
+            {
+                StartMusicInternal();
+            }
+            else
+            {
+                enabled = false;
+            }
         }
 
-        void Update()
+        private void LoadMusicConfig()
         {
-            if (_hotkey.Value.IsDown())
+            try
             {
-                showGUI = !showGUI;
-                _showGUI.Value = showGUI;
+                string modPath = Path.GetDirectoryName(Application.dataPath);
+                string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
+                if (File.Exists(configPath))
+                {
+                    string json = File.ReadAllText(configPath);
+                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, bool>>(json);
+                    if (configDict != null && configDict.ContainsKey("Enable_Music_Player"))
+                    {
+                        _musicEnabled = configDict["Enable_Music_Player"];
+                    }
+                }
             }
+            catch (System.Exception ex)
+            {
+                Debug.LogError($"Error loading music config: {ex.Message}");
+            }
+        }
+
+        public void SetMusicEnabled(bool enabled)
+        {
+            _musicEnabled = enabled;
+
+            if (!enabled)
+            {
+                // Stop audio when disabled
+                if (audioSource != null && audioSource.isPlaying)
+                {
+                    audioSource.Stop();
+                }
+                isPlaying = false;
+            }
+            else if (enabled)
+            {
+                // Start music when enabled
+                isPlaying = true;
+                if (shuffledSongs.Length > 0)
+                {
+                    if (audioSource != null && !audioSource.isPlaying)
+                    {
+                        PlayCurrentSong();
+                    }
+                }
+                else
+                {
+                    // If no songs, scan for them
+                    ScanAndShuffleSongs();
+                    if (shuffledSongs.Length > 0)
+                    {
+                        PlayCurrentSong();
+                    }
+                }
+
+                // Ensure music loop is running
+                if (musicCoroutine == null)
+                {
+                    musicCoroutine = StartCoroutine(MusicLoop());
+                }
+            }
+        }
+
+        public bool IsMusicEnabled()
+        {
+            return _musicEnabled;
         }
 
         private void StartMusicInternal()
@@ -136,9 +186,11 @@ namespace JiangHu
             }
         }
 
-        private void PlayCurrentSong()
+        public void PlayCurrentSong()
         {
+            if (!_musicEnabled) return;
             if (shuffledSongs.Length == 0) return;
+
             string currentSong = shuffledSongs[currentSongIndex];
             StartCoroutine(LoadAndPlaySong(currentSong));
         }
@@ -159,7 +211,7 @@ namespace JiangHu
                     {
                         audioSource.clip = clip;
                         audioSource.Play();
-                        isPlaying = true;
+                        isPlaying = true; // Ensure this is set
                     }
                 }
             }
@@ -177,24 +229,28 @@ namespace JiangHu
             };
         }
 
-        private void PlayNextSong()
+        public void PlayNextSong()
         {
+            if (!_musicEnabled) return; 
             if (shuffledSongs.Length == 0) return;
             if (audioSource != null && audioSource.isPlaying) audioSource.Stop();
             currentSongIndex = (currentSongIndex + 1) % shuffledSongs.Length;
             PlayCurrentSong();
         }
 
-        private void PlayPreviousSong()
+        public void PlayPreviousSong()
         {
+            if (!_musicEnabled) return; 
             if (shuffledSongs.Length == 0) return;
             if (audioSource != null && audioSource.isPlaying) audioSource.Stop();
             currentSongIndex = (currentSongIndex - 1 + shuffledSongs.Length) % shuffledSongs.Length;
             PlayCurrentSong();
         }
 
-        private void TogglePlayPause()
+        public void TogglePlayPause()
         {
+            if (!_musicEnabled) return; 
+
             if (audioSource != null && audioSource.isPlaying)
             {
                 audioSource.Pause();
@@ -208,6 +264,21 @@ namespace JiangHu
             else if (shuffledSongs.Length > 0)
             {
                 isPlaying = true;
+                PlayCurrentSong();
+            }
+        }
+
+        public void SetVolume(float newVolume)
+        {
+            volume = newVolume;
+            if (audioSource != null) audioSource.volume = volume;
+        }
+
+        public void SetCurrentSongIndex(int index)
+        {
+            currentSongIndex = index;
+            if (_musicEnabled && shuffledSongs.Length > 0)
+            {
                 PlayCurrentSong();
             }
         }
@@ -231,164 +302,30 @@ namespace JiangHu
             }
         }
 
-        public void SetVolume(float newVolume)
+
+        public float GetVolume()
         {
-            volume = newVolume;
-            if (audioSource != null) audioSource.volume = volume;
+            return volume;
         }
 
-        void OnGUI()
+        public string[] GetShuffledSongs()
         {
-            if (!_showGUI.Value) return;
-            windowRect = GUI.Window(12345, windowRect, DrawMusicPlayerWindow, "World Shaper 世界塑造器");
-
-            if (_showBackgroundList)
-            {
-                Rect bgListRect = new Rect(windowRect.x + windowRect.width + 10, windowRect.y, 360, 480);
-                bgListRect = GUI.Window(12346, bgListRect, DrawBackgroundListWindow, "Backgrounds");
-            }
-
-            if (_showMusicList)
-            {
-                Rect musicListRect = new Rect(windowRect.x - 360, windowRect.y, 360, 480);
-                musicListRect = GUI.Window(12347, musicListRect, DrawMusicListWindow, "Music Files");
-            }
+            return shuffledSongs;
         }
 
-        void DrawMusicPlayerWindow(int windowID)
+        public int GetCurrentSongIndex()
         {
-            // Close button
-            if (GUI.Button(new Rect(windowRect.width - 25, 5, 20, 20), "X"))
-            {
-                showGUI = false;
-                _showGUI.Value = false;
-                return;
-            }
-
-            GUI.DragWindow(new Rect(0, 0, windowRect.width - 25, 20));
-
-            GUILayout.BeginVertical();
-            GUILayout.Space(5);
-
-            // Now Playing Box
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Now Playing:", GUIStyle.none);
-            GUILayout.Space(5);
-            if (shuffledSongs.Length > 0 && currentSongIndex < shuffledSongs.Length)
-            {
-                string currentSong = shuffledSongs[currentSongIndex];
-                string songName = Path.GetFileNameWithoutExtension(currentSong);
-                GUILayout.Label(songName);
-            }
-            else
-            {
-                GUILayout.Label("No songs");
-            }
-            GUILayout.EndVertical();
-
-            GUILayout.Space(5);
-
-            // Controls Box
-            GUILayout.BeginVertical("box");
-
-            // Volume slider
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("Vol:", GUILayout.Width(30));
-            float newVolume = GUILayout.HorizontalSlider(volume, 0f, 1f, GUILayout.Width(120));
-            if (Mathf.Abs(newVolume - volume) > 0.01f) SetVolume(newVolume);
-            GUILayout.EndHorizontal();
-
-            GUILayout.Space(5);
-
-            // Music controls
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("◀◀", GUILayout.Height(25), GUILayout.Width(50))) PlayPreviousSong();
-            GUILayout.FlexibleSpace();
-
-            string playPauseText = (audioSource != null && audioSource.isPlaying) ? "■" : "▶";
-            if (GUILayout.Button(playPauseText, GUILayout.Height(25), GUILayout.Width(50))) TogglePlayPause();
-            GUILayout.FlexibleSpace();
-
-            if (GUILayout.Button("▶▶", GUILayout.Height(25), GUILayout.Width(50))) PlayNextSong();
-            GUILayout.FlexibleSpace();
-            GUILayout.EndHorizontal();
-            GUILayout.EndVertical();
-            GUILayout.Space(5);
-
-            // Music Selection Section
-            if (shuffledSongs.Length > 0 && GUILayout.Button(" ◄ Select Music       选择音乐", GUILayout.Height(20)))
-            {
-                _showMusicList = !_showMusicList;
-            }
-            GUILayout.Space(20);
-
-            // Background Box
-            GUILayout.BeginVertical("box");
-            if (_changeBackground != null)
-            {
-                bool newBackgroundEnabled = GUILayout.Toggle(_changeBackground.GetBackgroundEnabled(), " Enable Background  开启背景", GUIStyle.none);
-                if (newBackgroundEnabled != _changeBackground.GetBackgroundEnabled())
-                {
-                    _changeBackground.SetBackgroundEnabled(newBackgroundEnabled);
-                }
-                GUILayout.Space(5);
-
-                var backgrounds = _changeBackground.GetAvailableBackgrounds();
-                if (backgrounds.Count > 0 && GUILayout.Button(" Select Background       选择背景 ► ", GUILayout.Height(20)))
-                {
-                    _showBackgroundList = !_showBackgroundList;
-                }
-            }
-            GUILayout.EndVertical();
-            GUILayout.EndVertical();
+            return currentSongIndex;
         }
 
-        void DrawBackgroundListWindow(int windowID)
+        public bool IsPlaying()
         {
-            GUI.DragWindow(new Rect(0, 0, windowRect.width - 25, 20));
-
-            var backgrounds = _changeBackground.GetAvailableBackgrounds();
-
-            _backgroundScrollPosition = GUILayout.BeginScrollView(_backgroundScrollPosition, GUILayout.Width(340), GUILayout.Height(450));
-
-
-
-            foreach (var background in backgrounds)
-            {
-                if (GUILayout.Button(background, GUILayout.Height(30)))
-                {
-                    _changeBackground.SetBackground(background);
-                }
-            }
-
-            GUILayout.EndScrollView(); 
+            return isPlaying && audioSource != null && audioSource.isPlaying;
         }
 
-        void DrawMusicListWindow(int windowID)
+        public AudioSource GetAudioSource()
         {
-            GUI.DragWindow(new Rect(0, 0, windowRect.width - 25, 20));
-
-            _musicScrollPosition = GUILayout.BeginScrollView(_musicScrollPosition, GUILayout.Width(340), GUILayout.Height(450));
-
-            foreach (var song in shuffledSongs)
-            {
-                string songName = Path.GetFileNameWithoutExtension(song);
-                if (GUILayout.Button(songName, GUILayout.Height(30)))
-                {
-                    for (int i = 0; i < shuffledSongs.Length; i++)
-                    {
-                        if (shuffledSongs[i] == song)
-                        {
-                            currentSongIndex = i;
-                            PlayCurrentSong();
-                            break;
-                        }
-                    }
-                }
-            }
-
-            GUILayout.EndScrollView(); 
+            return audioSource;
         }
     }
 }

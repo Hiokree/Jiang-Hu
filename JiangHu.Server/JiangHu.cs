@@ -33,6 +33,8 @@ public class JiangHuMod : IOnLoad
     private readonly EnableJianghuBot _enableJianghuBot;
     private readonly JianghuBotName _jianghuBotName;
     private readonly MovementServerSide _movementServerSide;
+    private readonly newbotXP _newbotXP;
+
 
     public JiangHuMod(
         DatabaseService databaseService,
@@ -48,7 +50,8 @@ public class JiangHuMod : IOnLoad
         QuestGenerator questGenerator,
         EnableJianghuBot enableJianghuBot,
         JianghuBotName jianghuBotName,
-        MovementServerSide movementServerSide)
+        MovementServerSide movementServerSide,
+        newbotXP newbotXP)
     {
         _databaseService = databaseService;
         _imageRouterService = imageRouterService;
@@ -65,36 +68,33 @@ public class JiangHuMod : IOnLoad
         _enableJianghuBot = enableJianghuBot;
         _jianghuBotName = jianghuBotName;
         _movementServerSide = movementServerSide;
+        _newbotXP = newbotXP;
     }
 
     public async Task OnLoad()
     {
         RouteImages();
         LoadLocales();
+
         _traderService.SetupJiangHuTrader();
         _newQuestModule.SetupJiangHuQuests();
-
-        await _newItemModule.OnLoad();
         _newDialogueModule.SetupJiangHuDialogues();
-
-        await _saveServer.LoadAsync();
-        await _RuleSettings.ApplySettings();
-
+        _newItemModule.OnLoad();
+   
         _enableJianghuBot.ApplyBotSettings();
         _jianghuBotName.SetupJianghuBotNames();
-
         _movementServerSide.ApplyAllSettings();
 
-        _questGenerator.GenerateQuestChain(); 
-        await Task.Delay(100);
-
+        
+        await _saveServer.LoadAsync();
+        await _RuleSettings.ApplySettings();
         _Preset.ApplyPreset();
-
+        _questGenerator.GenerateQuestChain();
+        _newbotXP.ApplyAllRaidModeSettings();
         await _saveServer.SaveAsync();
         Log.PrintBanner();
         await Task.CompletedTask;
     }
-
     private void RouteImages()
     {
         var modPath = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);

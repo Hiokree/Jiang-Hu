@@ -192,7 +192,7 @@ namespace JiangHu
         static void JumpEnterPostfix(JumpStateClass __instance)
         {
             if (!EnableJumpHigher) return;
-            __instance.Float_5 *= 1.4f;
+            __instance.Float_5 *= 1.3f;
         }
         #endregion
 
@@ -206,7 +206,7 @@ namespace JiangHu
         static bool WeaponPrefix(ref float reload, ref float draw)
         {
             if (!EnableFastWeapon) return true;
-            draw = 7f; 
+            draw = 5f; 
             return true;
         }
         #endregion
