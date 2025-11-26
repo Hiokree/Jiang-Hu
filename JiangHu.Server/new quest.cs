@@ -21,7 +21,10 @@ public class NewQuestModule
     private readonly ModHelper _modHelper;
     private readonly string _modPath;
     private bool _questsLoaded = false;
-    private bool _Enable_New_Quest = false;
+    private bool _Enable_JiangHu_quest = false;
+    private bool _Enable_Arena_Quest = false;
+    private bool _Enable_Dogtag_Collection = false;
+    private bool _Enable_Quest_Generator = false;
 
     public NewQuestModule(DatabaseService databaseService, CustomQuestService customQuestService, ModHelper modHelper)
     {
@@ -29,29 +32,55 @@ public class NewQuestModule
         _customQuestService = customQuestService;
         _modHelper = modHelper;
         _modPath = _modHelper.GetAbsolutePathToModFolder(Assembly.GetExecutingAssembly());
-        LoadConfig();
+        
     }
 
     public void SetupJiangHuQuests()
     {
-        if (!_Enable_New_Quest)
+        LoadConfig();
+
+        var loadedQuests = new Dictionary<string, int>();
+
+        if (_Enable_JiangHu_quest)
         {
-            return;
+            var count = LoadQuestFile("JiangHu_quest.json");
+            if (count > 0) loadedQuests["jianghu"] = count;
         }
 
-        var quests = LoadQuestsFromJson();
-        foreach (var quest in quests) CreateQuest(quest);
-        _questsLoaded = true;
-        Console.WriteLine($"\x1b[90m♻️ [Jiang Hu] Core Modules New Quest Loaded    基础构件：新任务\x1b[0m");
+        if (_Enable_Arena_Quest)
+        {
+            var count = LoadQuestFile("Arena_Quest.json");
+            if (count > 0) loadedQuests["arena"] = count;
+        }
+
+        if (_Enable_Dogtag_Collection)
+        {
+            var count = LoadQuestFile("Dogtag_Collection_Quest.json");
+            if (count > 0) loadedQuests["Dogtag_Collection"] = count;
+        }
+
+        if (_Enable_Quest_Generator)
+        {
+            var count = LoadQuestFile("Random_Quest.json");
+        }
+
+        if (loadedQuests.Count > 0)
+        {
+            _questsLoaded = true;
+            var logParts = new List<string>();
+            foreach (var kvp in loadedQuests)
+            {
+                logParts.Add($"{kvp.Value} {kvp.Key} quests");
+            }
+            Console.WriteLine($"\x1b[90m♻️ [Jiang Hu] Core Modules New Quests: {string.Join(", ", logParts)} loaded    基础构件：新任务\x1b[0m");
+        }
     }
 
     private void LoadConfig()
     {
         try
         {
-            var modPath = System.IO.Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location);
-            var configPath = System.IO.Path.Combine(modPath, "config", "config.json");
-
+            var configPath = System.IO.Path.Combine(_modPath, "config", "config.json");
             if (!System.IO.File.Exists(configPath))
             {
                 Console.WriteLine("⚠️ [New Quest] config.json not found!");
@@ -61,9 +90,16 @@ public class NewQuestModule
             var json = System.IO.File.ReadAllText(configPath);
             var config = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
 
-            if (config != null && config.TryGetValue("Enable_New_Quest", out var questValue))
+            if (config != null)
             {
-                _Enable_New_Quest = questValue.GetBoolean();
+                if (config.TryGetValue("Enable_JiangHu_quest", out var jianghuValue))
+                    _Enable_JiangHu_quest = jianghuValue.GetBoolean();
+                if (config.TryGetValue("Enable_Arena_Quest", out var arenaValue))
+                    _Enable_Arena_Quest = arenaValue.GetBoolean();
+                if (config.TryGetValue("Enable_Dogtag_Collection", out var Dogtag_CollectionValue))
+                    _Enable_Dogtag_Collection = Dogtag_CollectionValue.GetBoolean();
+                if (config.TryGetValue("Enable_Quest_Generator", out var generatorValue))
+                    _Enable_Quest_Generator = generatorValue.GetBoolean();
             }
         }
         catch (Exception ex)
@@ -73,9 +109,25 @@ public class NewQuestModule
     }
 
 
-    private List<Quest> LoadQuestsFromJson()
+    private int LoadQuestFile(string fileName)
     {
-        var questDict = _modHelper.GetJsonDataFromFile<Dictionary<string, Quest>>(_modPath, "db/quest/JiangHu_quest.json");
+        try
+        {
+            var quests = LoadQuestsFromJson(fileName);
+            foreach (var quest in quests)
+                CreateQuest(quest);
+            return quests.Count;
+        }
+        catch (Exception ex)
+        {
+            return 0;
+        }
+    }
+
+
+    private List<Quest> LoadQuestsFromJson(string fileName)
+    {
+        var questDict = _modHelper.GetJsonDataFromFile<Dictionary<string, Quest>>(_modPath, $"db/quest/{fileName}");
         var quests = new List<Quest>();
         foreach (var kvp in questDict)
         {
@@ -89,12 +141,20 @@ public class NewQuestModule
 
     private void CreateQuest(Quest quest)
     {
-        var newQuestDetails = new NewQuestDetails
+        try
         {
-            NewQuest = quest,
-            Locales = LoadQuestLocales(quest.Id)
-        };
-        _customQuestService.CreateQuest(newQuestDetails);
+            var newQuestDetails = new NewQuestDetails
+            {
+                NewQuest = quest,
+                Locales = LoadQuestLocales(quest.Id)
+            };
+
+            _customQuestService.CreateQuest(newQuestDetails);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"❌ [Debug] Failed to create quest {quest.Id}: {ex.Message}");
+        }
     }
 
     private Dictionary<string, Dictionary<string, string>> LoadQuestLocales(MongoId questId)

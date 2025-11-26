@@ -44,12 +44,14 @@ namespace JiangHu
         private bool restartNewRaidMode = false;
         private bool enableGreetingLog = true;
         private bool showCoreModulesGUI = false;
+        private bool enableDogtagCollection = true;
+
 
         private Rect coreModulesWindowRect = new Rect(350, 150, 360, 160);
 
         private bool showRuleSettingsGUI = false;
         private Rect ruleSettingsWindowRect = new Rect(350, 150, 550, 420);
-        private Rect windowRect = new Rect(300, 100, 500, 620);
+        private Rect windowRect = new Rect(300, 100, 500, 700);
         private bool showGUI = false;
 
         private bool showSettingsGuide = false;
@@ -169,6 +171,8 @@ namespace JiangHu
                     restartNewRaidMode = configDict["Restart_New_RaidMode"];
                 if (configDict.ContainsKey("Enable_Greeting_Log"))
                     enableGreetingLog = configDict["Enable_Greeting_Log"];
+                if (configDict.ContainsKey("Enable_Dogtag_Collection"))
+                    enableDogtagCollection = configDict["Enable_Dogtag_Collection"];
             }              
         }
 
@@ -217,6 +221,7 @@ namespace JiangHu
                     { "Enable_New_RaidMode", enableNewRaidMode },
                     { "Restart_New_RaidMode", restartNewRaidMode },
                     { "Enable_Greeting_Log", enableGreetingLog },
+                    { "Enable_Dogtag_Collection", enableDogtagCollection },
                 };
 
                 string modPath = Path.GetDirectoryName(Application.dataPath);
@@ -363,15 +368,15 @@ namespace JiangHu
             GUILayout.EndVertical();
             GUILayout.Space(10);
 
-            // Quest Generator Box
+            // Three Body Mode Box
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Quest Generator    任务生成器", GUIStyle.none);
+            GUILayout.Label("Three Body Mode    三体模式", GUIStyle.none);
             GUILayout.Space(5);
 
-            bool newQuestGen = GUILayout.Toggle(enableQuestGenerator, " Enable (Disable Vanilla Quests FIRST)    开启。需先禁用原版任务");   
-            if (newQuestGen != enableQuestGenerator)
+            bool newDogtagCollection = GUILayout.Toggle(enableDogtagCollection, " Enable (Use JiangHu Bot Name)    开启。需使用江湖人机名字");
+            if (newDogtagCollection != enableDogtagCollection)
             {
-                enableQuestGenerator = newQuestGen;
+                enableDogtagCollection = newDogtagCollection;
                 SaveSettingsToJson();
             }
             GUILayout.EndVertical();
@@ -400,6 +405,22 @@ namespace JiangHu
             if (GUILayout.Button("Languages    多国语言"))
             {
                 showBotNameGUI = true;
+            }
+            GUILayout.EndVertical();
+
+            GUILayout.Space(10);
+
+
+            // Quest Generator Box
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Quest Generator    任务生成器", GUIStyle.none);
+            GUILayout.Space(5);
+
+            bool newQuestGen = GUILayout.Toggle(enableQuestGenerator, " Enable (Need ‘Disable Vanilla Quests’)    开启。需先禁用原版任务");
+            if (newQuestGen != enableQuestGenerator)
+            {
+                enableQuestGenerator = newQuestGen;
+                SaveSettingsToJson();
             }
             GUILayout.EndVertical();
 

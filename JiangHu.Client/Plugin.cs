@@ -6,6 +6,7 @@ using HarmonyLib;
 using JiangHu.Patches;
 using UnityEngine;
 using System.Reflection;
+using EFT.InventoryLogic;
 
 namespace JiangHu
 {
@@ -37,6 +38,8 @@ namespace JiangHu
             DontDestroyOnLoad(pluginObj);
             pluginObj.hideFlags = HideFlags.HideAndDontSave;
 
+            pluginObj.AddComponent<DogtagConditionManager>();
+
             pluginObj.AddComponent<XPConditionManager>();
             pluginObj.AddComponent<NewMovement>();
             pluginObj.AddComponent<RemoveAlpha>();
@@ -56,6 +59,9 @@ namespace JiangHu
             descriptionLoader.SetConfig(ShowDescription);
 
             PatchUseRepairKitInRaid.Enable();
+
+            new PatchSlotItemViewRefresh().Enable();
+            new PatchGridViewShow().Enable();
         }
 
         private void UpdateCursorState()
@@ -81,6 +87,7 @@ namespace JiangHu
 
         void OnDestroy()
         {
+
             if (pluginObj != null)
                 Destroy(pluginObj);
         }

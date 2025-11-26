@@ -8,11 +8,14 @@ using System.Threading.Tasks;
 using JiangHu.Server;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Reflection.CodeWrapper;
+using SPTarkov.Reflection.Patching;
 using SPTarkov.Server.Core.DI;
 using SPTarkov.Server.Core.Servers;
 using SPTarkov.Server.Core.Services;
 using SPTarkov.Server.Core.Services.Image;
+using SPTarkov.Server.Core.Utils;
 using SPTarkov.Server.Core.Utils.Json;
+using SPTarkov.Reflection.Patching;
 
 namespace JiangHu.Server;
 
@@ -34,7 +37,7 @@ public class JiangHuMod : IOnLoad
     private readonly JianghuBotName _jianghuBotName;
     private readonly MovementServerSide _movementServerSide;
     private readonly newbotXP _newbotXP;
-
+    private readonly PatchManager _patchManager;
 
     public JiangHuMod(
         DatabaseService databaseService,
@@ -51,7 +54,8 @@ public class JiangHuMod : IOnLoad
         EnableJianghuBot enableJianghuBot,
         JianghuBotName jianghuBotName,
         MovementServerSide movementServerSide,
-        newbotXP newbotXP)
+        newbotXP newbotXP,
+        PatchManager patchManager)
     {
         _databaseService = databaseService;
         _imageRouterService = imageRouterService;
@@ -69,23 +73,29 @@ public class JiangHuMod : IOnLoad
         _jianghuBotName = jianghuBotName;
         _movementServerSide = movementServerSide;
         _newbotXP = newbotXP;
+        _patchManager = patchManager;
     }
 
     public async Task OnLoad()
     {
+
+        _patchManager.PatcherName = "JiangHu.Server";
+        _patchManager.AutoPatch = true;
+        _patchManager.EnablePatches();
+
+
         RouteImages();
         LoadLocales();
 
         _traderService.SetupJiangHuTrader();
         _newQuestModule.SetupJiangHuQuests();
         _newDialogueModule.SetupJiangHuDialogues();
-        _newItemModule.OnLoad();
-   
+        _newItemModule.OnLoad();   
         _enableJianghuBot.ApplyBotSettings();
         _jianghuBotName.SetupJianghuBotNames();
         _movementServerSide.ApplyAllSettings();
 
-        
+
         await _saveServer.LoadAsync();
         await _RuleSettings.ApplySettings();
         _Preset.ApplyPreset();
@@ -95,6 +105,9 @@ public class JiangHuMod : IOnLoad
         Log.PrintBanner();
         await Task.CompletedTask;
     }
+
+
+
     private void RouteImages()
     {
         var modPath = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);

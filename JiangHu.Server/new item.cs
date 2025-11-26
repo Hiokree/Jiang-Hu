@@ -25,6 +25,7 @@ public class NewItemModule
     private readonly DatabaseService _databaseService;
     private readonly ConfigServer _configServer;
     private bool _Enable_New_Item = false;
+    private bool _Enable_Dogtag_Collection = false;
 
     public NewItemModule(CustomItemService CustomItemService, DatabaseService databaseService, ConfigServer configServer)
     {
@@ -36,11 +37,6 @@ public class NewItemModule
 
     public void OnLoad()
     {
-        if (!_Enable_New_Item)
-        {
-            return;
-        }
-
         var existingItems = _databaseService.GetTables().Templates.Items;
         if (existingItems.ContainsKey("e983002c4ab4d99999889000"))  // Mixue
         {
@@ -49,17 +45,29 @@ public class NewItemModule
         }
 
         DefineCustomBuffs();
-        CreateMixueItem();
-        CreateHaidilaoItem();
-        CreateBaiyaoItem();
-        CreateRepairKitItem();
-        CreateMaotaiItem();
-        CreateArmorRepairCat();
-        CreateWeaponRepairCat();
 
-        AddItemsToFleaBlacklist();
 
-        Console.WriteLine($"\x1b[90m♻️ [Jiang Hu] Core Modules New Items Loaded    基础构件：新物品 \x1b[0m");
+        if (_Enable_New_Item)
+        {
+            CreateMixueItem();
+            CreateHaidilaoItem();
+            CreateBaiyaoItem();
+            CreateRepairKitItem();
+            CreateMaotaiItem();
+            CreateArmorRepairCat();
+            CreateWeaponRepairCat();
+
+            Console.WriteLine($"\x1b[90m♻️ [Jiang Hu] Core Modules New Items Loaded    基础构件：新物品 \x1b[0m");
+        }
+
+        if (_Enable_Dogtag_Collection) 
+        {
+            CreateCosmosCasket01();
+            CreateCosmosCasket02();
+            CreateCosmosCasket03();
+            Console.WriteLine($"\x1b[33m🎁 [Jiang Hu] Three Body Mode enabled    三体模式 \u001b[0m");
+        }
+       
     }
 
     private void LoadConfig()
@@ -78,9 +86,12 @@ public class NewItemModule
             var json = System.IO.File.ReadAllText(configPath);
             var config = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
 
-            if (config != null && config.TryGetValue("Enable_New_Item", out var itemValue))
+            if (config != null)
             {
-                _Enable_New_Item = itemValue.GetBoolean();
+                if (config.TryGetValue("Enable_New_Item", out var itemValue))
+                    _Enable_New_Item = itemValue.GetBoolean();
+                if (config.TryGetValue("Enable_Dogtag_Collection", out var dogtagValue)) // Add this
+                    _Enable_Dogtag_Collection = dogtagValue.GetBoolean();
             }
         }
         catch (Exception ex)
@@ -453,6 +464,310 @@ public class NewItemModule
     }
 
 
+    private void CreateCosmosCasket01()
+    {
+        NewItemFromCloneDetails cosmosCasket = new NewItemFromCloneDetails
+        {
+            ItemTplToClone = "5c093e3486f77430cb02e593",
+            NewId = "e983002c4ab4d99999889007",
+            ParentId = "5795f317245977243854e041",
+            FleaPriceRoubles = 15000000,
+            HandbookPriceRoubles = 12000000,
+            HandbookParentId = "5b47574386f77428ca22b33a",
+            Locales = new Dictionary<string, LocaleDetails>
+            {
+                ["en"] = new LocaleDetails
+                {
+                    Name = "1",
+                    ShortName = "1",
+                    Description = "1"
+                }
+            },
+            OverrideProperties = new TemplateItemProperties
+            {
+                Prefab = new Prefab
+                {
+                    Path = "assets/content/items/barter/item_barter_valuable_nyball/item_barter_valuable_nyball_violet.bundle",
+                    Rcid = ""
+                },
+                DiscardLimit = -1,
+                Weight = 0.01,
+                BackgroundColor = "tracerRed",
+                Height = 1,
+                Width = 1,
+                ItemSound = "item_container_plastic",
+                Grids = new List<Grid>
+                {
+                    new Grid
+                    {
+                        Name = "main",
+                        Id = "e983002c4ab4d99999889007_main",
+                        Parent = "e983002c4ab4d99999889007",
+                        Properties = new GridProperties
+                        {
+                            CellsH = 3,
+                            CellsV = 3,
+                            Filters = new List<GridFilter>
+                            {
+                                new GridFilter
+                                {
+                                    Filter = new HashSet<MongoId>
+                                    {
+                                        new("54009119af1c881c07000029")
+                                    }
+                                }
+                            },
+                            MaxCount = 0,
+                            MaxWeight = 0,
+                            MinCount = 0,
+                            IsSortingTable = false
+                        }
+                    }
+                }
+            }
+        };
+
+        _CustomItemService.CreateItemFromClone(cosmosCasket);
+
+        AddCosmosCasketToSecureContainers();
+        AddCosmosCasketToPocketSpecialSlots();
+    }
+
+    private void CreateCosmosCasket02()
+    {
+        NewItemFromCloneDetails cosmosCasket = new NewItemFromCloneDetails
+        {
+            ItemTplToClone = "5c093e3486f77430cb02e593",
+            NewId = "e983002c4ab4d99999889008",
+            ParentId = "5795f317245977243854e041",
+            FleaPriceRoubles = 45000000,
+            HandbookPriceRoubles = 36000000,
+            HandbookParentId = "5b47574386f77428ca22b33a",
+            Locales = new Dictionary<string, LocaleDetails>
+            {
+                ["en"] = new LocaleDetails
+                {
+                    Name = "1",
+                    ShortName = "1",
+                    Description = "1"
+                }
+            },
+            OverrideProperties = new TemplateItemProperties
+            {
+                Prefab = new Prefab
+                {
+                    Path = "assets/content/items/barter/item_barter_valuable_nyball/item_barter_valuable_nyball_silver.bundle",
+                    Rcid = ""
+                },
+                DiscardLimit = -1,
+                Weight = 0.01,
+                BackgroundColor = "tracerRed",
+                Height = 1,
+                Width = 1,
+                ItemSound = "item_container_plastic",
+                Grids = new List<Grid>
+                {
+                    new Grid
+                    {
+                        Name = "main",
+                        Id = "e983002c4ab4d99999889007_main",
+                        Parent = "e983002c4ab4d99999889007",
+                        Properties = new GridProperties
+                        {
+                            CellsH = 5,
+                            CellsV = 5,
+                            Filters = new List<GridFilter>
+                            {
+                                new GridFilter
+                                {
+                                    Filter = new HashSet<MongoId>
+                                    {
+                                        new("54009119af1c881c07000029")
+                                    }
+                                }
+                            },
+                            MaxCount = 0,
+                            MaxWeight = 0,
+                            MinCount = 0,
+                            IsSortingTable = false
+                        }
+                    }
+                }
+            }
+        };
+
+        _CustomItemService.CreateItemFromClone(cosmosCasket);
+
+        AddCosmosCasketToSecureContainers();
+        AddCosmosCasketToPocketSpecialSlots();
+    }
+
+    private void CreateCosmosCasket03()
+    {
+        NewItemFromCloneDetails cosmosCasket = new NewItemFromCloneDetails
+        {
+            ItemTplToClone = "5c093e3486f77430cb02e593",
+            NewId = "e983002c4ab4d99999889009",
+            ParentId = "5795f317245977243854e041",
+            FleaPriceRoubles = 150000000,
+            HandbookPriceRoubles = 120000000,
+            HandbookParentId = "5b47574386f77428ca22b33a",
+            Locales = new Dictionary<string, LocaleDetails>
+            {
+                ["en"] = new LocaleDetails
+                {
+                    Name = "1",
+                    ShortName = "1",
+                    Description = "1"
+                }
+            },
+            OverrideProperties = new TemplateItemProperties
+            {
+                Prefab = new Prefab
+                {
+                    Path = "assets/content/items/barter/item_barter_valuable_nyball/item_barter_valuable_nyball_red.bundle",
+                    Rcid = ""
+                },
+                DiscardLimit = -1,
+                Weight = 0.01,
+                BackgroundColor = "tracerRed",
+                Height = 1,
+                Width = 1,
+                ItemSound = "item_container_plastic",
+                Grids = new List<Grid>
+                {
+                    new Grid
+                    {
+                        Name = "main",
+                        Id = "e983002c4ab4d99999889007_main",
+                        Parent = "e983002c4ab4d99999889007",
+                        Properties = new GridProperties
+                        {
+                            CellsH = 10,
+                            CellsV = 10,
+                            Filters = new List<GridFilter>
+                            {
+                                new GridFilter
+                                {
+                                    Filter = new HashSet<MongoId>
+                                    {
+                                        new("54009119af1c881c07000029")
+                                    }
+                                }
+                            },
+                            MaxCount = 0,
+                            MaxWeight = 0,
+                            MinCount = 0,
+                            IsSortingTable = false
+                        }
+                    }
+                }
+            }
+        };
+
+        _CustomItemService.CreateItemFromClone(cosmosCasket);
+
+        AddCosmosCasketToSecureContainers();
+        AddCosmosCasketToPocketSpecialSlots();
+    }
+
+    private void AddCosmosCasketToSecureContainers()
+    {
+        var items = _databaseService.GetTables().Templates.Items;
+        MongoId[] secureContainerIds =
+        [
+        new("544a11ac4bdc2d470e8b456a"), // Alpha
+        new("5857a8b324597729ab0a0e7d"), // Beta
+        new("5857a8bc2459772bad15db29"), // Gamma
+        new("665ee77ccf2d642e98220bca"), // Gamma Unheard
+        new("59db794186f77448bc595262"), // Epsilon
+        new("664a55d84a90fc2c8a6305c9"), // Theta
+        new("5c093ca986f7740a1867ab12"), // Kappa
+        new("676008db84e242067d0dc4c9"), // Kappa (Desecrated)
+        new("5732ee6a24597719ae0c0281")  // Waist Pouch
+    ];
+
+        var cosmosCasketIds = new[]
+        {
+            new MongoId("e983002c4ab4d99999889007"),
+            new MongoId("e983002c4ab4d99999889008"),
+            new MongoId("e983002c4ab4d99999889009")
+        };
+
+        foreach (var containerId in secureContainerIds)
+        {
+            if (!items.TryGetValue(containerId, out var containerObj) || containerObj is not TemplateItem container)
+                continue;
+
+            var grids = container.Properties.Grids?.ToList() ?? [];
+            if (grids.Count == 0) continue;
+
+            var gridFilters = grids[0].Properties.Filters;
+            if (gridFilters == null) continue;
+
+            var filterList = gridFilters.ToList();
+            if (filterList.Count == 0) continue;
+
+            var allowed = filterList[0].Filter ?? new HashSet<MongoId>();
+            foreach (var cosmosCasketId in cosmosCasketIds)
+            {
+                allowed.Add(cosmosCasketId);
+            }
+            filterList[0].Filter = allowed;
+            grids[0].Properties.Filters = filterList;
+
+            container.Properties.Grids = grids;
+        }
+    }
+
+    private void AddCosmosCasketToPocketSpecialSlots()
+    {
+        var items = _databaseService.GetTables().Templates.Items;
+        var cosmosCasketIds = new[]
+        {
+            new MongoId("e983002c4ab4d99999889007"),
+            new MongoId("e983002c4ab4d99999889008"),
+            new MongoId("e983002c4ab4d99999889009")
+        };
+
+        var specialPocket = items.GetValueOrDefault("627a4e6b255f7527fb05a0f6");
+        var tuePocket = items.GetValueOrDefault("65e080be269cbd5c5005e529");
+
+        if (specialPocket?.Properties?.Slots != null)
+        {
+            foreach (var slot in specialPocket.Properties.Slots)
+            {
+                if (slot?.Properties?.Filters != null)
+                {
+                    foreach (var filter in slot.Properties.Filters)
+                    {
+                        foreach (var cosmosCasketId in cosmosCasketIds)
+                        {
+                            filter.Filter?.Add(cosmosCasketId);
+                        }
+                    }
+                }
+            }
+        }
+
+        if (tuePocket?.Properties?.Slots != null)
+        {
+            foreach (var slot in tuePocket.Properties.Slots)
+            {
+                if (slot?.Properties?.Filters != null)
+                {
+                    foreach (var filter in slot.Properties.Filters)
+                    {
+                        foreach (var cosmosCasketId in cosmosCasketIds)
+                        {
+                            filter.Filter?.Add(cosmosCasketId);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private void AddItemsToFleaBlacklist()
     {
         var ragfairConfig = _configServer.GetConfig<RagfairConfig>();
@@ -466,7 +781,10 @@ public class NewItemModule
             "e983002c4ab4d99999889003",
             "e983002c4ab4d99999889004",
             "e983002c4ab4d99999889005",
-            "e983002c4ab4d99999889006"
+            "e983002c4ab4d99999889006",
+            "e983002c4ab4d99999889007",
+            "e983002c4ab4d99999889008",
+            "e983002c4ab4d99999889009"
         };
 
         foreach (var itemId in itemIds)

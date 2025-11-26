@@ -188,7 +188,7 @@ namespace JiangHu.Server
                     };
 
                     quest.Conditions.AvailableForStart = new List<QuestCondition> { condition };
-                    Console.WriteLine($"\x1b[91m🍂 [Jiang Hu] Quest opened    任务开启\x1b[0m");
+                    Console.WriteLine($"\x1b[91m🍂 [Jiang Hu] Arena Quest opened    竞技场任务开启\x1b[0m");
                 }
             }
             catch (Exception ex)

@@ -60,9 +60,13 @@
       <HintPath>$(GameManagedDir)\Unity.TextMeshPro.dll</HintPath>
     </Reference>
 
-	  <Reference Include="AnimationSystem.Types">
-		  <HintPath>$(GameManagedDir)\AnimationSystem.Types.dll</HintPath>
-	  </Reference>	  
+	<Reference Include="AnimationSystem.Types">
+		<HintPath>$(GameManagedDir)\AnimationSystem.Types.dll</HintPath>
+	</Reference>
+	<Reference Include="ItemComponent.Types">
+		<HintPath>$(GameManagedDir)\ItemComponent.Types.dll</HintPath>
+	</Reference>	  
+	  
 	  
     <!-- ⚙️ UnityEngine modules -->
     <Reference Include="UnityEngine">
