@@ -26,13 +26,15 @@ public class NewItemModule
     private readonly ConfigServer _configServer;
     private bool _Enable_New_Item = false;
     private bool _Enable_Dogtag_Collection = false;
+    private readonly ItemFilterService _itemFilterService;
 
-    public NewItemModule(CustomItemService CustomItemService, DatabaseService databaseService, ConfigServer configServer)
+    public NewItemModule(CustomItemService CustomItemService, DatabaseService databaseService, ConfigServer configServer, ItemFilterService itemFilterService)
     {
         _CustomItemService = CustomItemService;
         _databaseService = databaseService;
         _configServer = configServer;
         LoadConfig();
+        _itemFilterService = itemFilterService;
     }
 
     public void OnLoad()
@@ -65,6 +67,7 @@ public class NewItemModule
             CreateCosmosCasket01();
             CreateCosmosCasket02();
             CreateCosmosCasket03();
+            AddItemsToLootBlacklist();
             Console.WriteLine($"\x1b[33m🎁 [Jiang Hu] Three Body Mode enabled    三体模式 \u001b[0m");
         }
        
@@ -766,6 +769,17 @@ public class NewItemModule
                 }
             }
         }
+    }
+
+    private void AddItemsToLootBlacklist()
+    {
+        var itemIdsToBlacklist = new[]
+        {
+        new MongoId("e983002c4ab4d99999889007"),
+        new MongoId("e983002c4ab4d99999889008"),
+        new MongoId("e983002c4ab4d99999889009")
+    };
+        _itemFilterService.AddItemToBlacklistCache(itemIdsToBlacklist);
     }
 
     private void AddItemsToFleaBlacklist()

@@ -31,7 +31,10 @@ namespace JiangHu.Server
                 var config = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(configJson);
 
                 if (config == null || !config.ContainsKey("Use_Preset") || !config["Use_Preset"].GetBoolean())
+                {
+                    Console.WriteLine("\x1b[93m🎮 [Jiang Hu] Free Mode On    自由模式开启\x1b[0m");
                     return;
+                }
 
                 var profiles = _saveServer.GetProfiles();
 
@@ -40,52 +43,147 @@ namespace JiangHu.Server
                     var pmc = profile.CharacterData?.PmcData;
                     if (pmc?.Info == null) continue;
 
-                    int prestigeLevel = pmc.Info.PrestigeLevel ?? 0;
+                    // fixed settings
+                    WriteConfigSetting("Enable_New_Trader", true);
+                    WriteConfigSetting("Enable_New_Item", true);
+                    WriteConfigSetting("Enable_Main_Quest", true);
+                    WriteConfigSetting("Enable_Arena_Mode", true);
+                    WriteConfigSetting("Remove_VanillaQuest_XP_reward", true);
+                    WriteConfigSetting("Increase_HeadHP", true);
+                    WriteConfigSetting("Enable_Dogtag_Collection", true);
+                    WriteConfigSetting("Change_Prestige_Conditions", true);
+                    WriteConfigSetting("Add_HideoutProduction_DSP", true);
+                    WriteConfigSetting("Disable_Vanilla_Quests", true);
+                    WriteConfigSetting("Lock_Flea", false);
 
-                    if (prestigeLevel == 0)
+                    // adjustable settings reset: Rewards
+
+                    //// unlocks
+                    WriteConfigSetting("Unlock_VanillaLocked_Items", false);
+                    WriteConfigSetting("Unlock_VanilaTrader_TraderStanding", false);
+                    WriteConfigSetting("Unlock_VanillaLocked_recipe", false);
+                    WriteConfigSetting("Unlock_VanillaLocked_Customization", false);
+
+                    //// skills
+                    WriteConfigSetting("Enable_New_Movement", false);
+                    WriteConfigSetting("Enable_Fast_Movement", false);
+                    WriteConfigSetting("Enable_Fast_Leaning", false);
+                    WriteConfigSetting("Enable_Fast_Pose_Transition", false);
+                    WriteConfigSetting("Enable_Jump_Higher", false);
+                    WriteConfigSetting("Enable_Slide", false);
+                    WriteConfigSetting("Enable_Fast_Weapon_Switching", false);
+                    WriteConfigSetting("Enable_Minimal_Aimpunch", false);
+                    WriteConfigSetting("Enable_Fast_Aiming", false);
+                    WriteConfigSetting("Enable_Wider_Freelook_Angle", false);
+
+                    // adjustable settings reset: Challenges
+
+                    //// disable flea first
+                    WriteConfigSetting("Enable_Cash_Wipe", false);
+                    WriteConfigSetting("Cash_Wipe_Coefficiency", 0.1);
+                    WriteConfigSetting("Enable_No_Insurance", false);
+                    WriteConfigSetting("Enable_empty_vanilla_shop", false);
+
+                    // unlocks
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af881000")) // "Home In Tarkov - Part 1"
                     {
-                        WriteConfigSetting("Disable_Vanilla_Quests", true);
-                        WriteConfigSetting("Unlock_AllItems_By_NewQuest", true);
-                        WriteConfigSetting("Change_Prestige_Conditions", true);
-                        WriteConfigSetting("Increase_HeadHP", true);
+                        WriteConfigSetting("Unlock_VanillaLocked_recipe", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880100")) // "Prologue - Ground Zero"
+                    {
+                        WriteConfigSetting("Unlock_VanillaLocked_Customization", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880300")) // "Prologue - Interchange"
+                    {
+                        WriteConfigSetting("Unlock_VanilaTrader_TraderStanding", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880600")) // "Prologue - Reserve"
+                    {
+                        WriteConfigSetting("Unlock_VanillaLocked_Items", true);
+                    }
+
+                    // skills
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880200")) // "Prologue - Customs"
+                    {
+                        WriteConfigSetting("Enable_Wider_Freelook_Angle", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880400")) // "Prologue - Factory"
+                    {
+                        WriteConfigSetting("Enable_New_Movement", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880500")) // "Prologue - Woods"
+                    {
+                        WriteConfigSetting("Enable_Slide", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880700")) // "Prologue - Shoreline"
+                    {
+                        WriteConfigSetting("Enable_Minimal_Aimpunch", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880800")) // "Prologue - Lighthouse"
+                    {
+                        WriteConfigSetting("Enable_Fast_Pose_Transition", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880900")) // "Prologue - Streets of Tarkov"
+                    {
+                        WriteConfigSetting("Enable_Fast_Leaning", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880a00")) // "Prologue - Lab"
+                    {
+                        WriteConfigSetting("Enable_Fast_Weapon_Switching", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af886000")) // "Big Tarkov Family"
+                    {
+                        WriteConfigSetting("Enable_Fast_Movement", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d999998880f0")) // "Oasis - Professional  Part 2"
+                    {
+                        WriteConfigSetting("Enable_Jump_Higher", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d999998880b0")) // "Oasis - Precise Identification  Part 2"
+                    {
+                        WriteConfigSetting("Enable_Fast_Aiming", true);
+                    }
+
+                    // Challenges
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af887000")) // "The Survivalist"
+                    {
                         WriteConfigSetting("Lock_Flea", true);
-                        WriteConfigSetting("Enable_empty_vanilla_shop", false);
-                        WriteConfigSetting("Enable_No_Insurance", false);
-                        WriteConfigSetting("Enable_Cash_Wipe", false);
-                        WriteConfigSetting("Add_HideoutProduction_DSP", true);
-                        WriteConfigSetting("Add_HideoutProduction_Labryskeycard", true);
-                        WriteConfigSetting("Unlock_All_Labrys_Quests", true);
-                        WriteConfigSetting("Enable_Replace_OneRaid_with_OneLife", false);
                     }
-
-                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af8896a0")) // "Home In Tarkov - Part 1"
-                    {
-                        WriteConfigSetting("Lock_Flea", false);
-                    }
-
-                    if (CheckQuestCompleted(pmc, "e983002c4ab4d99999888080")) // "Full Gear Preparation"
-                    {
-                        WriteConfigSetting("Lock_Flea", true);
-                    }
-
-                    if (CheckQuestCompleted(pmc, "e983002c4ab4d99999888061")) // "Reaching The Oasis"
-                    {
-                        WriteConfigSetting("Enable_empty_vanilla_shop", true);
-                    }
-
-                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af888700")) // "Long March"
-                    {
-                        WriteConfigSetting("Enable_No_Insurance", true);
-                    }
-
-                    if (CheckQuestCompleted(pmc, "e983002c4ab4d99999888080")) // "Full Gear Preparation"
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af884000")) // "Prologue"
                     {
                         WriteConfigSetting("Enable_Cash_Wipe", true);
                     }
 
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af884000")) // "Prologue"
+                    {
+                        WriteConfigSetting("Cash_Wipe_Coefficiency", 0.1);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af885000")) // "Reaching The Oasis"
+                    {
+                        WriteConfigSetting("Enable_No_Insurance", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af888000")) // "Long March"
+                    {
+                        WriteConfigSetting("Enable_empty_vanilla_shop", true);
+                    }
+
                     break;
                 }
-                ShowAppliedRulesLog();
+                Console.WriteLine("\x1b[93m🎮 [Jiang Hu] Story Mode On    剧情模式开启\x1b[0m");
             }
             catch (Exception ex)
             {
@@ -106,7 +204,7 @@ namespace JiangHu.Server
             return false;
         }
 
-        private void WriteConfigSetting(string settingName, bool value)
+        private void WriteConfigSetting(string settingName, object value)
         {
             try
             {
@@ -133,17 +231,6 @@ namespace JiangHu.Server
             catch (Exception ex)
             {
                 Console.WriteLine($"❌ [Preset] Error updating {settingName}: {ex.Message}");
-            }
-        }
-
-        private void ShowAppliedRulesLog()
-        {
-            try
-            {
-                Console.WriteLine("\x1b[36m🎮 [Jiang Hu] Preset applied    应用预设\x1b[0m");
-            }
-            catch (Exception)
-            {
             }
         }
     }

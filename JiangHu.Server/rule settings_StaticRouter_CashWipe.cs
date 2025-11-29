@@ -53,12 +53,19 @@ namespace JiangHu.Server
             if (inventory == null)
                 return output;
 
-            // Currency templates
+            var wipeCoefficient = GetWipeCoefficient();
             var CASH_TPLS = new Dictionary<string, MongoId>
             {
                 { "RUB", new MongoId("5449016a4bdc2d6f028b456f") },
                 { "USD", new MongoId("569668774bdc2da2298b4568") },
                 { "EUR", new MongoId("5696686a4bdc2da3298b456a") }
+            };
+
+            var thresholds = new Dictionary<string, long>
+            {
+                { "RUB", 1000000 },
+                { "USD", 0 },
+                { "EUR", 0 }
             };
 
             var removedByType = new Dictionary<string, long>
@@ -68,17 +75,67 @@ namespace JiangHu.Server
                 { "EUR", 0 }
             };
 
-            // Remove all cash
+            var amountToRemoveByType = new Dictionary<string, long>
+            {
+                { "RUB", 0 },
+                { "USD", 0 },
+                { "EUR", 0 }
+            };
+
             var cashItems = inventory.Where(i => CASH_TPLS.Values.Contains(i.Template)).ToList();
+
+            var totalCash = new Dictionary<string, long> { { "RUB", 0 }, { "USD", 0 }, { "EUR", 0 } };
             foreach (var cashItem in cashItems)
             {
                 string type = CASH_TPLS.FirstOrDefault(x => x.Value == cashItem.Template).Key ?? "UNKNOWN";
-                long stack = (long) (cashItem.Upd?.StackObjectsCount ?? 0);
-                removedByType[type] += stack;
-                inventory.Remove(cashItem);
+                totalCash[type] += (long) (cashItem.Upd?.StackObjectsCount ?? 0);
             }
 
-            Console.WriteLine($"🔥 [CashWipe] Cash wiped after death → RUB={removedByType["RUB"]}, USD={removedByType["USD"]}, EUR={removedByType["EUR"]}");
+            foreach (var type in totalCash.Keys)
+            {
+                if (totalCash[type] > thresholds[type])
+                {
+                    long amountToRemove = (long) (totalCash[type] * wipeCoefficient);
+                    long newTotal = totalCash[type] - amountToRemove;
+
+                    if (newTotal < thresholds[type])
+                    {
+                        amountToRemove = totalCash[type] - thresholds[type];
+                    }
+
+                    amountToRemoveByType[type] = amountToRemove;
+                }
+            }
+
+            foreach (var cashItem in cashItems.ToList())
+            {
+                string type = CASH_TPLS.FirstOrDefault(x => x.Value == cashItem.Template).Key ?? "UNKNOWN";
+
+                if (!amountToRemoveByType.ContainsKey(type) || amountToRemoveByType[type] <= 0)
+                    continue;
+
+                long currentStack = (long) (cashItem.Upd?.StackObjectsCount ?? 0);
+                long removeFromThisStack = Math.Min(currentStack, amountToRemoveByType[type]);
+
+                if (removeFromThisStack > 0)
+                {
+                    long newStack = currentStack - removeFromThisStack;
+                    amountToRemoveByType[type] -= removeFromThisStack;
+                    removedByType[type] += removeFromThisStack;
+
+                    if (newStack > 0)
+                    {
+                        cashItem.Upd ??= new Upd();
+                        cashItem.Upd.StackObjectsCount = newStack;
+                    }
+                    else
+                    {
+                        inventory.Remove(cashItem);
+                    }
+                }
+            }
+
+            Console.WriteLine($"\x1b[91m🔥 [Jiang Hu] Cash wiped: {removedByType["RUB"]} RUB, {removedByType["USD"]} USD, {removedByType["EUR"]} EUR (Coefficient: {wipeCoefficient}) \x1b[0m");
 
             return output;
         }
@@ -102,6 +159,26 @@ namespace JiangHu.Server
             {
                 return false;
             }
+        }
+
+        private static double GetWipeCoefficient()
+        {
+            try
+            {
+                var modPath = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+                var configPath = System.IO.Path.Combine(modPath, "config", "config.json");
+
+                if (!File.Exists(configPath)) return 1.0;
+
+                var json = File.ReadAllText(configPath);
+                var config = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
+
+                if (config?.TryGetValue("Cash_Wipe_Coefficiency", out var coeffValue) == true)
+                    return coeffValue.GetDouble();
+            }
+            catch { }
+
+            return 1.0;
         }
     }
 }

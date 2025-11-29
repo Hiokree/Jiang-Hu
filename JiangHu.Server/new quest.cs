@@ -22,7 +22,7 @@ public class NewQuestModule
     private readonly string _modPath;
     private bool _questsLoaded = false;
     private bool _Enable_JiangHu_quest = false;
-    private bool _Enable_Arena_Quest = false;
+    private bool _Enable_Arena_Mode = false;
     private bool _Enable_Dogtag_Collection = false;
     private bool _Enable_Quest_Generator = false;
 
@@ -43,11 +43,11 @@ public class NewQuestModule
 
         if (_Enable_JiangHu_quest)
         {
-            var count = LoadQuestFile("JiangHu_quest.json");
-            if (count > 0) loadedQuests["jianghu"] = count;
+            var count = LoadQuestFolder("Main_Quest");
+            if (count > 0) loadedQuests["main"] = count;
         }
 
-        if (_Enable_Arena_Quest)
+        if (_Enable_Arena_Mode)
         {
             var count = LoadQuestFile("Arena_Quest.json");
             if (count > 0) loadedQuests["arena"] = count;
@@ -92,12 +92,15 @@ public class NewQuestModule
 
             if (config != null)
             {
-                if (config.TryGetValue("Enable_JiangHu_quest", out var jianghuValue))
-                    _Enable_JiangHu_quest = jianghuValue.GetBoolean();
-                if (config.TryGetValue("Enable_Arena_Quest", out var arenaValue))
-                    _Enable_Arena_Quest = arenaValue.GetBoolean();
+                if (config.TryGetValue("Enable_Main_Quest", out var mainQuestValue))
+                    _Enable_JiangHu_quest = mainQuestValue.GetBoolean();
+
+                if (config.TryGetValue("Enable_Arena_Mode", out var arenaValue))
+                    _Enable_Arena_Mode = arenaValue.GetBoolean();
+
                 if (config.TryGetValue("Enable_Dogtag_Collection", out var Dogtag_CollectionValue))
                     _Enable_Dogtag_Collection = Dogtag_CollectionValue.GetBoolean();
+
                 if (config.TryGetValue("Enable_Quest_Generator", out var generatorValue))
                     _Enable_Quest_Generator = generatorValue.GetBoolean();
             }
@@ -111,19 +114,30 @@ public class NewQuestModule
 
     private int LoadQuestFile(string fileName)
     {
-        try
-        {
-            var quests = LoadQuestsFromJson(fileName);
-            foreach (var quest in quests)
-                CreateQuest(quest);
-            return quests.Count;
-        }
-        catch (Exception ex)
-        {
-            return 0;
-        }
+        var quests = LoadQuestsFromJson(fileName);
+        foreach (var quest in quests)
+            CreateQuest(quest);
+        return quests.Count;
     }
 
+    private int LoadQuestFolder(string folderName)
+    {
+        var folderPath = System.IO.Path.Combine(_modPath, "db", "quest", folderName);
+        if (!System.IO.Directory.Exists(folderPath))
+            return 0;
+
+        var jsonFiles = System.IO.Directory.GetFiles(folderPath, "*.json");
+        int totalQuests = 0;
+
+        foreach (var jsonFile in jsonFiles)
+        {
+            var fileName = System.IO.Path.GetFileName(jsonFile);
+            var count = LoadQuestFile(System.IO.Path.Combine(folderName, fileName));
+            totalQuests += count;
+        }
+
+        return totalQuests;
+    }
 
     private List<Quest> LoadQuestsFromJson(string fileName)
     {

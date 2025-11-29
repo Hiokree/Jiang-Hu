@@ -4,13 +4,14 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using Newtonsoft.Json.Linq;
 
 namespace JiangHu
 {
     public class RuleSettingsManager : MonoBehaviour
     {
         private bool disableVanillaQuests = true;
-        private bool unlockAllItemsByNewQuest = true;
+        private bool unlockVanillaLockedItems = true;
         private bool changePrestigeCondition = true;
         private bool increaseHeadHP = true;
         private bool lockFlea = true;
@@ -40,18 +41,27 @@ namespace JiangHu
         private bool enableNewTrader = true;
         private bool enableNewQuest = true;
         private bool enableNewItem = true;
-        private bool enableNewRaidMode = true;
-        private bool restartNewRaidMode = false;
+        private bool enableArenaMode = true;
+        private bool restartArenaMode = false;
         private bool enableGreetingLog = true;
         private bool showCoreModulesGUI = false;
         private bool enableDogtagCollection = true;
+        private bool removeVanillaQuestXPReward = true;
+        private bool unlockVanillaTraderTraderStanding = true;
+        private bool unlockVanillaLockedRecipe = true;
+        private bool unlockVanillaLockedCustomization = true;
+        private float cashWipeCoefficiency = 0.1f;
+        private bool showStoryModeGuide = false;
+        private Rect storyModeWindowRect = new Rect(200, 100, 1000, 800);
+        private Vector2 storyModeScrollPosition = Vector2.zero;
+        private string storyModeContent = "";
 
 
         private Rect coreModulesWindowRect = new Rect(350, 150, 360, 160);
 
         private bool showRuleSettingsGUI = false;
-        private Rect ruleSettingsWindowRect = new Rect(350, 150, 550, 420);
-        private Rect windowRect = new Rect(300, 100, 500, 700);
+        private Rect ruleSettingsWindowRect = new Rect(350, 150, 600, 600);
+        private Rect windowRect = new Rect(300, 100, 500, 830);
         private bool showGUI = false;
 
         private bool showSettingsGuide = false;
@@ -89,146 +99,175 @@ namespace JiangHu
             string modPath = Path.GetDirectoryName(Application.dataPath);
             string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
             string json = File.ReadAllText(configPath);
-            var configDict = JsonConvert.DeserializeObject<Dictionary<string, bool>>(json);
+            var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
 
             if (configDict != null)
             {
-                if (configDict.ContainsKey("Disable_Vanilla_Quests"))
-                    disableVanillaQuests = configDict["Disable_Vanilla_Quests"];
-                if (configDict.ContainsKey("Unlock_AllItems_By_NewQuest"))
-                    unlockAllItemsByNewQuest = configDict["Unlock_AllItems_By_NewQuest"];
-                if (configDict.ContainsKey("Change_Prestige_Conditions"))
-                    changePrestigeCondition = configDict["Change_Prestige_Conditions"];
-                if (configDict.ContainsKey("Increase_HeadHP"))
-                    increaseHeadHP = configDict["Increase_HeadHP"];
-                if (configDict.ContainsKey("Lock_Flea"))
-                    lockFlea = configDict["Lock_Flea"];
-                if (configDict.ContainsKey("Enable_empty_vanilla_shop"))
-                    enableEmptyVanillaShop = configDict["Enable_empty_vanilla_shop"];
-                if (configDict.ContainsKey("Enable_No_Insurance"))
-                    enableNoInsurance = configDict["Enable_No_Insurance"];
-                if (configDict.ContainsKey("Enable_Cash_Wipe"))
-                    enableCashWipeAfterDeath = configDict["Enable_Cash_Wipe"];
-                if (configDict.ContainsKey("Add_HideoutProduction_DSP"))
-                    addHideoutProductionDSP = configDict["Add_HideoutProduction_DSP"];
-                if (configDict.ContainsKey("Add_HideoutProduction_Labryskeycard"))
-                    addHideoutProductionLabryskeycard = configDict["Add_HideoutProduction_Labryskeycard"];
-                if (configDict.ContainsKey("Unlock_All_Labrys_Quests"))
-                    unlockAllLabrysQuests = configDict["Unlock_All_Labrys_Quests"];
-                if (configDict.ContainsKey("Use_Preset"))
-                    usePreset = configDict["Use_Preset"];
-                if (configDict.ContainsKey("Enable_Quest_Generator"))
-                    enableQuestGenerator = configDict["Enable_Quest_Generator"];
-                if (configDict.ContainsKey("Enable_Jianghu_Bot"))
-                    enableJianghuBot = configDict["Enable_Jianghu_Bot"];
-                if (configDict.ContainsKey("Enable_Jianghu_BotName"))
-                    enableJianghuBotName = configDict["Enable_Jianghu_BotName"];
-                if (configDict.ContainsKey("Enable_Jianghu_BotName_ch"))
-                    botNameLanguageSettings["ch"] = configDict["Enable_Jianghu_BotName_ch"];
-                if (configDict.ContainsKey("Enable_Jianghu_BotName_en"))
-                    botNameLanguageSettings["en"] = configDict["Enable_Jianghu_BotName_en"];
-                if (configDict.ContainsKey("Enable_Jianghu_BotName_es"))
-                    botNameLanguageSettings["es"] = configDict["Enable_Jianghu_BotName_es"];
-                if (configDict.ContainsKey("Enable_Jianghu_BotName_fr"))
-                    botNameLanguageSettings["fr"] = configDict["Enable_Jianghu_BotName_fr"];
-                if (configDict.ContainsKey("Enable_Jianghu_BotName_jp"))
-                    botNameLanguageSettings["jp"] = configDict["Enable_Jianghu_BotName_jp"];
-                if (configDict.ContainsKey("Enable_Jianghu_BotName_po"))
-                    botNameLanguageSettings["po"] = configDict["Enable_Jianghu_BotName_po"];
-                if (configDict.ContainsKey("Enable_Jianghu_BotName_ru"))
-                    botNameLanguageSettings["ru"] = configDict["Enable_Jianghu_BotName_ru"];
-                if (configDict.ContainsKey("Enable_Replace_OneRaid_with_OneLife"))
-                    enableReplaceOneRaidWithOneLife = configDict["Enable_Replace_OneRaid_with_OneLife"];
-                if (configDict.ContainsKey("Enable_New_Movement"))
-                    enableNewMovement = configDict["Enable_New_Movement"];
-                if (configDict.ContainsKey("Enable_Fast_Movement"))
-                    enableFastMovement = configDict["Enable_Fast_Movement"];
-                if (configDict.ContainsKey("Enable_Fast_Leaning"))
-                    enableFastLeaning = configDict["Enable_Fast_Leaning"];
-                if (configDict.ContainsKey("Enable_Fast_Pose_Transition"))
-                    enableFastPoseTransition = configDict["Enable_Fast_Pose_Transition"];
-                if (configDict.ContainsKey("Enable_Jump_Higher"))
-                    enableJumpHigher = configDict["Enable_Jump_Higher"];
-                if (configDict.ContainsKey("Enable_Slide"))
-                    enableSlide = configDict["Enable_Slide"];
-                if (configDict.ContainsKey("Enable_Fast_Weapon_Switching"))
-                    enableFastWeapon = configDict["Enable_Fast_Weapon_Switching"];
-                if (configDict.ContainsKey("Enable_Minimal_Aimpunch"))
-                    enableMinimalAimpunch = configDict["Enable_Minimal_Aimpunch"];
-                if (configDict.ContainsKey("Enable_Fast_Aiming"))
-                    enableFastAiming = configDict["Enable_Fast_Aiming"];
-                if (configDict.ContainsKey("Enable_Wider_Freelook_Angle"))
-                    enableWiderFreelook = configDict["Enable_Wider_Freelook_Angle"];
-                if (configDict.ContainsKey("Enable_New_Trader"))
-                    enableNewTrader = configDict["Enable_New_Trader"];
-                if (configDict.ContainsKey("Enable_New_Quest"))
-                    enableNewQuest = configDict["Enable_New_Quest"];
-                if (configDict.ContainsKey("Enable_New_Item"))
-                    enableNewItem = configDict["Enable_New_Item"];
-                if (configDict.ContainsKey("Enable_New_RaidMode"))
-                    enableNewRaidMode = configDict["Enable_New_RaidMode"];
-                if (configDict.ContainsKey("Restart_New_RaidMode"))
-                    restartNewRaidMode = configDict["Restart_New_RaidMode"];
-                if (configDict.ContainsKey("Enable_Greeting_Log"))
-                    enableGreetingLog = configDict["Enable_Greeting_Log"];
-                if (configDict.ContainsKey("Enable_Dogtag_Collection"))
-                    enableDogtagCollection = configDict["Enable_Dogtag_Collection"];
-            }              
+                if (configDict.ContainsKey("Disable_Vanilla_Quests") && configDict["Disable_Vanilla_Quests"] is bool)
+                    disableVanillaQuests = (bool)configDict["Disable_Vanilla_Quests"];
+                if (configDict.ContainsKey("Unlock_VanillaLocked_Items") && configDict["Unlock_VanillaLocked_Items"] is bool)
+                    unlockVanillaLockedItems = (bool)configDict["Unlock_VanillaLocked_Items"];
+                if (configDict.ContainsKey("Change_Prestige_Conditions") && configDict["Change_Prestige_Conditions"] is bool)
+                    changePrestigeCondition = (bool)configDict["Change_Prestige_Conditions"];
+                if (configDict.ContainsKey("Increase_HeadHP") && configDict["Increase_HeadHP"] is bool)
+                    increaseHeadHP = (bool)configDict["Increase_HeadHP"];
+                if (configDict.ContainsKey("Lock_Flea") && configDict["Lock_Flea"] is bool)
+                    lockFlea = (bool)configDict["Lock_Flea"];
+                if (configDict.ContainsKey("Enable_empty_vanilla_shop") && configDict["Enable_empty_vanilla_shop"] is bool)
+                    enableEmptyVanillaShop = (bool)configDict["Enable_empty_vanilla_shop"];
+                if (configDict.ContainsKey("Enable_No_Insurance") && configDict["Enable_No_Insurance"] is bool)
+                    enableNoInsurance = (bool)configDict["Enable_No_Insurance"];
+                if (configDict.ContainsKey("Enable_Cash_Wipe") && configDict["Enable_Cash_Wipe"] is bool)
+                    enableCashWipeAfterDeath = (bool)configDict["Enable_Cash_Wipe"];
+                if (configDict.ContainsKey("Add_HideoutProduction_DSP") && configDict["Add_HideoutProduction_DSP"] is bool)
+                    addHideoutProductionDSP = (bool)configDict["Add_HideoutProduction_DSP"];
+                if (configDict.ContainsKey("Add_HideoutProduction_Labryskeycard") && configDict["Add_HideoutProduction_Labryskeycard"] is bool)
+                    addHideoutProductionLabryskeycard = (bool)configDict["Add_HideoutProduction_Labryskeycard"];
+                if (configDict.ContainsKey("Unlock_All_Labrys_Quests") && configDict["Unlock_All_Labrys_Quests"] is bool)
+                    unlockAllLabrysQuests = (bool)configDict["Unlock_All_Labrys_Quests"];
+                if (configDict.ContainsKey("Use_Preset") && configDict["Use_Preset"] is bool)
+                    usePreset = (bool)configDict["Use_Preset"];
+                if (configDict.ContainsKey("Enable_Quest_Generator") && configDict["Enable_Quest_Generator"] is bool)
+                    enableQuestGenerator = (bool)configDict["Enable_Quest_Generator"];
+                if (configDict.ContainsKey("Enable_Jianghu_Bot") && configDict["Enable_Jianghu_Bot"] is bool)
+                    enableJianghuBot = (bool)configDict["Enable_Jianghu_Bot"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName") && configDict["Enable_Jianghu_BotName"] is bool)
+                    enableJianghuBotName = (bool)configDict["Enable_Jianghu_BotName"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName_ch") && configDict["Enable_Jianghu_BotName_ch"] is bool)
+                    botNameLanguageSettings["ch"] = (bool)configDict["Enable_Jianghu_BotName_ch"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName_en") && configDict["Enable_Jianghu_BotName_en"] is bool)
+                    botNameLanguageSettings["en"] = (bool)configDict["Enable_Jianghu_BotName_en"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName_es") && configDict["Enable_Jianghu_BotName_es"] is bool)
+                    botNameLanguageSettings["es"] = (bool)configDict["Enable_Jianghu_BotName_es"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName_fr") && configDict["Enable_Jianghu_BotName_fr"] is bool)
+                    botNameLanguageSettings["fr"] = (bool)configDict["Enable_Jianghu_BotName_fr"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName_jp") && configDict["Enable_Jianghu_BotName_jp"] is bool)
+                    botNameLanguageSettings["jp"] = (bool)configDict["Enable_Jianghu_BotName_jp"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName_po") && configDict["Enable_Jianghu_BotName_po"] is bool)
+                    botNameLanguageSettings["po"] = (bool)configDict["Enable_Jianghu_BotName_po"];
+                if (configDict.ContainsKey("Enable_Jianghu_BotName_ru") && configDict["Enable_Jianghu_BotName_ru"] is bool)
+                    botNameLanguageSettings["ru"] = (bool)configDict["Enable_Jianghu_BotName_ru"];
+                if (configDict.ContainsKey("Enable_Replace_OneRaid_with_OneLife") && configDict["Enable_Replace_OneRaid_with_OneLife"] is bool)
+                    enableReplaceOneRaidWithOneLife = (bool)configDict["Enable_Replace_OneRaid_with_OneLife"];
+                if (configDict.ContainsKey("Enable_New_Movement") && configDict["Enable_New_Movement"] is bool)
+                    enableNewMovement = (bool)configDict["Enable_New_Movement"];
+                if (configDict.ContainsKey("Enable_Fast_Movement") && configDict["Enable_Fast_Movement"] is bool)
+                    enableFastMovement = (bool)configDict["Enable_Fast_Movement"];
+                if (configDict.ContainsKey("Enable_Fast_Leaning") && configDict["Enable_Fast_Leaning"] is bool)
+                    enableFastLeaning = (bool)configDict["Enable_Fast_Leaning"];
+                if (configDict.ContainsKey("Enable_Fast_Pose_Transition") && configDict["Enable_Fast_Pose_Transition"] is bool)
+                    enableFastPoseTransition = (bool)configDict["Enable_Fast_Pose_Transition"];
+                if (configDict.ContainsKey("Enable_Jump_Higher") && configDict["Enable_Jump_Higher"] is bool)
+                    enableJumpHigher = (bool)configDict["Enable_Jump_Higher"];
+                if (configDict.ContainsKey("Enable_Slide") && configDict["Enable_Slide"] is bool)
+                    enableSlide = (bool)configDict["Enable_Slide"];
+                if (configDict.ContainsKey("Enable_Fast_Weapon_Switching") && configDict["Enable_Fast_Weapon_Switching"] is bool)
+                    enableFastWeapon = (bool)configDict["Enable_Fast_Weapon_Switching"];
+                if (configDict.ContainsKey("Enable_Minimal_Aimpunch") && configDict["Enable_Minimal_Aimpunch"] is bool)
+                    enableMinimalAimpunch = (bool)configDict["Enable_Minimal_Aimpunch"];
+                if (configDict.ContainsKey("Enable_Fast_Aiming") && configDict["Enable_Fast_Aiming"] is bool)
+                    enableFastAiming = (bool)configDict["Enable_Fast_Aiming"];
+                if (configDict.ContainsKey("Enable_Wider_Freelook_Angle") && configDict["Enable_Wider_Freelook_Angle"] is bool)
+                    enableWiderFreelook = (bool)configDict["Enable_Wider_Freelook_Angle"];
+                if (configDict.ContainsKey("Enable_New_Trader") && configDict["Enable_New_Trader"] is bool)
+                    enableNewTrader = (bool)configDict["Enable_New_Trader"];
+                if (configDict.ContainsKey("Enable_New_Quest") && configDict["Enable_New_Quest"] is bool)
+                    enableNewQuest = (bool)configDict["Enable_New_Quest"];
+                if (configDict.ContainsKey("Enable_New_Item") && configDict["Enable_New_Item"] is bool)
+                    enableNewItem = (bool)configDict["Enable_New_Item"];
+                if (configDict.ContainsKey("Enable_Arena_Mode") && configDict["Enable_Arena_Mode"] is bool)
+                    enableArenaMode = (bool)configDict["Enable_Arena_Mode"];
+                if (configDict.ContainsKey("Restart_Arena_Mode") && configDict["Restart_Arena_Mode"] is bool)
+                    restartArenaMode = (bool)configDict["Restart_Arena_Mode"];
+                if (configDict.ContainsKey("Enable_Greeting_Log") && configDict["Enable_Greeting_Log"] is bool)
+                    enableGreetingLog = (bool)configDict["Enable_Greeting_Log"];
+                if (configDict.ContainsKey("Enable_Dogtag_Collection") && configDict["Enable_Dogtag_Collection"] is bool)
+                    enableDogtagCollection = (bool)configDict["Enable_Dogtag_Collection"];
+                if (configDict.ContainsKey("Remove_VanillaQuest_XP_reward") && configDict["Remove_VanillaQuest_XP_reward"] is bool)
+                    removeVanillaQuestXPReward = (bool)configDict["Remove_VanillaQuest_XP_reward"];
+                if (configDict.ContainsKey("Unlock_VanilaTrader_TraderStanding") && configDict["Unlock_VanilaTrader_TraderStanding"] is bool)
+                    unlockVanillaTraderTraderStanding = (bool)configDict["Unlock_VanilaTrader_TraderStanding"];
+                if (configDict.ContainsKey("Unlock_VanillaLocked_recipe") && configDict["Unlock_VanillaLocked_recipe"] is bool)
+                    unlockVanillaLockedRecipe = (bool)configDict["Unlock_VanillaLocked_recipe"];
+                if (configDict.ContainsKey("Unlock_VanillaLocked_Customization") && configDict["Unlock_VanillaLocked_Customization"] is bool)
+                    unlockVanillaLockedCustomization = (bool)configDict["Unlock_VanillaLocked_Customization"];
+
+                // Cash wipe coefficient
+                if (configDict.ContainsKey("Cash_Wipe_Coefficiency"))
+                {
+                    if (configDict["Cash_Wipe_Coefficiency"] is long)
+                        cashWipeCoefficiency = (long)configDict["Cash_Wipe_Coefficiency"];
+                    else if (configDict["Cash_Wipe_Coefficiency"] is double)
+                        cashWipeCoefficiency = (float)(double)configDict["Cash_Wipe_Coefficiency"];
+                }
+            }
         }
 
         private void SaveSettingsToJson()
         {
             try
             {
-                var configDict = new Dictionary<string, bool>
-                {
-                    { "Disable_Vanilla_Quests", disableVanillaQuests },
-                    { "Unlock_AllItems_By_NewQuest", unlockAllItemsByNewQuest },
-                    { "Change_Prestige_Conditions", changePrestigeCondition },
-                    { "Increase_HeadHP", increaseHeadHP },
-                    { "Lock_Flea", lockFlea },
-                    { "Enable_empty_vanilla_shop", enableEmptyVanillaShop },
-                    { "Enable_No_Insurance", enableNoInsurance },
-                    { "Enable_Cash_Wipe", enableCashWipeAfterDeath },
-                    { "Add_HideoutProduction_DSP", addHideoutProductionDSP },
-                    { "Add_HideoutProduction_Labryskeycard", addHideoutProductionLabryskeycard },
-                    { "Unlock_All_Labrys_Quests", unlockAllLabrysQuests },
-                    { "Use_Preset", usePreset },
-                    { "Enable_Quest_Generator", enableQuestGenerator },
-                    { "Enable_Jianghu_Bot", enableJianghuBot },
-                    { "Enable_Jianghu_BotName", enableJianghuBotName },
-                    { "Enable_Jianghu_BotName_ch", botNameLanguageSettings["ch"] },
-                    { "Enable_Jianghu_BotName_en", botNameLanguageSettings["en"] },
-                    { "Enable_Jianghu_BotName_es", botNameLanguageSettings["es"] },
-                    { "Enable_Jianghu_BotName_fr", botNameLanguageSettings["fr"] },
-                    { "Enable_Jianghu_BotName_jp", botNameLanguageSettings["jp"] },
-                    { "Enable_Jianghu_BotName_po", botNameLanguageSettings["po"] },
-                    { "Enable_Jianghu_BotName_ru", botNameLanguageSettings["ru"] },
-                    { "Enable_Replace_OneRaid_with_OneLife", enableReplaceOneRaidWithOneLife },
-                    { "Enable_New_Movement", enableNewMovement },
-                    { "Enable_Fast_Movement", enableFastMovement },
-                    { "Enable_Fast_Leaning", enableFastLeaning },
-                    { "Enable_Fast_Pose_Transition", enableFastPoseTransition },
-                    { "Enable_Jump_Higher", enableJumpHigher },
-                    { "Enable_Slide", enableSlide },
-                    { "Enable_Fast_Weapon_Switching", enableFastWeapon },
-                    { "Enable_Minimal_Aimpunch", enableMinimalAimpunch },
-                    { "Enable_Fast_Aiming", enableFastAiming },
-                    { "Enable_Wider_Freelook_Angle", enableWiderFreelook },
-                    { "Enable_New_Trader", enableNewTrader },
-                    { "Enable_New_Quest", enableNewQuest },
-                    { "Enable_New_Item", enableNewItem },
-                    { "Enable_New_RaidMode", enableNewRaidMode },
-                    { "Restart_New_RaidMode", restartNewRaidMode },
-                    { "Enable_Greeting_Log", enableGreetingLog },
-                    { "Enable_Dogtag_Collection", enableDogtagCollection },
-                };
-
                 string modPath = Path.GetDirectoryName(Application.dataPath);
                 string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
 
-                Directory.CreateDirectory(Path.GetDirectoryName(configPath));
-                string json = JsonConvert.SerializeObject(configDict, Formatting.Indented);
+                JObject configObj;
+                if (File.Exists(configPath))
+                {
+                    string existingJson = File.ReadAllText(configPath);
+                    configObj = JObject.Parse(existingJson);
+                }
+                else
+                {
+                    configObj = new JObject();
+                }
+
+                configObj["Disable_Vanilla_Quests"] = disableVanillaQuests;
+                configObj["Unlock_VanillaLocked_Items"] = unlockVanillaLockedItems;
+                configObj["Change_Prestige_Conditions"] = changePrestigeCondition;
+                configObj["Increase_HeadHP"] = increaseHeadHP;
+                configObj["Lock_Flea"] = lockFlea;
+                configObj["Enable_empty_vanilla_shop"] = enableEmptyVanillaShop;
+                configObj["Enable_No_Insurance"] = enableNoInsurance;
+                configObj["Enable_Cash_Wipe"] = enableCashWipeAfterDeath;
+                configObj["Add_HideoutProduction_DSP"] = addHideoutProductionDSP;
+                configObj["Add_HideoutProduction_Labryskeycard"] = addHideoutProductionLabryskeycard;
+                configObj["Unlock_All_Labrys_Quests"] = unlockAllLabrysQuests;
+                configObj["Use_Preset"] = usePreset;
+                configObj["Enable_Quest_Generator"] = enableQuestGenerator;
+                configObj["Enable_Jianghu_Bot"] = enableJianghuBot;
+                configObj["Enable_Jianghu_BotName"] = enableJianghuBotName;
+                configObj["Enable_Jianghu_BotName_ch"] = botNameLanguageSettings["ch"];
+                configObj["Enable_Jianghu_BotName_en"] = botNameLanguageSettings["en"];
+                configObj["Enable_Jianghu_BotName_es"] = botNameLanguageSettings["es"];
+                configObj["Enable_Jianghu_BotName_fr"] = botNameLanguageSettings["fr"];
+                configObj["Enable_Jianghu_BotName_jp"] = botNameLanguageSettings["jp"];
+                configObj["Enable_Jianghu_BotName_po"] = botNameLanguageSettings["po"];
+                configObj["Enable_Jianghu_BotName_ru"] = botNameLanguageSettings["ru"];
+                configObj["Enable_Replace_OneRaid_with_OneLife"] = enableReplaceOneRaidWithOneLife;
+                configObj["Enable_New_Movement"] = enableNewMovement;
+                configObj["Enable_Fast_Movement"] = enableFastMovement;
+                configObj["Enable_Fast_Leaning"] = enableFastLeaning;
+                configObj["Enable_Fast_Pose_Transition"] = enableFastPoseTransition;
+                configObj["Enable_Jump_Higher"] = enableJumpHigher;
+                configObj["Enable_Slide"] = enableSlide;
+                configObj["Enable_Fast_Weapon_Switching"] = enableFastWeapon;
+                configObj["Enable_Minimal_Aimpunch"] = enableMinimalAimpunch;
+                configObj["Enable_Fast_Aiming"] = enableFastAiming;
+                configObj["Enable_Wider_Freelook_Angle"] = enableWiderFreelook;
+                configObj["Enable_New_Trader"] = enableNewTrader;
+                configObj["Enable_New_Quest"] = enableNewQuest;
+                configObj["Enable_New_Item"] = enableNewItem;
+                configObj["Enable_Arena_Mode"] = enableArenaMode;
+                configObj["Restart_Arena_Mode"] = restartArenaMode;
+                configObj["Enable_Greeting_Log"] = enableGreetingLog;
+                configObj["Enable_Dogtag_Collection"] = enableDogtagCollection;
+                configObj["Remove_VanillaQuest_XP_reward"] = removeVanillaQuestXPReward;
+                configObj["Unlock_VanilaTrader_TraderStanding"] = unlockVanillaTraderTraderStanding;
+                configObj["Unlock_VanillaLocked_recipe"] = unlockVanillaLockedRecipe;
+                configObj["Unlock_VanillaLocked_Customization"] = unlockVanillaLockedCustomization;
+                configObj["Cash_Wipe_Coefficiency"] = cashWipeCoefficiency;
+
+                string json = JsonConvert.SerializeObject(configObj, Formatting.Indented);
                 File.WriteAllText(configPath, json);
 
                 Debug.Log("✅ [JiangHu] Settings saved to JSON");
@@ -244,6 +283,27 @@ namespace JiangHu
             { "ch", false }, { "en", false }, { "es", false }, { "fr", false }, 
             { "jp", false }, { "po", false }, { "ru", false }
         };
+
+        private void LoadStoryModeGuide(string languageCode)
+        {
+            try
+            {
+                string guidePath = Path.Combine(Path.GetDirectoryName(Application.dataPath), "BepInEx", "plugins", "JiangHu.Client", "story_mode_description", $"{languageCode}.md");
+
+                if (File.Exists(guidePath))
+                {
+                    storyModeContent = File.ReadAllText(guidePath);
+                }
+                else
+                {
+                    storyModeContent = $"# Story Mode Guide - {languageCode}\n\nFile not found at: {guidePath}";
+                }
+            }
+            catch (System.Exception ex)
+            {
+                storyModeContent = $"# Story Mode Guide\n\nError: {ex.Message}";
+            }
+        }
 
         private void LoadSettingsGuide(string languageCode)
         {
@@ -303,6 +363,10 @@ namespace JiangHu
             {
                 coreModulesWindowRect = GUI.Window(12353, coreModulesWindowRect, DrawCoreModulesWindow, "Core Modules  核心模块");
             }
+            if (showStoryModeGuide)
+            {
+                storyModeWindowRect = GUI.Window(12354, storyModeWindowRect, DrawStoryModeGuideWindow, "Story Mode Guide  剧情模式指南");
+            }
             else
             {
                 windowRect = GUI.Window(12349, windowRect, DrawSettingsWindow, "Game Setting Manager  江湖设置管理器");
@@ -322,32 +386,43 @@ namespace JiangHu
 
             GUILayout.Space(10);
 
-            // Core Modules Box
+            // Game Mode
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Core Modules", GUIStyle.none);
+            GUILayout.Label("Game Mode  游戏模式", GUIStyle.none);
             GUILayout.Space(5);
-
-            if (GUILayout.Button("Core Modules Settings  核心模块设置"))
+            
+            bool storyMode = GUILayout.Toggle(usePreset, " Story Mode  剧情模式");
+            if (storyMode != usePreset) { usePreset = storyMode; SaveSettingsToJson(); }
+            GUILayout.Space(5);
+            GUILayout.Label("Can only change settings marked with ***  仅可修改带***的设置");
+            GUILayout.Space(5);
+            if (GUILayout.Button("Guide  指南"))
             {
-                showCoreModulesGUI = true;
+                LoadStoryModeGuide(currentLanguage);
+                showStoryModeGuide = true;
             }
+
+            bool freeMode = GUILayout.Toggle(!usePreset, " Free Mode  自由模式");
+            if (freeMode == usePreset) { usePreset = !freeMode; SaveSettingsToJson(); }
+            GUILayout.Space(5);
+            GUILayout.Label("Can change each setting freely  可自由修改各项设置");
             GUILayout.EndVertical();
 
             GUILayout.Space(10);
 
             // FPS Mode Box
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Competitive FPS Mode    竞技射击模式", GUIStyle.none);
+            GUILayout.Label("Competitive FPS Style  竞技射击风格", GUIStyle.none);
             GUILayout.Space(5);
 
-            bool newEnableMovement = GUILayout.Toggle(enableNewMovement, " Enable Floating Steps Over Ripples    开启凌波微步");
+            bool newEnableMovement = GUILayout.Toggle(enableNewMovement, " Enable Floating Steps Over Ripples  开启凌波微步");
             if (newEnableMovement != enableNewMovement)
             {
                 enableNewMovement = newEnableMovement;
                 SaveSettingsToJson();
             }
             GUILayout.Space(5);
-            if (GUILayout.Button("Mode Settings    心法设置"))
+            if (GUILayout.Button("Mode Settings  心法设置"))
             {
                 showMovementSettingsGUI = true;
             }
@@ -356,24 +431,24 @@ namespace JiangHu
 
             // Dance on the Razor's Edge Box
             GUILayout.BeginVertical("box");
-            GUILayout.Label("New Arena    惊鸿猎", GUIStyle.none);
+            GUILayout.Label("New Arena  惊鸿猎", GUIStyle.none);
             GUILayout.Space(5);
 
-            bool newRaidMode = GUILayout.Toggle(enableNewRaidMode, " Enable Arena    开启惊鸿猎");
-            if (newRaidMode != enableNewRaidMode) { enableNewRaidMode = newRaidMode; SaveSettingsToJson(); }
+            bool ArenaMode = GUILayout.Toggle(enableArenaMode, " Enable Arena  开启惊鸿猎");
+            if (ArenaMode != enableArenaMode) { enableArenaMode = ArenaMode; SaveSettingsToJson(); }
             GUILayout.Space(5);
-            bool restartRaidMode = GUILayout.Toggle(restartNewRaidMode, " Restart Arena    重置惊鸿猎");
-            if (restartRaidMode != restartNewRaidMode) { restartNewRaidMode = restartRaidMode; SaveSettingsToJson(); }
+            bool restartRaidMode = GUILayout.Toggle(restartArenaMode, " Restart Arena  重置惊鸿猎");
+            if (restartRaidMode != restartArenaMode) { restartArenaMode = restartRaidMode; SaveSettingsToJson(); }
 
             GUILayout.EndVertical();
             GUILayout.Space(10);
 
             // Three Body Mode Box
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Three Body Mode    三体模式", GUIStyle.none);
+            GUILayout.Label("Three Body Collect  三体搜集", GUIStyle.none);
             GUILayout.Space(5);
 
-            bool newDogtagCollection = GUILayout.Toggle(enableDogtagCollection, " Enable (Use JiangHu Bot Name)    开启。需使用江湖人机名字");
+            bool newDogtagCollection = GUILayout.Toggle(enableDogtagCollection, " Enable (Use JiangHu Bot Name)  开启。需使用江湖人机名字");
             if (newDogtagCollection != enableDogtagCollection)
             {
                 enableDogtagCollection = newDogtagCollection;
@@ -385,24 +460,24 @@ namespace JiangHu
 
             // Bot Box
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Bot    人机", GUIStyle.none);
+            GUILayout.Label("Bot  人机", GUIStyle.none);
             GUILayout.Space(5);
 
-            bool newEnableBot = GUILayout.Toggle(enableJianghuBot, " Enable Jianghu Bot    使用江湖人机");
+            bool newEnableBot = GUILayout.Toggle(enableJianghuBot, " Enable Jianghu Bot  江湖人机");
             if (newEnableBot != enableJianghuBot)
             {
                 enableJianghuBot = newEnableBot;
                 SaveSettingsToJson();
             }
             GUILayout.Space(5);
-            bool newEnableBotName = GUILayout.Toggle(enableJianghuBotName, " Enable Jianghu Bot Names    使用江湖人机名字");
+            bool newEnableBotName = GUILayout.Toggle(enableJianghuBotName, " Enable Jianghu Bot Names  江湖人机名字");
             if (newEnableBotName != enableJianghuBotName)
             {
                 enableJianghuBotName = newEnableBotName;
                 SaveSettingsToJson();
             }
             GUILayout.Space(5);
-            if (GUILayout.Button("Languages    多国语言"))
+            if (GUILayout.Button("Languages  多国语言 ***"))
             {
                 showBotNameGUI = true;
             }
@@ -413,10 +488,10 @@ namespace JiangHu
 
             // Quest Generator Box
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Quest Generator    任务生成器", GUIStyle.none);
+            GUILayout.Label("Quest Generator  任务生成器", GUIStyle.none);
             GUILayout.Space(5);
 
-            bool newQuestGen = GUILayout.Toggle(enableQuestGenerator, " Enable (Need ‘Disable Vanilla Quests’)    开启。需先禁用原版任务");
+            bool newQuestGen = GUILayout.Toggle(enableQuestGenerator, " Enable (Need ‘Disable Vanilla Quests’)  开启。需先禁用原版任务 ***");
             if (newQuestGen != enableQuestGenerator)
             {
                 enableQuestGenerator = newQuestGen;
@@ -426,16 +501,26 @@ namespace JiangHu
 
             GUILayout.Space(10);
 
-            // Game Rules Box
+            // Guide
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Game Rules    游戏规则", GUIStyle.none);
+            GUILayout.Label("More Settings  更多设置", GUIStyle.none);
             GUILayout.Space(5);
-            bool newUsePreset = GUILayout.Toggle(usePreset, " Use Preset Configuration    使用预设");
-            if (newUsePreset != usePreset) { usePreset = newUsePreset; SaveSettingsToJson(); }
-            GUILayout.Space(5);
-            if (GUILayout.Button("Rule Settings    规则设置"))
+            if (GUILayout.Button("More Rule Settings    更多规则设置"))
             {
                 showRuleSettingsGUI = true;
+            }
+            GUILayout.EndVertical();
+
+            GUILayout.Space(10);
+
+            // Core Modules Box
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Core Modules  核心模块", GUIStyle.none);
+            GUILayout.Space(5);
+
+            if (GUILayout.Button("Core Modules Settings  核心模块设置"))
+            {
+                showCoreModulesGUI = true;
             }
             GUILayout.EndVertical();
 
@@ -449,6 +534,9 @@ namespace JiangHu
                 showSettingsGuide = true;
             }
             GUILayout.EndHorizontal();
+
+            GUILayout.FlexibleSpace(); 
+            GUI.DragWindow(new Rect(0, windowRect.height - 30, windowRect.width, 30));
         }
 
         void DrawSettingsGuideWindow(int windowID)
@@ -603,7 +691,7 @@ namespace JiangHu
             whiteLabelStyle.normal.textColor = Color.white;
 
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Basic movement (default on)    基础身法（默认开启）", GUIStyle.none);
+            GUILayout.Label("Basic movement (default on)  基础身法（默认开启）", GUIStyle.none);
             GUILayout.Space(5);
             GUILayout.Label("Clean & Smooth, Bunny Hopping, no inertia, etc.", whiteLabelStyle);
             GUILayout.Space(5);
@@ -687,6 +775,47 @@ namespace JiangHu
                 SaveSettingsToJson();
             }
             GUILayout.Space(5);
+
+            bool newUnlockItems = GUILayout.Toggle(unlockVanillaLockedItems, " Unlock Vanilla Locked Items  解锁原版锁定物品");
+            if (newUnlockItems != unlockVanillaLockedItems)
+            {
+                unlockVanillaLockedItems = newUnlockItems;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newRemoveXPReward = GUILayout.Toggle(removeVanillaQuestXPReward, " Remove Vanilla Quest XP Reward  移除原版任务经验奖励");
+            if (newRemoveXPReward != removeVanillaQuestXPReward)
+            {
+                removeVanillaQuestXPReward = newRemoveXPReward;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newUnlockTraderStanding = GUILayout.Toggle(unlockVanillaTraderTraderStanding, " Unlock Traders and Max all Standing  解锁商人并满好感度");
+            if (newUnlockTraderStanding != unlockVanillaTraderTraderStanding)
+            {
+                unlockVanillaTraderTraderStanding = newUnlockTraderStanding;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newUnlockRecipe = GUILayout.Toggle(unlockVanillaLockedRecipe, " Unlock Vanilla Locked Recipes  解锁原版锁定配方");
+            if (newUnlockRecipe != unlockVanillaLockedRecipe)
+            {
+                unlockVanillaLockedRecipe = newUnlockRecipe;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newUnlockCustomization = GUILayout.Toggle(unlockVanillaLockedCustomization, " Unlock Vanilla Locked Customization  解锁原版锁定装扮");
+            if (newUnlockCustomization != unlockVanillaLockedCustomization)
+            {
+                unlockVanillaLockedCustomization = newUnlockCustomization;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
             bool newLockFlea = GUILayout.Toggle(lockFlea, " Lock Flea Market  锁跳蚤市场");
             if (newLockFlea != lockFlea)
             {
@@ -708,13 +837,28 @@ namespace JiangHu
                 SaveSettingsToJson();
             }
             GUILayout.Space(5);
-            bool newCashWipe = GUILayout.Toggle(enableCashWipeAfterDeath, " Cash Wipe on Death  死亡清空现金");
+            bool newCashWipe = GUILayout.Toggle(enableCashWipeAfterDeath, " Cash Wipe on Death (Protects first million)  死亡清空现金 (100万保底)");
             if (newCashWipe != enableCashWipeAfterDeath)
             {
                 enableCashWipeAfterDeath = newCashWipe;
                 SaveSettingsToJson();
             }
             GUILayout.Space(5);
+
+            GUILayout.Label("     Cash Wipe Coefficient  现金清除系数");
+            GUILayout.Space(5);
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(25);
+            float newCoefficiency = GUILayout.HorizontalSlider(cashWipeCoefficiency, 0f, 1f, GUILayout.Width(200));
+            GUILayout.Label(cashWipeCoefficiency.ToString("F2"), GUILayout.Width(30));
+            GUILayout.EndHorizontal();
+            if (newCoefficiency != cashWipeCoefficiency)
+            {
+                cashWipeCoefficiency = newCoefficiency;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
             bool newHeadHP = GUILayout.Toggle(increaseHeadHP, " Increase Head HP  大头");
             if (newHeadHP != increaseHeadHP)
             {
@@ -736,7 +880,7 @@ namespace JiangHu
                 SaveSettingsToJson();
             }
             GUILayout.Space(5);
-            bool newOneLife = GUILayout.Toggle(enableReplaceOneRaidWithOneLife, " Replace new quest 1 Raid requirement with 1 Life    新任务的单局完成改为一命完成");
+            bool newOneLife = GUILayout.Toggle(enableReplaceOneRaidWithOneLife, " Replace new quest 1 Raid requirement with 1 Life  新任务的单局完成改为一命完成 ***");
             if (newOneLife != enableReplaceOneRaidWithOneLife)
             {
                 enableReplaceOneRaidWithOneLife = newOneLife;
@@ -750,14 +894,6 @@ namespace JiangHu
             GUILayout.Label("Core Rules", GUIStyle.none);
             GUILayout.Space(5);
 
-
-            bool newUnlockItems = GUILayout.Toggle(unlockAllItemsByNewQuest, " Unlock Items by 1 New Quest  新任务解锁全部物品");
-            if (newUnlockItems != unlockAllItemsByNewQuest)
-            {
-                unlockAllItemsByNewQuest = newUnlockItems;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
             bool newPrestige = GUILayout.Toggle(changePrestigeCondition, " Change Prestige Conditions  改变升级荣誉条件");
             if (newPrestige != changePrestigeCondition)
             {
@@ -804,6 +940,72 @@ namespace JiangHu
             if (newGreetingLog != enableGreetingLog) { enableGreetingLog = newGreetingLog; SaveSettingsToJson(); }
 
             GUILayout.EndVertical();
+        }
+
+        void DrawStoryModeGuideWindow(int windowID)
+        {
+            GUIStyle buttonStyle = new GUIStyle(GUI.skin.button);
+            buttonStyle.fontSize = 14;
+
+            if (GUI.Button(new Rect(storyModeWindowRect.width - 25, 5, 20, 20), "X"))
+            {
+                showStoryModeGuide = false;
+                return;
+            }
+
+            float buttonWidth = (storyModeWindowRect.width - 40) / 7f;
+            float buttonY = 40f;
+
+            // Languages in alphabetical order
+            if (GUI.Button(new Rect(20, buttonY, buttonWidth, 35), "中文", buttonStyle))
+            {
+                currentLanguage = "ch";
+                LoadStoryModeGuide("ch");
+            }
+            if (GUI.Button(new Rect(20 + buttonWidth, buttonY, buttonWidth, 35), "English", buttonStyle))
+            {
+                currentLanguage = "en";
+                LoadStoryModeGuide("en");
+            }
+            if (GUI.Button(new Rect(20 + buttonWidth * 2, buttonY, buttonWidth, 35), "Español", buttonStyle))
+            {
+                currentLanguage = "es";
+                LoadStoryModeGuide("es");
+            }
+            if (GUI.Button(new Rect(20 + buttonWidth * 3, buttonY, buttonWidth, 35), "Français", buttonStyle))
+            {
+                currentLanguage = "fr";
+                LoadStoryModeGuide("fr");
+            }
+            if (GUI.Button(new Rect(20 + buttonWidth * 4, buttonY, buttonWidth, 35), "日本語", buttonStyle))
+            {
+                currentLanguage = "jp";
+                LoadStoryModeGuide("jp");
+            }
+            if (GUI.Button(new Rect(20 + buttonWidth * 5, buttonY, buttonWidth, 35), "Português", buttonStyle))
+            {
+                currentLanguage = "po";
+                LoadStoryModeGuide("po");
+            }
+            if (GUI.Button(new Rect(20 + buttonWidth * 6, buttonY, buttonWidth, 35), "Русский", buttonStyle))
+            {
+                currentLanguage = "ru";
+                LoadStoryModeGuide("ru");
+            }
+
+            GUI.DragWindow(new Rect(0, 0, storyModeWindowRect.width - 120, 25));
+
+            float scrollViewY = buttonY + 45f;
+            float scrollViewHeight = storyModeWindowRect.height - scrollViewY - 10f;
+
+            GUILayout.BeginArea(new Rect(10, scrollViewY, storyModeWindowRect.width - 20, scrollViewHeight));
+            storyModeScrollPosition = GUILayout.BeginScrollView(storyModeScrollPosition, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            GUIStyle contentStyle = new GUIStyle(GUI.skin.label);
+            contentStyle.fontSize = 16;
+            contentStyle.wordWrap = true;
+            GUILayout.Label(storyModeContent);
+            GUILayout.EndScrollView();
+            GUILayout.EndArea();
         }
     }
 }

@@ -17,8 +17,8 @@ namespace JiangHu.Server
     {
         private readonly DatabaseServer _databaseServer;
         private readonly SaveServer _saveServer;
-        private bool _Enable_New_RaidMode = false;
-        private bool _Restart_New_RaidMode = false;
+        private bool _Enable_Arena_Mode = false;
+        private bool _Restart_Arena_Mode = false;
         private readonly string[] _targetQuestIds = {
             "e973002c4ab4d99999999000",
             "e973002c4ab4d99999999010",
@@ -38,7 +38,7 @@ namespace JiangHu.Server
 
         public void ApplyAllRaidModeSettings()
         {
-            if (!_Enable_New_RaidMode)
+            if (!_Enable_Arena_Mode)
             {
                 ResetRaidModeQuestsInProfiles();
                 return;
@@ -69,11 +69,11 @@ namespace JiangHu.Server
                 if (config == null)
                     return;
 
-                if (config.TryGetValue("Enable_New_RaidMode", out var raidModeValue))
-                    _Enable_New_RaidMode = raidModeValue.GetBoolean();
+                if (config.TryGetValue("Enable_Arena_Mode", out var raidModeValue))
+                    _Enable_Arena_Mode = raidModeValue.GetBoolean();
 
-                if (config.TryGetValue("Restart_New_RaidMode", out var restartValue))
-                    _Restart_New_RaidMode = restartValue.GetBoolean();
+                if (config.TryGetValue("Restart_Arena_Mode", out var restartValue))
+                    _Restart_Arena_Mode = restartValue.GetBoolean();
 
             }
             catch (Exception ex)
@@ -86,7 +86,7 @@ namespace JiangHu.Server
         {
             try
             {
-                if (!_Enable_New_RaidMode)
+                if (!_Enable_Arena_Mode)
                 {
                     return;
                 }
@@ -129,7 +129,7 @@ namespace JiangHu.Server
         {
             try
             {
-                if (!_Enable_New_RaidMode)
+                if (!_Enable_Arena_Mode)
                 {
                     return;
                 }
@@ -161,7 +161,7 @@ namespace JiangHu.Server
         {
             try
             {
-                if (!_Enable_New_RaidMode)
+                if (!_Enable_Arena_Mode)
                 {
                     return;
                 }
@@ -241,9 +241,9 @@ namespace JiangHu.Server
                     var json = File.ReadAllText(configPath);
                     var configDict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
 
-                    if (configDict != null && configDict.ContainsKey("Restart_New_RaidMode"))
+                    if (configDict != null && configDict.ContainsKey("Restart_Arena_Mode"))
                     {
-                        configDict["Restart_New_RaidMode"] = JsonDocument.Parse("false").RootElement;
+                        configDict["Restart_Arena_Mode"] = JsonDocument.Parse("false").RootElement;
 
                         var options = new JsonSerializerOptions { WriteIndented = true };
                         File.WriteAllText(configPath, JsonSerializer.Serialize(configDict, options));
@@ -260,7 +260,7 @@ namespace JiangHu.Server
         {
             try
             {
-                if (!_Restart_New_RaidMode)
+                if (!_Restart_Arena_Mode)
                 {
                     return;
                 }

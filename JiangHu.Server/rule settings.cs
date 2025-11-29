@@ -22,6 +22,7 @@ using SPTarkov.Server.Core.Servers;
 using SPTarkov.Server.Core.Services;
 using SPTarkov.Server.Core.Utils.Json;
 
+
 namespace JiangHu.Server
 {
     [Injectable]
@@ -37,12 +38,19 @@ namespace JiangHu.Server
         private bool _Lock_Flea = false;
         private bool _Enable_No_Insurance = false;
         private bool _Enable_Empty_Vanilla_Shop = false;
-        private bool _Unlock_AllItems_By_NewQuest = false;
+
+        private bool _Unlock_VanillaLocked_Items = false;
+        private bool _Unlock_VanilaTrader_TraderStanding = false;
+        private bool _Unlock_VanillaLocked_recipe = false;
+        private bool _Unlock_VanillaLocked_Customization = false;
+
+
         private bool _Change_Prestige_Conditions = false;
         private bool _Add_HideoutProduction_DSP = false;
         private bool _Add_HideoutProduction_Labryskeycard = false;
         private bool _Unlock_All_Labrys_Quests = false;
         private bool _Enable_Replace_OneRaid_with_OneLife = false;
+        private bool _Remove_VanillaQuest_XP_reward = false;
 
         private readonly ConfigServer _configServer;
 
@@ -79,14 +87,32 @@ namespace JiangHu.Server
                 if (config == null)
                     return;
 
+                if (config.TryGetValue("Remove_VanillaQuest_XP_reward", out var xpRewardValue))
+                    _Remove_VanillaQuest_XP_reward = xpRewardValue.GetBoolean();
+
+                if (config.TryGetValue("Unlock_VanillaLocked_Items", out var itemsValue))
+                    _Unlock_VanillaLocked_Items = itemsValue.GetBoolean();
+
+                if (config.TryGetValue("Unlock_VanilaTrader_TraderStanding", out var standingValue))
+                    _Unlock_VanilaTrader_TraderStanding = standingValue.GetBoolean();
+
+                if (config.TryGetValue("Unlock_VanillaLocked_recipe", out var recipeValue))
+                    _Unlock_VanillaLocked_recipe = recipeValue.GetBoolean();
+
+                if (config.TryGetValue("Unlock_VanillaLocked_Customization", out var customizationValue))
+                    _Unlock_VanillaLocked_Customization = customizationValue.GetBoolean();
+
                 if (config.TryGetValue("Disable_Vanilla_Quests", out var questValue))
                     _Disable_Vanilla_Quests = questValue.GetBoolean();
 
-                if (config.TryGetValue("Increase_HeadHP", out var headValue))
-                    _Increase_HeadHP = headValue.GetBoolean();
-
                 if (config.TryGetValue("Lock_Flea", out var fleaValue))
                     _Lock_Flea = fleaValue.GetBoolean();
+
+                if (config.TryGetValue("Add_HideoutProduction_DSP", out var dspValue))
+                    _Add_HideoutProduction_DSP = dspValue.GetBoolean();
+
+                if (config.TryGetValue("Change_Prestige_Conditions", out var prestigeValue))
+                    _Change_Prestige_Conditions = prestigeValue.GetBoolean();
 
                 if (config.TryGetValue("Enable_No_Insurance", out var insuranceValue))
                     _Enable_No_Insurance = insuranceValue.GetBoolean();
@@ -94,14 +120,8 @@ namespace JiangHu.Server
                 if (config.TryGetValue("Enable_empty_vanilla_shop", out var emptyShopValue))
                     _Enable_Empty_Vanilla_Shop = emptyShopValue.GetBoolean();
 
-                if (config.TryGetValue("Unlock_AllItems_By_NewQuest", out var unlockValue))
-                    _Unlock_AllItems_By_NewQuest = unlockValue.GetBoolean();
-
-                if (config.TryGetValue("Change_Prestige_Conditions", out var prestigeValue))
-                    _Change_Prestige_Conditions = prestigeValue.GetBoolean();
-
-                if (config.TryGetValue("Add_HideoutProduction_DSP", out var dspValue))
-                    _Add_HideoutProduction_DSP = dspValue.GetBoolean();
+                if (config.TryGetValue("Increase_HeadHP", out var headValue))
+                    _Increase_HeadHP = headValue.GetBoolean();
 
                 if (config.TryGetValue("Add_HideoutProduction_Labryskeycard", out var labKeycardValue))
                     _Add_HideoutProduction_Labryskeycard = labKeycardValue.GetBoolean();
@@ -111,6 +131,7 @@ namespace JiangHu.Server
 
                 if (config.TryGetValue("Enable_Replace_OneRaid_with_OneLife", out var oneLifeValue))
                     _Enable_Replace_OneRaid_with_OneLife = oneLifeValue.GetBoolean();
+
 
             }
             catch (Exception ex)
@@ -125,13 +146,32 @@ namespace JiangHu.Server
             {
                 var tables = _databaseServer.GetTables();
 
+
+                if (_Remove_VanillaQuest_XP_reward)
+                    RemoveXPRewardsFromVanillaQuests(tables);
+
+                if (_Unlock_VanillaLocked_Items)
+                    UnlockVanillaLockedItems(tables);
+
+                if (_Unlock_VanilaTrader_TraderStanding)
+                    UnlockVanilaTraderTraderStanding(tables);            
+
+                if (_Unlock_VanillaLocked_recipe)
+                    UnlockVanillaLockedRecipe(tables);
+
+                if (_Unlock_VanillaLocked_Customization)
+                    RemoveCustomizationDirectRewards(tables);
+
                 if (_Disable_Vanilla_Quests)
                     DisableVanillaQuests(tables);
 
                 LockFlea(tables);
 
-                if (_Increase_HeadHP)
-                    IncreaseHeadHP();
+                if (_Add_HideoutProduction_DSP)
+                    AddHideoutProductionDSP(tables);
+
+                if (_Change_Prestige_Conditions)
+                    Change_Prestige_Conditions(tables);
 
                 if (_Enable_No_Insurance)
                     DisableInsurance(tables);
@@ -139,14 +179,8 @@ namespace JiangHu.Server
                 if (_Enable_Empty_Vanilla_Shop)
                     DisableVanillaShops(tables);
 
-                if (_Unlock_AllItems_By_NewQuest)
-                    UnlockAllItemsByNewQuest(tables);
-
-                if (_Change_Prestige_Conditions)
-                    Change_Prestige_Conditions(tables);
-
-                if (_Add_HideoutProduction_DSP)
-                    AddHideoutProductionDSP(tables);
+                if (_Increase_HeadHP)
+                    IncreaseHeadHP();
 
                 if (_Add_HideoutProduction_Labryskeycard)
                     AddHideoutProductionLabKeycard(tables);
@@ -156,6 +190,7 @@ namespace JiangHu.Server
 
                 if (_Enable_Replace_OneRaid_with_OneLife)
                     ReplaceOneRaidWithOneLife(tables);
+
             }
             catch (Exception ex)
             {
@@ -165,7 +200,6 @@ namespace JiangHu.Server
             return Task.CompletedTask;
         }
 
-        // 🔹 Disable Vanilla Quests
         private readonly HashSet<string> _targetTraderIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "54cb50c76803fa8b248b4571", // Prapor
@@ -181,6 +215,228 @@ namespace JiangHu.Server
             "638f541a29ffd1183d187f57" // Lightkeeper
         };
 
+        // 🔹 Remove Vanilla Quest XP reward (all vanilla quest modifications run before DisableVanillaQuests)
+        private void RemoveXPRewardsFromVanillaQuests(DatabaseTables tables)
+        {
+            var quests = tables.Templates.Quests;
+            int modifiedCount = 0;
+
+            foreach (var kvp in quests)
+            {
+                string questId = kvp.Key.ToString();
+
+                if (questId.StartsWith("e983", StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                if (string.IsNullOrEmpty(kvp.Value.TraderId) || !_targetTraderIds.Contains(kvp.Value.TraderId))
+                    continue;
+
+                var quest = kvp.Value;
+
+                if (quest.Rewards != null && quest.Rewards.ContainsKey("Success"))
+                {
+                    var successRewards = quest.Rewards["Success"];
+                    var originalCount = successRewards.Count;
+
+                    successRewards.RemoveAll(reward => reward.Type == RewardType.Experience);
+
+                    if (successRewards.Count != originalCount)
+                    {
+                        modifiedCount++;
+                    }
+
+                    if (!successRewards.Any())
+                    {
+                        quest.Rewards.Remove("Success");
+                    }
+                }
+            }
+
+            Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Removed XP rewards from {modifiedCount} vanilla quests    移除原版任务经验奖励\x1b[0m");
+        }
+
+        // 🔹 Unlock Vanilla Locked Items
+        private void UnlockVanillaLockedItems(DatabaseTables tables)
+        {
+            var quests = tables.Templates.Quests;
+            int modifiedCount = 0;
+
+            foreach (var kvp in quests)
+            {
+                string questId = kvp.Key.ToString();
+                if (questId.StartsWith("e983", StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.IsNullOrEmpty(kvp.Value.TraderId) || !_targetTraderIds.Contains(kvp.Value.TraderId)) continue;
+
+                var quest = kvp.Value;
+                if (quest.Rewards != null && quest.Rewards.ContainsKey("Success"))
+                {
+                    var successRewards = quest.Rewards["Success"];
+                    var originalCount = successRewards.Count;
+                    successRewards.RemoveAll(reward => reward.Type == RewardType.AssortmentUnlock);
+                    if (successRewards.Count != originalCount) modifiedCount++;
+                    if (!successRewards.Any()) quest.Rewards.Remove("Success");
+                }
+            }
+
+            foreach (var traderEntry in tables.Traders)
+            {
+                var trader = traderEntry.Value;
+                if (trader.QuestAssort != null && _targetTraderIds.Contains(trader.Base.Id))
+                {
+                    trader.QuestAssort.Clear();
+                    modifiedCount++;
+                }
+            }
+
+            Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Removed AssortmentUnlock from {modifiedCount} sources    移除商人解锁限制\x1b[0m");
+        }
+
+        // 🔹 Unlock Vanila traders, max all Vanila trader standings, and clear traderstanding rewards
+        private void UnlockVanilaTraderTraderStanding(DatabaseTables tables)
+        {
+            var quests = tables.Templates.Quests;
+            int modifiedCount = 0;
+
+            // Unlock Jaeger and Ref
+            var jaegerId = new MongoId("5c0647fdd443bc2504c2d371"); // Jaeger
+            var refId = new MongoId("6617beeaa9cfa777ca915b7c"); // Ref
+
+            if (tables.Traders.TryGetValue(jaegerId, out var jaeger))
+            {
+                jaeger.Base.UnlockedByDefault = true;
+                modifiedCount++;
+            }
+
+            if (tables.Traders.TryGetValue(refId, out var refTrader))
+            {
+                refTrader.Base.UnlockedByDefault = true;
+                modifiedCount++;
+            }
+
+            // Set all vanilla traders' standing to 6 in all player profiles
+            var profiles = _saveServer.GetProfiles();
+            foreach (var profile in profiles.Values)
+            {
+                if (profile.CharacterData?.PmcData?.TradersInfo != null)
+                {
+                    foreach (var traderId in _targetTraderIds)
+                    {
+                        if (profile.CharacterData.PmcData.TradersInfo.TryGetValue(traderId, out var traderInfo))
+                        {
+                            traderInfo.Standing = 6.0;
+                            modifiedCount++;
+                        }
+                    }
+                }
+            }
+
+            // Remove TraderStanding from quest rewards
+            foreach (var kvp in quests)
+            {
+                string questId = kvp.Key.ToString();
+                if (questId.StartsWith("e983", StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.IsNullOrEmpty(kvp.Value.TraderId) || !_targetTraderIds.Contains(kvp.Value.TraderId)) continue;
+
+                var quest = kvp.Value;
+                if (quest.Rewards != null && quest.Rewards.ContainsKey("Success"))
+                {
+                    var successRewards = quest.Rewards["Success"];
+                    var originalCount = successRewards.Count;
+                    successRewards.RemoveAll(reward => reward.Type == RewardType.TraderStanding);
+                    if (successRewards.Count != originalCount) modifiedCount++;
+                    if (!successRewards.Any()) quest.Rewards.Remove("Success");
+                }
+            }
+
+            Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Unlock traders, max standing, and clear standing rewards   解锁原版任务商人，满声望，清除声望奖励\x1b[0m");
+        }
+
+        // 🔹 Unlock Vanilla Locked Recipe
+        private void UnlockVanillaLockedRecipe(DatabaseTables tables)
+        {
+            var quests = tables.Templates.Quests;
+
+            foreach (var kvp in quests)
+            {
+                string questId = kvp.Key.ToString();
+                if (questId.StartsWith("e983", StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.IsNullOrEmpty(kvp.Value.TraderId) || !_targetTraderIds.Contains(kvp.Value.TraderId)) continue;
+
+                var quest = kvp.Value;
+                if (quest.Rewards != null && quest.Rewards.ContainsKey("Success"))
+                {
+                    var successRewards = quest.Rewards["Success"];
+                    successRewards.RemoveAll(reward => reward.Type == RewardType.ProductionScheme);
+                    if (!successRewards.Any()) quest.Rewards.Remove("Success");
+                }
+            }
+
+            if (tables.Hideout?.Production?.Recipes != null)
+            {
+                foreach (var recipe in tables.Hideout.Production.Recipes)
+                {
+                    if (recipe.Locked == true)
+                    {
+                        recipe.Locked = false;
+                    }
+
+                    if (recipe.Requirements != null)
+                    {
+                        recipe.Requirements.RemoveAll(req => req.QuestId != null);
+                    }
+                }
+            }
+            Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Unlock All Vanilla Production Recipes    解锁全部原版制作配方\x1b[0m");
+        }
+
+        // 🔹 Unlock Vanilla Customization
+        private void RemoveCustomizationDirectRewards(DatabaseTables tables)
+        {
+            var quests = tables.Templates.Quests;
+            int modifiedCount = 0;
+
+            foreach (var kvp in quests)
+            {
+                string questId = kvp.Key.ToString();
+                if (questId.StartsWith("e983", StringComparison.OrdinalIgnoreCase)) continue;
+                if (string.IsNullOrEmpty(kvp.Value.TraderId) || !_targetTraderIds.Contains(kvp.Value.TraderId)) continue;
+
+                var quest = kvp.Value;
+                if (quest.Rewards != null && quest.Rewards.ContainsKey("Success"))
+                {
+                    var successRewards = quest.Rewards["Success"];
+                    var originalCount = successRewards.Count;
+                    successRewards.RemoveAll(reward => reward.Type == RewardType.CustomizationDirect);
+                    if (successRewards.Count != originalCount) modifiedCount++;
+                    if (!successRewards.Any()) quest.Rewards.Remove("Success");
+                }
+            }
+
+            if (tables.Hideout?.Customisation != null)
+            {
+                if (tables.Hideout.Customisation.Globals != null)
+                {
+                    foreach (var global in tables.Hideout.Customisation.Globals)
+                    {
+                        global.Conditions?.Clear();
+                        modifiedCount++;
+                    }
+                }
+
+                if (tables.Hideout.Customisation.Slots != null)
+                {
+                    foreach (var slot in tables.Hideout.Customisation.Slots)
+                    {
+                        slot.Conditions?.Clear();
+                        modifiedCount++;
+                    }
+                }
+            }
+
+            Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Unlock all hideout Customization    解锁全部藏身处装饰\x1b[0m");
+        }
+
+        // 🔹 Disable Vanilla Quests (change start condition to lvl 99 and move them to new trader)
         private void DisableVanillaQuests(DatabaseTables tables)
         {
             var quests = tables.Templates.Quests;
@@ -217,13 +473,12 @@ namespace JiangHu.Server
                     VisibilityConditions = new List<VisibilityCondition>()
                 };
 
-                quest.Conditions.AvailableForStart = new List<QuestCondition> { condition }; 
+                quest.Conditions.AvailableForStart = new List<QuestCondition> { condition };
                 modifiedCount++;
             }
 
             Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Disabled and moved {traderChangedCount} vanilla quests to Loong Gate Inn    锁定原版任务并移至龙门客栈\x1b[0m");
         }
-
 
         // 🔹 Lock Flea
         private void LockFlea(DatabaseTables tables)
@@ -244,43 +499,117 @@ namespace JiangHu.Server
             }
         }
 
-        // 🔹 Increase Head HP
-        private void IncreaseHeadHP()
+        // 🔹 Add DSP Recipe
+        private void AddHideoutProductionDSP(DatabaseTables tables)
         {
             try
             {
-                var profiles = _saveServer.GetProfiles();
-                int modifiedCount = 0;
-
-                foreach (var kvp in profiles)
+                var newRecipe = new HideoutProduction
                 {
-                    var profile = kvp.Value;
-                    var pmc = profile?.CharacterData?.PmcData;
-                    if (pmc == null)
-                        continue;
-
-                    var exp = pmc?.Info?.Experience ?? 0;
-                    int bonusHp = Math.Min(exp / 30000, 65); 
-                    int newMax = Math.Min(35 + bonusHp, 100);
-
-                    if (pmc.Health?.BodyParts == null || !pmc.Health.BodyParts.ContainsKey("Head"))
-                        continue;
-
-                    var head = pmc.Health.BodyParts["Head"];
-
-                    head.Health.Maximum = newMax;
-                    if (head.Health.Current > newMax)
-                        head.Health.Current = newMax;
-                    Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Increased {pmc.Info.Nickname}'s Head HP to {newMax} (+{newMax - 35})    头变大啦\x1b[0m");
-                    modifiedCount++;
+                    Id = new MongoId("e983002c4ab4d99999888200"),
+                    AreaType = (HideoutAreas) 11,
+                    Requirements = new List<Requirement>
+            {
+                new Requirement
+                {
+                    TemplateId = new MongoId("590c2e1186f77425357b6124"),
+                    Type = "Tool",
+                    Count = 1
                 }
+            },
+                    ProductionTime = 60,
+                    EndProduct = new MongoId("62e910aaf957f2915e0a5e36"),
+                    IsEncoded = true,
+                    Locked = false,
+                    NeedFuelForAllProductionTime = true,
+                    Continuous = false,
+                    Count = 1,
+                    ProductionLimitCount = 0,
+                    IsCodeProduction = false
+                };
+
+                tables.Hideout.Production.Recipes.Add(newRecipe);
+                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Lighthouse DSP production recipe added    灯塔通行道具制作配方\x1b[0m");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error adjusting head HP: {ex.Message}  \x1b[0m");
+                Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error adding hideout production: {ex.Message} \x1b[0m");
             }
         }
 
+        // 🔹 Change Prestige Conditions
+        private void Change_Prestige_Conditions(DatabaseTables tables)
+        {
+            try
+            {
+                if (!_Change_Prestige_Conditions)
+                {
+                    Console.WriteLine("ℹ️ [Jiang Hu] Change_Prestige_Conditions is false. Skipping prestige conditions replacement.");
+                    return;
+                }
+
+                var originalPrestige = tables.Templates.Prestige;
+                if (originalPrestige?.Elements == null || originalPrestige.Elements.Count == 0)
+                {
+                    Console.WriteLine("⚠️ [Jiang Hu] No original prestige elements found.");
+                    return;
+                }
+
+                var conditionIds = new[]
+                {
+                    "e983002c4ab4d99999aaaa01", // Level 1
+                    "e983002c4ab4d99999aaaa11", // Level 2  
+                    "e983002c4ab4d99999aaaa21", // Level 3
+                    "e983002c4ab4d99999aaaa31"  // Level 4
+                };
+
+                for (int i = 0; i < originalPrestige.Elements.Count; i++)
+                {
+                    var element = originalPrestige.Elements[i];
+
+                    element.Conditions.Clear();
+
+                    element.Conditions.Add(new QuestCondition
+                    {
+                        Id = new MongoId(conditionIds[i]),
+                        Index = 1,
+                        DynamicLocale = false,
+                        VisibilityConditions = new List<VisibilityCondition>(),
+                        GlobalQuestCounterId = "",
+                        ParentId = "",
+                        Target = new ListOrT<string>(null, "e983002c4ab4d229af880000"),
+                        Status = new HashSet<QuestStatusEnum> { QuestStatusEnum.Success },
+                        AvailableAfter = 0,
+                        Dispersion = 0,
+                        ConditionType = "Quest"
+                    });
+
+                    element.TransferConfigs = new TransferConfigs
+                    {
+                        StashConfig = new StashPrestigeConfig
+                        {
+                            XCellCount = 0,
+                            YCellCount = 0,
+                            Filters = new StashPrestigeFilters
+                            {
+                                IncludedItems = new List<MongoId>(),
+                                ExcludedItems = new List<MongoId>()
+                            }
+                        },
+                        SkillConfig = new PrestigeSkillConfig { TransferMultiplier = element.TransferConfigs?.SkillConfig?.TransferMultiplier ?? 0 },
+                        MasteringConfig = new PrestigeMasteringConfig { TransferMultiplier = element.TransferConfigs?.MasteringConfig?.TransferMultiplier ?? 0 }
+                    };
+                }
+
+                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Prestige conditions and transfer configs replaced for {originalPrestige.Elements.Count} levels    新声望条件\x1b[0m");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error replacing prestige conditions: {ex.Message} \x1b[0m");
+            }
+        }
+
+        // 🔹 Disable Insurance
         private void DisableInsurance(DatabaseTables tables)
         {
             if (!_Enable_No_Insurance)
@@ -310,18 +639,19 @@ namespace JiangHu.Server
             }
         }
 
+        // 🔹 Disable Vanilla Shops
         private void DisableVanillaShops(DatabaseTables tables)
         {
             var lockedTraderIds = new[]
             {
-        "54cb50c76803fa8b248b4571", // Prapor
-        "54cb57776803fa99248b456e", // Therapist
-        "58330581ace78e27b8b10cee", // Skier
-        "5935c25fb3acc3127c3d8cd9", // Peacekeeper
-        "5a7c2eca46aef81a7ca2145d", // Mechanic
-        "5ac3b934156ae10c4430e83c", // Ragman
-        "5c0647fdd443bc2504c2d371", // Jaeger
-        "6617beeaa9cfa777ca915b7c"  // Fence
+                "54cb50c76803fa8b248b4571", // Prapor
+                "54cb57776803fa99248b456e", // Therapist
+                "58330581ace78e27b8b10cee", // Skier
+                "5935c25fb3acc3127c3d8cd9", // Peacekeeper
+                "5a7c2eca46aef81a7ca2145d", // Mechanic
+                "5ac3b934156ae10c4430e83c", // Ragman
+                "5c0647fdd443bc2504c2d371", // Jaeger
+                "6617beeaa9cfa777ca915b7c"  // Fence
             };
 
             var clearedTraders = new List<string>();
@@ -345,6 +675,7 @@ namespace JiangHu.Server
                 Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Vanilla shops cleared    禁商店\x1b[0m");
         }
 
+        // 🔹 Disable Fence Shop
         public void DisableFenceAssort(DatabaseTables tables, bool enableEmptyVanillaShop)
         {
             if (!enableEmptyVanillaShop)
@@ -394,202 +725,45 @@ namespace JiangHu.Server
             };
         }
 
-        private void UnlockAllItemsByNewQuest(DatabaseTables tables)
+
+        // 🔹 Increase Head HP
+        private void IncreaseHeadHP()
         {
             try
             {
-                int modifiedTraders = 0;
+                var profiles = _saveServer.GetProfiles();
+                int modifiedCount = 0;
 
-                foreach (var traderEntry in tables.Traders)
+                foreach (var kvp in profiles)
                 {
-                    var trader = traderEntry.Value;
-                    if (trader.QuestAssort == null)
+                    var profile = kvp.Value;
+                    var pmc = profile?.CharacterData?.PmcData;
+                    if (pmc == null)
                         continue;
 
-                    bool traderModified = false;
+                    var exp = pmc?.Info?.Experience ?? 0;
+                    int bonusHp = Math.Min(exp / 20000, 65);
+                    int newMax = Math.Min(35 + bonusHp, 100);
 
-                    foreach (var status in new[] { "success", "started", "fail" })
-                    {
-                        if (!trader.QuestAssort.ContainsKey(status))
-                            continue;
+                    if (pmc.Health?.BodyParts == null || !pmc.Health.BodyParts.ContainsKey("Head"))
+                        continue;
 
-                        var questItems = trader.QuestAssort[status];
-                        foreach (var key in questItems.Keys.ToList())
-                        {
-                            questItems[key] = "e983002c4ab4d229af8896a0"; 
-                            traderModified = true;
-                        }
-                    }
+                    var head = pmc.Health.BodyParts["Head"];
 
-                    if (traderModified)
-                        modifiedTraders++;
+                    head.Health.Maximum = newMax;
+                    if (head.Health.Current > newMax)
+                        head.Health.Current = newMax;
+                    Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Increased {pmc.Info.Nickname}'s Head HP to {newMax} (+{newMax - 35})    头变大啦\x1b[0m");
+                    modifiedCount++;
                 }
-                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Items unlock requirement changed    新任务解锁全部物品\x1b[0m");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error unlocking items: {ex.Message} \x1b[0m");
+                Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error adjusting head HP: {ex.Message}  \x1b[0m");
             }
         }
 
-        // Add converter class
-        public class MongoIdJsonConverter : JsonConverter<MongoId>
-        {
-            public override MongoId Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            {
-                string? idStr = reader.GetString();
-                if (string.IsNullOrEmpty(idStr))
-                    throw new JsonException("MongoId string is null or empty");
-                return new MongoId(idStr);
-            }
-
-            public override void Write(Utf8JsonWriter writer, MongoId value, JsonSerializerOptions options)
-            {
-                writer.WriteStringValue(value.ToString());
-            }
-        }
-        public class ListOrTJsonConverter<T> : JsonConverter<ListOrT<T>>
-        {
-            public override ListOrT<T>? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-            {
-                if (reader.TokenType == JsonTokenType.StartArray)
-                {
-                    var list = JsonSerializer.Deserialize<List<T>>(ref reader, options);
-                    return new ListOrT<T>(list, default);
-                }
-                else
-                {
-                    var item = JsonSerializer.Deserialize<T>(ref reader, options);
-                    return new ListOrT<T>(null, item);
-                }
-            }
-
-            public override void Write(Utf8JsonWriter writer, ListOrT<T> value, JsonSerializerOptions options)
-            {
-                if (value.IsList)
-                    JsonSerializer.Serialize(writer, value.List, options);
-                else
-                    JsonSerializer.Serialize(writer, value.Item, options);
-            }
-        }
-
-        private void Change_Prestige_Conditions(DatabaseTables tables)
-        {
-            try
-            {
-                if (!_Change_Prestige_Conditions)
-                {
-                    Console.WriteLine("ℹ️ [Jiang Hu] Change_Prestige_Conditions is false. Skipping prestige conditions replacement.");
-                    return;
-                }
-
-                var modPath = System.IO.Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-                var prestigeFile = System.IO.Path.Combine(modPath, "db", "prestige", "prestige.json");
-
-                if (!File.Exists(prestigeFile))
-                {
-                    Console.WriteLine("⚠️ [Jiang Hu] prestige.json not found. Skipping prestige conditions replacement.");
-                    return;
-                }
-
-                string prestigeJson = File.ReadAllText(prestigeFile);
-
-                var options = new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                };
-                options.Converters.Add(new MongoIdJsonConverter());
-
-                var customPrestige = JsonSerializer.Deserialize<Prestige>(prestigeJson, new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true,
-                    Converters =
-    {
-        new MongoIdJsonConverter(),
-        new ListOrTJsonConverter<string>()
-    }
-                });
-
-                if (customPrestige?.Elements == null || customPrestige.Elements.Count == 0)
-                {
-                    Console.WriteLine("⚠️ [Jiang Hu] prestige.json is empty or invalid. Skipping prestige conditions replacement.");
-                    return;
-                }
-
-                var originalPrestige = tables.Templates.Prestige;
-                if (originalPrestige?.Elements == null || originalPrestige.Elements.Count == 0)
-                {
-                    Console.WriteLine("⚠️ [Jiang Hu] No original prestige elements found.");
-                    return;
-                }
-
-                for (int i = 0; i < originalPrestige.Elements.Count; i++)
-                {
-                    var element = originalPrestige.Elements[i];
-
-                    if (i < customPrestige.Elements.Count)
-                    {
-                        element.Conditions = customPrestige.Elements[i].Conditions;
-                    }
-                    else
-                    {
-                        element.Conditions.Clear();
-                    }
-                }
-                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Prestige conditions replaced for {originalPrestige.Elements.Count} levels    新声望条件\x1b[0m");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error replacing prestige conditions: {ex.Message} \x1b[0m");
-            }
-        }
-        private void AddHideoutProductionDSP(DatabaseTables tables)
-        {
-            try
-            {
-                if (!_Add_HideoutProduction_DSP)
-                    return;
-
-                var dspItem = tables.Templates.Items["62e910aaf957f2915e0a5e36"];
-                if (dspItem == null)
-                {
-                    Console.WriteLine("⚠️ [Jiang Hu] DSP item not found in templates");
-                    return;
-                }
-
-                var newRecipe = new HideoutProduction
-                {
-                    Id = new MongoId("e983002c4ab4d99999888200"),
-                    AreaType = (HideoutAreas) 11, 
-                    Requirements = new List<Requirement>
-            {
-                new Requirement
-                {
-                    TemplateId = new MongoId("590c2e1186f77425357b6124"), 
-                    Type = "Tool",
-                    Count = 1
-                }
-            },
-                    ProductionTime = 60,
-                    EndProduct = new MongoId("62e910aaf957f2915e0a5e36"),
-                    IsEncoded = true,
-                    Locked = false,
-                    NeedFuelForAllProductionTime = true,
-                    Continuous = false,
-                    Count = 1,
-                    ProductionLimitCount = 0,
-                    IsCodeProduction = false
-                };
-
-                tables.Hideout.Production.Recipes.Add(newRecipe);
-                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] DSP production recipe added    灯塔道具制作蓝图\x1b[0m");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error adding hideout production: {ex.Message} \x1b[0m");
-            }
-        }
-
+        // 🔹 Add Labrys Keycard Recipe
         private void AddHideoutProductionLabKeycard(DatabaseTables tables)
         {
             try
@@ -694,10 +868,9 @@ namespace JiangHu.Server
             {
                 const string targetLocation = "6733700029c367a3d40b02af";
                 const string newTraderId = "e983002c4ab4d99999888000";
-                const string targetQuestId = "e983002c4ab4d229af888480"; // "Big Tarkov Family"
 
                 var quests = tables.Templates.Quests;
-                var matchingQuests = new List<(string QuestId, SPTarkov.Server.Core.Models.Eft.Common.Tables.Quest Quest)>();
+                int modifiedCount = 0;
 
                 foreach (var kvp in quests)
                 {
@@ -706,39 +879,13 @@ namespace JiangHu.Server
 
                     if (quest.Location == targetLocation)
                     {
-                        matchingQuests.Add((questId, quest));
+                        quest.TraderId = newTraderId;
+                        quest.Conditions.AvailableForStart?.Clear();
+                        modifiedCount++;
                     }
                 }
 
-                foreach (var (questId, quest) in matchingQuests)
-                {
-                    string questName = quest.Name ?? "Unnamed Quest";
-
-                    string oldTraderId = quest.TraderId;
-                    quest.TraderId = newTraderId;
-
-                    quest.Conditions.AvailableForStart?.Clear();
-                    quest.Conditions.AvailableForStart = new List<QuestCondition>();
-
-                    var condition = new QuestCondition
-                    {
-                        Id = new MongoId(Guid.NewGuid().ToString("N").Substring(0, 24)),
-                        Index = 0,
-                        ConditionType = "Quest",
-                        Status = new HashSet<SPTarkov.Server.Core.Models.Enums.QuestStatusEnum>
-                {
-                    SPTarkov.Server.Core.Models.Enums.QuestStatusEnum.Success
-                },
-                        Target = new ListOrT<string>(list: null, item: targetQuestId),
-                        DynamicLocale = false,
-                        GlobalQuestCounterId = string.Empty,
-                        ParentId = string.Empty,
-                        VisibilityConditions = new List<VisibilityCondition>()
-                    };
-
-                    quest.Conditions.AvailableForStart.Add(condition);
-                }
-                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Unlocked {matchingQuests.Count} Labrys quests    解锁迷宫任务\x1b[0m");
+                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Unlocked {modifiedCount} Labrys quests    解锁迷宫任务\x1b[0m");
             }
             catch (Exception ex)
             {
@@ -746,6 +893,7 @@ namespace JiangHu.Server
             }
         }
 
+        // 🔹 Replace One-Raid with One-Life for specific quests
         private void ReplaceOneRaidWithOneLife(DatabaseTables tables)
         {
             try
@@ -756,12 +904,12 @@ namespace JiangHu.Server
                 var quests = tables.Templates.Quests;
                 int modifiedCount = 0;
 
-                // Quest e983002c4ab4d229af888700
-                if (quests.TryGetValue("e983002c4ab4d229af888700", out var quest700))
+                // Long March
+                if (quests.TryGetValue("e983002c4ab4d229af888000", out var quest08))
                 {
-                    if (quest700.Conditions?.AvailableForFinish != null)
+                    if (quest08.Conditions?.AvailableForFinish != null)
                     {
-                        foreach (var condition in quest700.Conditions.AvailableForFinish)
+                        foreach (var condition in quest08.Conditions.AvailableForFinish)
                         {
                             if (condition.OneSessionOnly == true)
                             {
@@ -770,9 +918,9 @@ namespace JiangHu.Server
                         }
                     }
 
-                    if (quest700.Conditions?.AvailableForFinish != null)
+                    if (quest08.Conditions?.AvailableForFinish != null)
                     {
-                        quest700.Conditions.AvailableForFinish.RemoveAll(condition =>
+                        quest08.Conditions.AvailableForFinish.RemoveAll(condition =>
                             condition.Counter?.Conditions?.Any(counterCondition =>
                                 counterCondition.ConditionType == "ExitStatus") == true
                         );
@@ -780,7 +928,7 @@ namespace JiangHu.Server
 
                     var failCondition700 = new QuestCondition
                     {
-                        Id = new MongoId("e983002c4ab4d229af88876d"),
+                        Id = new MongoId("e983002c4ab4d229af888090"),
                         Index = 0,
                         ConditionType = "CounterCreator",
                         DynamicLocale = false,
@@ -792,12 +940,12 @@ namespace JiangHu.Server
                         VisibilityConditions = new List<VisibilityCondition>(),
                         Counter = new QuestConditionCounter
                         {
-                            Id = "e983002c4ab4d229af88876c",
+                            Id = "e983002c4ab4d229af888091",
                             Conditions = new List<QuestConditionCounterCondition>
                     {
                         new QuestConditionCounterCondition
                         {
-                            Id = new MongoId("e983002c4ab4d229af88876b"),
+                            Id = new MongoId("e983002c4ab4d229af888092"),
                             ConditionType = "ExitStatus",
                             DynamicLocale = false,
                             Status = new List<string> { "Killed", "MissingInAction", "Left" }
@@ -806,22 +954,22 @@ namespace JiangHu.Server
                         }
                     };
 
-                    if (quest700.Conditions.Fail == null)
-                        quest700.Conditions.Fail = new List<QuestCondition>();
+                    if (quest08.Conditions.Fail == null)
+                        quest08.Conditions.Fail = new List<QuestCondition>();
 
-                    quest700.Conditions.Fail.Insert(0, failCondition700);
+                    quest08.Conditions.Fail.Insert(0, failCondition700);
 
-                    quest700.Restartable = true;
+                    quest08.Restartable = true;
 
                     modifiedCount++;
                 }
 
-                // Quest e983002c4ab4d229af8882b2
-                if (quests.TryGetValue("e983002c4ab4d229af8882b2", out var quest2b2))
+                // Jiang Hu Bounty Edict
+                if (quests.TryGetValue("e983002c4ab4d229af880000", out var quest00))
                 {
-                    if (quest2b2.Conditions?.AvailableForFinish != null)
+                    if (quest00.Conditions?.AvailableForFinish != null)
                     {
-                        foreach (var condition in quest2b2.Conditions.AvailableForFinish)
+                        foreach (var condition in quest00.Conditions.AvailableForFinish)
                         {
                             if (condition.OneSessionOnly == true)
                             {
@@ -830,9 +978,9 @@ namespace JiangHu.Server
                         }
                     }
 
-                    if (quest2b2.Conditions?.AvailableForFinish != null)
+                    if (quest00.Conditions?.AvailableForFinish != null)
                     {
-                        quest2b2.Conditions.AvailableForFinish.RemoveAll(condition =>
+                        quest00.Conditions.AvailableForFinish.RemoveAll(condition =>
                             condition.Counter?.Conditions?.Any(counterCondition =>
                                 counterCondition.ConditionType == "ExitStatus") == true
                         );
@@ -840,7 +988,7 @@ namespace JiangHu.Server
 
                     var failCondition2b2 = new QuestCondition
                     {
-                        Id = new MongoId("e983002c4ab4d229af888317"),
+                        Id = new MongoId("e983002c4ab4d229af880030"),
                         Index = 0,
                         ConditionType = "CounterCreator",
                         DynamicLocale = false,
@@ -852,12 +1000,12 @@ namespace JiangHu.Server
                         VisibilityConditions = new List<VisibilityCondition>(),
                         Counter = new QuestConditionCounter
                         {
-                            Id = "e983002c4ab4d229af888316",
+                            Id = "e983002c4ab4d229af880031",
                             Conditions = new List<QuestConditionCounterCondition>
                     {
                         new QuestConditionCounterCondition
                         {
-                            Id = new MongoId("e983002c4ab4d229af888315"),
+                            Id = new MongoId("e983002c4ab4d229af880032"),
                             ConditionType = "ExitStatus",
                             DynamicLocale = false,
                             Status = new List<string> { "Killed", "MissingInAction", "Left" }
@@ -866,12 +1014,12 @@ namespace JiangHu.Server
                         }
                     };
 
-                    if (quest2b2.Conditions.Fail == null)
-                        quest2b2.Conditions.Fail = new List<QuestCondition>();
+                    if (quest00.Conditions.Fail == null)
+                        quest00.Conditions.Fail = new List<QuestCondition>();
 
-                    quest2b2.Conditions.Fail.Insert(0, failCondition2b2);
+                    quest00.Conditions.Fail.Insert(0, failCondition2b2);
                     
-                    quest2b2.Restartable = true;
+                    quest00.Restartable = true;
 
                     modifiedCount++;
                 }

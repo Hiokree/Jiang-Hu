@@ -35,7 +35,7 @@ namespace JiangHu
             if (!File.Exists(configPath)) return;
 
             var config = JObject.Parse(File.ReadAllText(configPath));
-            EnableNewRaidMode = config["Enable_New_RaidMode"]?.Value<bool>() ?? true;
+            EnableNewRaidMode = config["Enable_Arena_Mode"]?.Value<bool>() ?? true;
         }
 
         void Start()
