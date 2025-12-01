@@ -66,7 +66,7 @@ namespace JiangHu
 
         private void UpdateCursorState()
         {
-            bool anyGUIOpen = ShowSettingsManager.Value;
+            bool anyGUIOpen = ShowMusicPlayer.Value || ShowSettingsManager.Value;
 
             if (anyGUIOpen)
             {

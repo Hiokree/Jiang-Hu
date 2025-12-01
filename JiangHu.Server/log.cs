@@ -2,7 +2,7 @@
 using System.IO;
 using System.Reflection;
 using System.Text.Json;
-
+using System.Drawing;
 namespace JiangHu.Server
 {
     public static class Log

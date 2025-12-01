@@ -454,6 +454,22 @@ namespace JiangHu
                 enableDogtagCollection = newDogtagCollection;
                 SaveSettingsToJson();
             }
+            GUILayout.Space(5);
+            bool newEnableBotName = GUILayout.Toggle(enableJianghuBotName, " Enable Three Body Bot Names  三体人机名字");
+            if (newEnableBotName != enableJianghuBotName)
+            {
+                enableJianghuBotName = newEnableBotName;
+                if (!enableJianghuBotName && enableDogtagCollection)
+                {
+                    enableDogtagCollection = false;
+                }
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            if (GUILayout.Button("Languages  多国语言 ***"))
+            {
+                showBotNameGUI = true;
+            }
             GUILayout.EndVertical();
 
             GUILayout.Space(10);
@@ -463,23 +479,11 @@ namespace JiangHu
             GUILayout.Label("Bot  人机", GUIStyle.none);
             GUILayout.Space(5);
 
-            bool newEnableBot = GUILayout.Toggle(enableJianghuBot, " Enable Jianghu Bot  江湖人机");
+            bool newEnableBot = GUILayout.Toggle(enableJianghuBot, " Enable Boss Brain Bot  首领风格人机");
             if (newEnableBot != enableJianghuBot)
             {
                 enableJianghuBot = newEnableBot;
                 SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            bool newEnableBotName = GUILayout.Toggle(enableJianghuBotName, " Enable Jianghu Bot Names  江湖人机名字");
-            if (newEnableBotName != enableJianghuBotName)
-            {
-                enableJianghuBotName = newEnableBotName;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            if (GUILayout.Button("Languages  多国语言 ***"))
-            {
-                showBotNameGUI = true;
             }
             GUILayout.EndVertical();
 

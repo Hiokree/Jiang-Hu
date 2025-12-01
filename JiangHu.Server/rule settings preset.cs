@@ -83,6 +83,7 @@ namespace JiangHu.Server
                     WriteConfigSetting("Cash_Wipe_Coefficiency", 0.1);
                     WriteConfigSetting("Enable_No_Insurance", false);
                     WriteConfigSetting("Enable_empty_vanilla_shop", false);
+                    WriteConfigSetting("Disable_Secure_Container", false);
 
                     // unlocks
                     if (CheckQuestCompleted(pmc, "e983002c4ab4d229af881000")) // "Home In Tarkov - Part 1"
@@ -179,6 +180,11 @@ namespace JiangHu.Server
                     if (CheckQuestCompleted(pmc, "e983002c4ab4d229af888000")) // "Long March"
                     {
                         WriteConfigSetting("Enable_empty_vanilla_shop", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af888000")) // "Long March"
+                    {
+                        WriteConfigSetting("Disable_Secure_Container", true);
                     }
 
                     break;

@@ -38,6 +38,7 @@ namespace JiangHu.Server
         private bool _Lock_Flea = false;
         private bool _Enable_No_Insurance = false;
         private bool _Enable_Empty_Vanilla_Shop = false;
+        private bool _Disable_Secure_Container = false;
 
         private bool _Unlock_VanillaLocked_Items = false;
         private bool _Unlock_VanilaTrader_TraderStanding = false;
@@ -132,6 +133,8 @@ namespace JiangHu.Server
                 if (config.TryGetValue("Enable_Replace_OneRaid_with_OneLife", out var oneLifeValue))
                     _Enable_Replace_OneRaid_with_OneLife = oneLifeValue.GetBoolean();
 
+                if (config.TryGetValue("Disable_Secure_Container", out var ContainerValue))
+                    _Disable_Secure_Container = ContainerValue.GetBoolean();
 
             }
             catch (Exception ex)
@@ -191,6 +194,9 @@ namespace JiangHu.Server
                 if (_Enable_Replace_OneRaid_with_OneLife)
                     ReplaceOneRaidWithOneLife(tables);
 
+                if (_Disable_Secure_Container)
+                    DisableSecureContainer(tables);
+
             }
             catch (Exception ex)
             {
@@ -247,7 +253,7 @@ namespace JiangHu.Server
 
                     if (!successRewards.Any())
                     {
-                        quest.Rewards.Remove("Success");
+                        successRewards.Clear();
                     }
                 }
             }
@@ -725,6 +731,46 @@ namespace JiangHu.Server
             };
         }
 
+        private void DisableSecureContainer(DatabaseTables tables)
+        {
+            var items = tables.Templates.Items; 
+
+            MongoId[] secureContainerIds =
+            [
+                new("544a11ac4bdc2d470e8b456a"), // Alpha
+                new("5857a8b324597729ab0a0e7d"), // Beta
+                new("5857a8bc2459772bad15db29"), // Gamma
+                new("665ee77ccf2d642e98220bca"), // Gamma Unheard
+                new("59db794186f77448bc595262"), // Epsilon
+                new("664a55d84a90fc2c8a6305c9"), // Theta
+                new("5c093ca986f7740a1867ab12"), // Kappa
+                new("676008db84e242067d0dc4c9"), // Kappa (Desecrated)
+                new("5732ee6a24597719ae0c0281")  // Waist Pouch
+            ];
+
+            foreach (var containerId in secureContainerIds)
+            {
+                if (!items.TryGetValue(containerId, out var containerObj) || containerObj is not TemplateItem container)
+                    continue;
+
+                var grids = container.Properties.Grids?.ToList() ?? [];
+                if (grids.Count == 0) continue;
+
+                var gridFilters = grids[0].Properties.Filters;
+                if (gridFilters == null) continue;
+
+                var filterList = gridFilters.ToList();
+                if (filterList.Count == 0) continue;
+
+                // Clear the filter - set to empty HashSet so nothing can be put in
+                filterList[0].Filter = new HashSet<MongoId>();
+                grids[0].Properties.Filters = filterList;
+
+                container.Properties.Grids = grids;
+            }
+
+            Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Secure container filters cleared    安全容器过滤器已清空\x1b[0m");
+        }
 
         // 🔹 Increase Head HP
         private void IncreaseHeadHP()

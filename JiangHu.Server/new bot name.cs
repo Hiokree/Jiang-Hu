@@ -46,6 +46,7 @@ public class JianghuBotName
                 if (bossTypes.Contains(botTypeId)) continue;
 
                 botType.FirstNames = customNames;
+                botType.LastNames = new List<string>();
                 replacedCount++;
             }
 
