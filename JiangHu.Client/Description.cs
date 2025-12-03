@@ -114,8 +114,6 @@ namespace JiangHu
                 LoadDescription("ru");
             }
 
-            GUI.DragWindow(new Rect(0, 0, windowRect.width - 230, 25));
-
             float scrollViewY = buttonY + 45f;
             float scrollViewHeight = windowRect.height - scrollViewY - 10f;
 
@@ -125,7 +123,7 @@ namespace JiangHu
             GUILayout.EndScrollView();
             GUILayout.EndArea();
 
-            GUI.DragWindow(new Rect(0, 0, windowRect.width - 230, 40));
+            GUI.DragWindow(new Rect(0, 0, windowRect.width, windowRect.height));
         }
     }
 }

@@ -17,8 +17,9 @@ namespace JiangHu.Server
     {
         private readonly DatabaseServer _databaseServer;
         private readonly SaveServer _saveServer;
-        private bool _Enable_Arena_Mode = false;
-        private bool _Restart_Arena_Mode = false;
+        private bool _Enable_Arena_Quest = false;
+        private bool _Restart_Arena_Quest = false;
+        private bool _Enable_XP_Mode = false;
         private readonly string[] _targetQuestIds = {
             "e973002c4ab4d99999999000",
             "e973002c4ab4d99999999010",
@@ -38,12 +39,6 @@ namespace JiangHu.Server
 
         public void ApplyAllRaidModeSettings()
         {
-            if (!_Enable_Arena_Mode)
-            {
-                ResetRaidModeQuestsInProfiles();
-                return;
-            }
-            Console.WriteLine("\x1b[91m🍂 [Jiang Hu] Dance on the Razor's Edge enabled    惊鸿猎\x1b[0m");
             newBotXpValues();
             ApplyEnergyHydrationSettings();
             ModifyQuestCondition();
@@ -69,12 +64,14 @@ namespace JiangHu.Server
                 if (config == null)
                     return;
 
-                if (config.TryGetValue("Enable_Arena_Mode", out var raidModeValue))
-                    _Enable_Arena_Mode = raidModeValue.GetBoolean();
+                if (config.TryGetValue("Enable_Arena_Quest", out var arenaQuestValue))
+                    _Enable_Arena_Quest = arenaQuestValue.GetBoolean();
 
-                if (config.TryGetValue("Restart_Arena_Mode", out var restartValue))
-                    _Restart_Arena_Mode = restartValue.GetBoolean();
+                if (config.TryGetValue("Restart_Arena_Quest", out var restartValue))
+                    _Restart_Arena_Quest = restartValue.GetBoolean();
 
+                if (config.TryGetValue("Enable_XP_Mode", out var XPModeValue))
+                    _Enable_XP_Mode = XPModeValue.GetBoolean();
             }
             catch (Exception ex)
             {
@@ -86,7 +83,7 @@ namespace JiangHu.Server
         {
             try
             {
-                if (!_Enable_Arena_Mode)
+                if (!_Enable_XP_Mode)
                 {
                     return;
                 }
@@ -117,6 +114,7 @@ namespace JiangHu.Server
                         if (botModified) modifiedCount++;
                     }
                 }
+                Console.WriteLine("\x1b[91m🍂 [Jiang Hu] Dance on the Razor's Edge enabled    惊鸿猎\x1b[0m");
                 Console.WriteLine("\x1b[91m🍂 [Jiang Hu] Boss kill XP adjusted    调整击杀首领经验\x1b[0m");
             }
             catch (Exception ex)
@@ -129,7 +127,7 @@ namespace JiangHu.Server
         {
             try
             {
-                if (!_Enable_Arena_Mode)
+                if (!_Enable_XP_Mode)
                 {
                     return;
                 }
@@ -161,7 +159,7 @@ namespace JiangHu.Server
         {
             try
             {
-                if (!_Enable_Arena_Mode)
+                if (!_Enable_Arena_Quest)
                 {
                     return;
                 }
@@ -188,44 +186,12 @@ namespace JiangHu.Server
                     };
 
                     quest.Conditions.AvailableForStart = new List<QuestCondition> { condition };
-                    Console.WriteLine($"\x1b[91m🍂 [Jiang Hu] Arena Quest opened    竞技场任务开启\x1b[0m");
+                    Console.WriteLine($"\x1b[91m🍂 [Jiang Hu] Aporia Quest enabled    向阳而生任务开启\x1b[0m");
                 }
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"\x1b[91m❌ [Quest Mod] Error modifying quest condition: {ex.Message}\x1b[0m");
-            }
-        }
-
-        private void ResetRaidModeQuestsInProfiles()
-        {
-            try
-            {
-                var profiles = _saveServer.GetProfiles();
-                int resetCount = 0;
-
-                foreach (var profile in profiles.Values)
-                {
-                    var pmcQuests = profile.CharacterData?.PmcData?.Quests;
-                    if (pmcQuests != null)
-                    {
-                        foreach (var questId in _targetQuestIds)
-                        {
-                            var quest = pmcQuests.FirstOrDefault(q => q.QId == questId);
-                            if (quest != null)
-                            {
-                                quest.Status = QuestStatusEnum.Locked;
-                                resetCount++;
-                            }
-                        }
-                    }
-                }
-
-                Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Reset {resetCount} raid mode quests to locked\x1b[0m");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"\x1b[91m❌ [Quest Reset] Error resetting quests: {ex.Message}\x1b[0m");
             }
         }
 
@@ -241,9 +207,9 @@ namespace JiangHu.Server
                     var json = File.ReadAllText(configPath);
                     var configDict = JsonSerializer.Deserialize<Dictionary<string, JsonElement>>(json);
 
-                    if (configDict != null && configDict.ContainsKey("Restart_Arena_Mode"))
+                    if (configDict != null && configDict.ContainsKey("Restart_Arena_Quest"))
                     {
-                        configDict["Restart_Arena_Mode"] = JsonDocument.Parse("false").RootElement;
+                        configDict["Restart_Arena_Quest"] = JsonDocument.Parse("false").RootElement;
 
                         var options = new JsonSerializerOptions { WriteIndented = true };
                         File.WriteAllText(configPath, JsonSerializer.Serialize(configDict, options));
@@ -260,7 +226,7 @@ namespace JiangHu.Server
         {
             try
             {
-                if (!_Restart_Arena_Mode)
+                if (!_Restart_Arena_Quest)
                 {
                     return;
                 }
@@ -286,7 +252,7 @@ namespace JiangHu.Server
                 }
 
                 SaveConfigRestartFlag();
-                Console.WriteLine($"\x1b[92m⚔️ [Jiang Hu] Locked {lockedCount} raid mode quests in profiles\x1b[0m");
+                Console.WriteLine($"\x1b[92m⚔️ [Jiang Hu] Locked {lockedCount} Aporia quests in profiles\x1b[0m");
             }
             catch (Exception ex)
             {

@@ -1,12 +1,14 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
 using EFT;
+using EFT.InventoryLogic;
 using GPUInstancer;
 using HarmonyLib;
+using JiangHu.ExfilRandomizer;
 using JiangHu.Patches;
-using UnityEngine;
+using JiangHu.Patches;
 using System.Reflection;
-using EFT.InventoryLogic;
+using UnityEngine;
 
 namespace JiangHu
 {
@@ -39,8 +41,10 @@ namespace JiangHu
             pluginObj.hideFlags = HideFlags.HideAndDontSave;
 
             pluginObj.AddComponent<DogtagConditionManager>();
-
             pluginObj.AddComponent<XPConditionManager>();
+            pluginObj.AddComponent<RaidStatusConditionManager>();
+
+
             pluginObj.AddComponent<NewMovement>();
             pluginObj.AddComponent<RemoveAlpha>();
 
@@ -57,6 +61,11 @@ namespace JiangHu
 
             descriptionLoader = pluginObj.AddComponent<DescriptionLoader>();
             descriptionLoader.SetConfig(ShowDescription);
+
+            new MainMenuModifierPatch().Enable();
+            new HideProgressCounterUIPatch().Enable();
+            new RandomExfilDestinationPatch().Enable();
+            new RaidEndDetectionPatch().Enable();
 
             PatchUseRepairKitInRaid.Enable();
 

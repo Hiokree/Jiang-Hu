@@ -115,7 +115,9 @@ namespace JiangHu
 
             if (_showMusicList)
             {
-                Rect musicListRect = new Rect(windowRect.x - 360, windowRect.y, 360, 480);
+                float musicX = windowRect.x - 360 - 10;
+
+                Rect musicListRect = new Rect(musicX, windowRect.y, 360, 480);
                 musicListRect = GUI.Window(12347, musicListRect, DrawMusicListWindow, "Music Files");
             }
         }
@@ -128,8 +130,6 @@ namespace JiangHu
                 _showGUI.Value = false;
                 return;
             }
-
-            GUI.DragWindow(new Rect(0, 0, windowRect.width - 25, 20));
 
             GUILayout.BeginVertical();
             GUILayout.Space(5);
@@ -228,6 +228,8 @@ namespace JiangHu
             }
             GUILayout.EndVertical();
             GUILayout.EndVertical();
+
+            GUI.DragWindow(new Rect(0, 0, windowRect.width, windowRect.height));
         }
 
         void DrawBackgroundListWindow(int windowID)
@@ -238,11 +240,10 @@ namespace JiangHu
                 return;
             }
 
-            GUI.DragWindow(new Rect(0, 0, 360 - 25, 20));
-
             var backgrounds = _changeBackground.GetAvailableBackgrounds();
 
-            _backgroundScrollPosition = GUILayout.BeginScrollView(_backgroundScrollPosition, GUILayout.Width(340), GUILayout.Height(450));
+            _backgroundScrollPosition = GUILayout.BeginScrollView(_backgroundScrollPosition,
+                GUILayout.Width(340), GUILayout.Height(450));
 
             foreach (var background in backgrounds)
             {
@@ -263,11 +264,10 @@ namespace JiangHu
                 return;
             }
 
-            GUI.DragWindow(new Rect(0, 0, 360 - 25, 20));
-
             var shuffledSongs = _musicPlayer.GetShuffledSongs();
 
-            _musicScrollPosition = GUILayout.BeginScrollView(_musicScrollPosition, GUILayout.Width(340), GUILayout.Height(450));
+            _musicScrollPosition = GUILayout.BeginScrollView(_musicScrollPosition,
+                GUILayout.Width(340), GUILayout.Height(450));
 
             for (int i = 0; i < shuffledSongs.Length; i++)
             {

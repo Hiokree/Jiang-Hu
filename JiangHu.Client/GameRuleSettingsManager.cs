@@ -1,10 +1,13 @@
 ﻿using BepInEx.Configuration;
+using EFT;
 using EFT.UI;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using UnityEngine;
-using Newtonsoft.Json.Linq;
 
 namespace JiangHu
 {
@@ -25,7 +28,6 @@ namespace JiangHu
         private bool enableQuestGenerator = true;
         private bool enableJianghuBot = true;
         private bool enableJianghuBotName = true;
-        private bool showBotNameGUI = false;
         private bool enableReplaceOneRaidWithOneLife = true;
         public bool enableNewMovement = true;
         private bool enableFastMovement = true;
@@ -35,45 +37,63 @@ namespace JiangHu
         private bool enableSlide = true;
         private bool enableFastWeapon = true;
         private bool enableWiderFreelook = true;
-        private bool showMovementSettingsGUI = false;
         private bool enableMinimalAimpunch = true;
         private bool enableFastAiming = true;
         private bool enableNewTrader = true;
         private bool enableNewQuest = true;
         private bool enableNewItem = true;
-        private bool enableArenaMode = true;
-        private bool restartArenaMode = false;
         private bool enableGreetingLog = true;
-        private bool showCoreModulesGUI = false;
         private bool enableDogtagCollection = true;
         private bool removeVanillaQuestXPReward = true;
         private bool unlockVanillaTraderTraderStanding = true;
         private bool unlockVanillaLockedRecipe = true;
         private bool unlockVanillaLockedCustomization = true;
         private float cashWipeCoefficiency = 0.1f;
-        private bool showStoryModeGuide = false;
-        private Rect storyModeWindowRect = new Rect(200, 100, 1000, 800);
-        private Vector2 storyModeScrollPosition = Vector2.zero;
-        private string storyModeContent = "";
+        private bool enableXPMode = false; 
+        private bool restartXPMode = false; 
+        private bool enableArenaQuest = false;
 
+        // Map settings
+        private Dictionary<string, bool> mapSettings = new Dictionary<string, bool>
+        {
+            { "Woods", false }, { "factory4_day", false }, { "factory4_night", false }, { "bigmap", false },
+            { "Shoreline", false }, { "Interchange", false }, { "RezervBase", false }, { "laboratory", false },
+            { "Lighthouse", false }, { "TarkovStreets", false }, { "Sandbox", false }, { "Sandbox_high", false },
+            { "labyrinth", false }
+        };
 
-        private Rect coreModulesWindowRect = new Rect(350, 150, 360, 160);
+        private Dictionary<string, bool> botNameLanguageSettings = new Dictionary<string, bool>
+        {
+            { "ch", false }, { "en", false }, { "es", false }, { "fr", false },
+            { "jp", false }, { "po", false }, { "ru", false }
+        };
 
-        private bool showRuleSettingsGUI = false;
-        private Rect ruleSettingsWindowRect = new Rect(350, 150, 600, 600);
-        private Rect windowRect = new Rect(300, 100, 500, 830);
+        // Window rect
+        private Rect windowRect = new Rect(Screen.width / 2 - 450, Screen.height / 2 - 300, 1200, 700);
         private bool showGUI = false;
 
+        // Guide windows
         private bool showSettingsGuide = false;
         private Rect guideWindowRect = new Rect(200, 100, 1000, 800);
         private Vector2 guideScrollPosition = Vector2.zero;
         private string settingsGuideContent = "";
-        private string currentLanguage = "en";
 
-        private Rect botNameWindowRect = new Rect(250, 150, 400, 270);
+        private Vector2 storyModeScrollPosition = Vector2.zero;
+        private string storyModeContent = "";
+
+        private string currentLanguage = "en";
         private ConfigEntry<bool> showSettingsManager;
 
-        private Rect movementSettingsWindowRect = new Rect(300, 150, 400, 480);
+        // Tab 
+        private int selectedTab = 0;
+        private string[] tabNames = new string[] {
+            "Game Mode  游戏模式",
+            "Aporia  向阳而生",
+            "Physics  凌波微步",
+            "Three Body  三体",
+            "Gamge Rules  游戏规则",
+            "Core Modules  核心模块"
+        };
 
         public void SetConfig(ConfigEntry<bool> showSettingsManager)
         {
@@ -175,10 +195,12 @@ namespace JiangHu
                     enableNewQuest = (bool)configDict["Enable_New_Quest"];
                 if (configDict.ContainsKey("Enable_New_Item") && configDict["Enable_New_Item"] is bool)
                     enableNewItem = (bool)configDict["Enable_New_Item"];
-                if (configDict.ContainsKey("Enable_Arena_Mode") && configDict["Enable_Arena_Mode"] is bool)
-                    enableArenaMode = (bool)configDict["Enable_Arena_Mode"];
-                if (configDict.ContainsKey("Restart_Arena_Mode") && configDict["Restart_Arena_Mode"] is bool)
-                    restartArenaMode = (bool)configDict["Restart_Arena_Mode"];
+                if (configDict.ContainsKey("Enable_XP_Mode") && configDict["Enable_XP_Mode"] is bool)
+                    enableXPMode = (bool)configDict["Enable_XP_Mode"];
+                if (configDict.ContainsKey("Restart_XP_Mode") && configDict["Restart_XP_Mode"] is bool)
+                    restartXPMode = (bool)configDict["Restart_XP_Mode"];
+                if (configDict.ContainsKey("Enable_Arena_Quest") && configDict["Enable_Arena_Quest"] is bool)
+                    enableArenaQuest = (bool)configDict["Enable_Arena_Quest"];
                 if (configDict.ContainsKey("Enable_Greeting_Log") && configDict["Enable_Greeting_Log"] is bool)
                     enableGreetingLog = (bool)configDict["Enable_Greeting_Log"];
                 if (configDict.ContainsKey("Enable_Dogtag_Collection") && configDict["Enable_Dogtag_Collection"] is bool)
@@ -199,6 +221,14 @@ namespace JiangHu
                         cashWipeCoefficiency = (long)configDict["Cash_Wipe_Coefficiency"];
                     else if (configDict["Cash_Wipe_Coefficiency"] is double)
                         cashWipeCoefficiency = (float)(double)configDict["Cash_Wipe_Coefficiency"];
+                }
+
+                // Map settings
+                foreach (var mapName in mapSettings.Keys.ToList())
+                {
+                    string configKey = $"Enable_{mapName.Replace("4", "").Replace("_", "")}";
+                    if (configDict.ContainsKey(configKey) && configDict[configKey] is bool)
+                        mapSettings[mapName] = (bool)configDict[configKey];
                 }
             }
         }
@@ -257,8 +287,9 @@ namespace JiangHu
                 configObj["Enable_New_Trader"] = enableNewTrader;
                 configObj["Enable_New_Quest"] = enableNewQuest;
                 configObj["Enable_New_Item"] = enableNewItem;
-                configObj["Enable_Arena_Mode"] = enableArenaMode;
-                configObj["Restart_Arena_Mode"] = restartArenaMode;
+                configObj["Enable_XP_Mode"] = enableXPMode;
+                configObj["Restart_XP_Mode"] = restartXPMode;
+                configObj["Enable_Arena_Quest"] = enableArenaQuest;
                 configObj["Enable_Greeting_Log"] = enableGreetingLog;
                 configObj["Enable_Dogtag_Collection"] = enableDogtagCollection;
                 configObj["Remove_VanillaQuest_XP_reward"] = removeVanillaQuestXPReward;
@@ -266,6 +297,13 @@ namespace JiangHu
                 configObj["Unlock_VanillaLocked_recipe"] = unlockVanillaLockedRecipe;
                 configObj["Unlock_VanillaLocked_Customization"] = unlockVanillaLockedCustomization;
                 configObj["Cash_Wipe_Coefficiency"] = cashWipeCoefficiency;
+
+                // Map settings
+                foreach (var kvp in mapSettings)
+                {
+                    string configKey = $"Enable_{kvp.Key.Replace("4", "").Replace("_", "")}";
+                    configObj[configKey] = kvp.Value;
+                }
 
                 string json = JsonConvert.SerializeObject(configObj, Formatting.Indented);
                 File.WriteAllText(configPath, json);
@@ -277,12 +315,6 @@ namespace JiangHu
                 Debug.LogError($"❌ [JiangHu] Error saving settings: {ex.Message}");
             }
         }
-
-        private Dictionary<string, bool> botNameLanguageSettings = new Dictionary<string, bool>
-        {
-            { "ch", false }, { "en", false }, { "es", false }, { "fr", false }, 
-            { "jp", false }, { "po", false }, { "ru", false }
-        };
 
         private void LoadStoryModeGuide(string languageCode)
         {
@@ -311,9 +343,6 @@ namespace JiangHu
             {
                 string guidePath = Path.Combine(Path.GetDirectoryName(Application.dataPath), "BepInEx", "plugins", "JiangHu.Client", "rule_setting_description", $"{languageCode}.md");
 
-                Debug.Log($"🔍 [JiangHu] Looking for guide at: {guidePath}");
-                Debug.Log($"🔍 [JiangHu] File exists: {File.Exists(guidePath)}");
-
                 if (File.Exists(guidePath))
                 {
                     settingsGuideContent = File.ReadAllText(guidePath);
@@ -322,14 +351,6 @@ namespace JiangHu
                 else
                 {
                     settingsGuideContent = $"# Settings Guide - {languageCode}\n\nFile not found at: {guidePath}";
-                    Debug.LogError($"❌ [JiangHu] Guide file NOT FOUND: {guidePath}");
-
-                    string dirPath = Path.GetDirectoryName(guidePath);
-                    if (Directory.Exists(dirPath))
-                    {
-                        var files = Directory.GetFiles(dirPath, "*.md");
-                        Debug.Log($"📁 [JiangHu] Files in directory: {string.Join(", ", files)}");
-                    }
                 }
             }
             catch (System.Exception ex)
@@ -341,31 +362,11 @@ namespace JiangHu
 
         void OnGUI()
         {
-            if (!showGUI) return; 
+            if (!showGUI) return;
 
             if (showSettingsGuide)
             {
                 guideWindowRect = GUI.Window(12348, guideWindowRect, DrawSettingsGuideWindow, "Settings Guide  设置指南");
-            }
-            else if (showBotNameGUI)
-            {
-                botNameWindowRect = GUI.Window(12350, botNameWindowRect, DrawBotNameSelectionWindow, "Languages  多国语言");
-            }
-            else if (showMovementSettingsGUI)
-            {
-                movementSettingsWindowRect = GUI.Window(12351, movementSettingsWindowRect, DrawMovementSettingsWindow, "Mode Settings  心法设置");
-            }
-            else if (showRuleSettingsGUI)
-            {
-                ruleSettingsWindowRect = GUI.Window(12352, ruleSettingsWindowRect, DrawRuleSettingsWindow, "Rule Settings  规则设置");
-            }
-            else if (showCoreModulesGUI)
-            {
-                coreModulesWindowRect = GUI.Window(12353, coreModulesWindowRect, DrawCoreModulesWindow, "Core Modules  核心模块");
-            }
-            if (showStoryModeGuide)
-            {
-                storyModeWindowRect = GUI.Window(12354, storyModeWindowRect, DrawStoryModeGuideWindow, "Story Mode Guide  剧情模式指南");
             }
             else
             {
@@ -382,35 +383,323 @@ namespace JiangHu
                 return;
             }
 
-            GUI.DragWindow(new Rect(0, 0, windowRect.width - 25, 20));
-
             GUILayout.Space(10);
 
-            // Game Mode
+            // Tab navigation
+            selectedTab = GUILayout.Toolbar(selectedTab, tabNames, GUILayout.Height(30));
+
+            GUILayout.Space(15);
+
+            // Tab content
+            switch (selectedTab)
+            {
+                case 0:
+                    DrawGameModeTab();
+                    break;
+                case 1:
+                    DrawArenaTab();
+                    break;
+                case 2:
+                    DrawPhysicsTab();
+                    break;
+                case 3: 
+                    DrawThreeBodyTab();
+                    break;
+                case 4: 
+                    DrawRulesTab();
+                    break;
+                case 5: 
+                    DrawCoreModulesTab();
+                    break;
+            }
+
+            GUILayout.FlexibleSpace();
+
+            // Bottom buttons
+            GUILayout.BeginHorizontal();
+
+            GUILayout.Label("Restart Server To Apply changes  重启服务器应用修改");
+
+            GUILayout.FlexibleSpace();
+
+            if (GUILayout.Button("Settings Guide    设置指南", GUILayout.Height(30)))
+            {
+                LoadSettingsGuide(currentLanguage);
+                showSettingsGuide = true;
+            }
+            GUILayout.EndHorizontal();
+
+            GUI.DragWindow(new Rect(0, 0, windowRect.width, windowRect.height));
+        }
+
+        void DrawGameModeTab()
+        {
+            // Load guide content for current language if not loaded
+            if (string.IsNullOrEmpty(storyModeContent))
+            {
+                LoadStoryModeGuide(currentLanguage);
+            }
+
+            // Free Mode Box
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Game Mode  游戏模式", GUIStyle.none);
             GUILayout.Space(5);
-            
+
+            bool freeMode = GUILayout.Toggle(!usePreset, " Free Mode  自由模式");
+            if (freeMode == usePreset)
+            {
+                usePreset = !freeMode;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            GUILayout.Label("Can change each setting freely  可自由修改各项设置");
+            GUILayout.EndVertical();
+            GUILayout.Space(5);
+
+            // Story Mode Box
+            GUILayout.BeginVertical("box");
             bool storyMode = GUILayout.Toggle(usePreset, " Story Mode  剧情模式");
             if (storyMode != usePreset) { usePreset = storyMode; SaveSettingsToJson(); }
             GUILayout.Space(5);
-            GUILayout.Label("Can only change settings marked with ***  仅可修改带***的设置");
-            GUILayout.Space(5);
-            if (GUILayout.Button("Guide  指南"))
+            bool newOneLife = GUILayout.Toggle(enableReplaceOneRaidWithOneLife, " Replace new quest 1 Raid requirement with 1 Life  新任务的单局完成改为一命完成");
+            if (newOneLife != enableReplaceOneRaidWithOneLife)
             {
-                LoadStoryModeGuide(currentLanguage);
-                showStoryModeGuide = true;
+                enableReplaceOneRaidWithOneLife = newOneLife;
+                SaveSettingsToJson();
             }
-
-            bool freeMode = GUILayout.Toggle(!usePreset, " Free Mode  自由模式");
-            if (freeMode == usePreset) { usePreset = !freeMode; SaveSettingsToJson(); }
             GUILayout.Space(5);
-            GUILayout.Label("Can change each setting freely  可自由修改各项设置");
+
             GUILayout.EndVertical();
 
             GUILayout.Space(10);
 
-            // FPS Mode Box
+            // horizontal layout for left-right columns
+            GUILayout.BeginHorizontal();
+
+            // LEFT COLUMN
+            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.15f));
+
+            GUILayout.BeginVertical("box", GUILayout.Height(400));
+            GUILayout.Label("Story Mode Guide", GUIStyle.none);
+            GUILayout.Space(5);
+            GUILayout.Label("剧情模式指南", GUIStyle.none);
+            GUILayout.Space(10);
+
+            GUILayout.BeginVertical();
+            GUILayout.FlexibleSpace(); 
+
+            if (GUILayout.Button("中文", GUILayout.ExpandHeight(true))) { currentLanguage = "ch"; LoadStoryModeGuide("ch"); }
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("English", GUILayout.ExpandHeight(true))) { currentLanguage = "en"; LoadStoryModeGuide("en"); }
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Español", GUILayout.ExpandHeight(true))) { currentLanguage = "es"; LoadStoryModeGuide("es"); }
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Français", GUILayout.ExpandHeight(true))) { currentLanguage = "fr"; LoadStoryModeGuide("fr"); }
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("日本語", GUILayout.ExpandHeight(true))) { currentLanguage = "jp"; LoadStoryModeGuide("jp"); }
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Português", GUILayout.ExpandHeight(true))) { currentLanguage = "po"; LoadStoryModeGuide("po"); }
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Русский", GUILayout.ExpandHeight(true))) { currentLanguage = "ru"; LoadStoryModeGuide("ru"); }
+
+            GUILayout.FlexibleSpace();
+            GUILayout.EndVertical(); 
+
+            GUILayout.EndVertical(); 
+
+            GUILayout.EndVertical(); 
+
+            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.85f - 20));
+
+            GUILayout.BeginVertical("box", GUILayout.Height(400));
+            storyModeScrollPosition = GUILayout.BeginScrollView(storyModeScrollPosition, GUILayout.ExpandHeight(true));
+            GUILayout.Label(storyModeContent, GUI.skin.label);
+            GUILayout.EndScrollView();
+
+            GUILayout.EndVertical(); 
+            GUILayout.EndVertical(); 
+
+            GUILayout.EndHorizontal(); 
+        }
+
+        void DrawArenaTab()
+        {
+            GUILayout.BeginHorizontal();
+
+            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.5f));
+
+            // Jiang Hu Road Box
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Jiang Hu Road  江湖行", GUIStyle.none);
+            GUILayout.Space(5);
+            GUILayout.Label("Randow Map + Transit. Click「江湖」button in main screen to play");
+            GUILayout.Space(5);
+            GUILayout.Label("随机地图、随机转移。点击主画面「江湖」按钮玩");
+            GUILayout.Space(10);
+
+            GUILayout.Label("Random Map Pool  随机地图池", GUIStyle.none);
+            GUILayout.Space(5);
+
+            bool newWoods = GUILayout.Toggle(mapSettings["Woods"], " Woods  森林");
+            if (newWoods != mapSettings["Woods"])
+            {
+                mapSettings["Woods"] = newWoods;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newFactoryDay = GUILayout.Toggle(mapSettings["factory4_day"], " Factory (Day)  工厂（白天）");
+            if (newFactoryDay != mapSettings["factory4_day"])
+            {
+                mapSettings["factory4_day"] = newFactoryDay;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newFactoryNight = GUILayout.Toggle(mapSettings["factory4_night"], " Factory (Night)  工厂（夜晚）");
+            if (newFactoryNight != mapSettings["factory4_night"])
+            {
+                mapSettings["factory4_night"] = newFactoryNight;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newCustoms = GUILayout.Toggle(mapSettings["bigmap"], " Customs  海关");
+            if (newCustoms != mapSettings["bigmap"])
+            {
+                mapSettings["bigmap"] = newCustoms;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newShoreline = GUILayout.Toggle(mapSettings["Shoreline"], " Shoreline  海岸线");
+            if (newShoreline != mapSettings["Shoreline"])
+            {
+                mapSettings["Shoreline"] = newShoreline;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newInterchange = GUILayout.Toggle(mapSettings["Interchange"], " Interchange  立交桥");
+            if (newInterchange != mapSettings["Interchange"])
+            {
+                mapSettings["Interchange"] = newInterchange;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newReserve = GUILayout.Toggle(mapSettings["RezervBase"], " Reserve  储备站");
+            if (newReserve != mapSettings["RezervBase"])
+            {
+                mapSettings["RezervBase"] = newReserve;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newLabs = GUILayout.Toggle(mapSettings["laboratory"], " Laboratory  实验室");
+            if (newLabs != mapSettings["laboratory"])
+            {
+                mapSettings["laboratory"] = newLabs;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newLighthouse = GUILayout.Toggle(mapSettings["Lighthouse"], " Lighthouse  灯塔");
+            if (newLighthouse != mapSettings["Lighthouse"])
+            {
+                mapSettings["Lighthouse"] = newLighthouse;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newStreets = GUILayout.Toggle(mapSettings["TarkovStreets"], " Tarkov Streets  塔科夫街区");
+            if (newStreets != mapSettings["TarkovStreets"])
+            {
+                mapSettings["TarkovStreets"] = newStreets;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newSandbox = GUILayout.Toggle(mapSettings["Sandbox"], " Sandbox  中心区");
+            if (newSandbox != mapSettings["Sandbox"])
+            {
+                mapSettings["Sandbox"] = newSandbox;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newSandboxHigh = GUILayout.Toggle(mapSettings["Sandbox_high"], " Sandbox (High)  中心区（高）");
+            if (newSandboxHigh != mapSettings["Sandbox_high"])
+            {
+                mapSettings["Sandbox_high"] = newSandboxHigh;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newLabyrinth = GUILayout.Toggle(mapSettings["labyrinth"], " Labyrinth  迷宫");
+            if (newLabyrinth != mapSettings["labyrinth"])
+            {
+                mapSettings["labyrinth"] = newLabyrinth;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            GUILayout.EndVertical();
+
+            GUILayout.EndVertical(); 
+
+            // RIGHT COLUMN
+            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.5f - 25));
+
+            // UPPER BOX
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Dance on the Razor's Edge  惊鸿猎", GUIStyle.none);
+            GUILayout.Space(10);
+            GUILayout.Label("Nerf boss XP & True survival   降低首领击杀经验 & 真实生存");
+            GUILayout.Space(10);
+
+            bool xpMode = GUILayout.Toggle(enableXPMode, " Enable Dance on the Razor's Edge  开启惊鸿猎");
+            if (xpMode != enableXPMode)
+            {
+                enableXPMode = xpMode;
+                SaveSettingsToJson();
+            }
+
+            GUILayout.EndVertical();
+
+            GUILayout.Space(227);
+
+            // LOWER BOX
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Aporia  向阳而生", GUIStyle.none);
+            GUILayout.Space(5);
+            GUILayout.Label("Play「Jiang Hu Road」while enable「Dance on the Razor's Edge」");
+            GUILayout.Space(5);
+            GUILayout.Label("需玩江湖行并开启惊鸿猎");
+            GUILayout.Space(10);
+
+            bool arenaQuest = GUILayout.Toggle(enableArenaQuest, " Enable Aporia Quests  开启向阳而生任务");
+            if (arenaQuest != (enableXPMode && enableArenaQuest))
+            {
+                enableXPMode = arenaQuest;
+                enableArenaQuest = arenaQuest;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(10);
+
+            bool restartRaidMode = GUILayout.Toggle(restartXPMode, " Restart Aporia Quests  重置向阳而生任务");
+            if (restartRaidMode != restartXPMode)
+            {
+                restartXPMode = restartRaidMode;
+                SaveSettingsToJson();
+            }
+
+            GUILayout.EndVertical();
+
+            GUILayout.EndVertical();
+            GUILayout.EndHorizontal();
+        }
+
+        void DrawPhysicsTab()
+        {
             GUILayout.BeginVertical("box");
             GUILayout.Label("Competitive FPS Style  竞技射击风格", GUIStyle.none);
             GUILayout.Space(5);
@@ -421,287 +710,15 @@ namespace JiangHu
                 enableNewMovement = newEnableMovement;
                 SaveSettingsToJson();
             }
-            GUILayout.Space(5);
-            if (GUILayout.Button("Mode Settings  心法设置"))
-            {
-                showMovementSettingsGUI = true;
-            }
             GUILayout.EndVertical();
             GUILayout.Space(10);
-
-            // Dance on the Razor's Edge Box
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("New Arena  惊鸿猎", GUIStyle.none);
-            GUILayout.Space(5);
-
-            bool ArenaMode = GUILayout.Toggle(enableArenaMode, " Enable Arena  开启惊鸿猎");
-            if (ArenaMode != enableArenaMode) { enableArenaMode = ArenaMode; SaveSettingsToJson(); }
-            GUILayout.Space(5);
-            bool restartRaidMode = GUILayout.Toggle(restartArenaMode, " Restart Arena  重置惊鸿猎");
-            if (restartRaidMode != restartArenaMode) { restartArenaMode = restartRaidMode; SaveSettingsToJson(); }
-
-            GUILayout.EndVertical();
-            GUILayout.Space(10);
-
-            // Three Body Mode Box
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Three Body Collect  三体搜集", GUIStyle.none);
-            GUILayout.Space(5);
-
-            bool newDogtagCollection = GUILayout.Toggle(enableDogtagCollection, " Enable (Use JiangHu Bot Name)  开启。需使用江湖人机名字");
-            if (newDogtagCollection != enableDogtagCollection)
-            {
-                enableDogtagCollection = newDogtagCollection;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            bool newEnableBotName = GUILayout.Toggle(enableJianghuBotName, " Enable Three Body Bot Names  三体人机名字");
-            if (newEnableBotName != enableJianghuBotName)
-            {
-                enableJianghuBotName = newEnableBotName;
-                if (!enableJianghuBotName && enableDogtagCollection)
-                {
-                    enableDogtagCollection = false;
-                }
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            if (GUILayout.Button("Languages  多国语言 ***"))
-            {
-                showBotNameGUI = true;
-            }
-            GUILayout.EndVertical();
-
-            GUILayout.Space(10);
-
-            // Bot Box
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Bot  人机", GUIStyle.none);
-            GUILayout.Space(5);
-
-            bool newEnableBot = GUILayout.Toggle(enableJianghuBot, " Enable Boss Brain Bot  首领风格人机");
-            if (newEnableBot != enableJianghuBot)
-            {
-                enableJianghuBot = newEnableBot;
-                SaveSettingsToJson();
-            }
-            GUILayout.EndVertical();
-
-            GUILayout.Space(10);
-
-
-            // Quest Generator Box
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Quest Generator  任务生成器", GUIStyle.none);
-            GUILayout.Space(5);
-
-            bool newQuestGen = GUILayout.Toggle(enableQuestGenerator, " Enable (Need ‘Disable Vanilla Quests’)  开启。需先禁用原版任务 ***");
-            if (newQuestGen != enableQuestGenerator)
-            {
-                enableQuestGenerator = newQuestGen;
-                SaveSettingsToJson();
-            }
-            GUILayout.EndVertical();
-
-            GUILayout.Space(10);
-
-            // Guide
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("More Settings  更多设置", GUIStyle.none);
-            GUILayout.Space(5);
-            if (GUILayout.Button("More Rule Settings    更多规则设置"))
-            {
-                showRuleSettingsGUI = true;
-            }
-            GUILayout.EndVertical();
-
-            GUILayout.Space(10);
-
-            // Core Modules Box
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Core Modules  核心模块", GUIStyle.none);
-            GUILayout.Space(5);
-
-            if (GUILayout.Button("Core Modules Settings  核心模块设置"))
-            {
-                showCoreModulesGUI = true;
-            }
-            GUILayout.EndVertical();
-
-            GUILayout.Space(10);
-
-            // Guide
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("Settings Guide    设置指南"))
-            {
-                LoadSettingsGuide(currentLanguage);
-                showSettingsGuide = true;
-            }
-            GUILayout.EndHorizontal();
-
-            GUILayout.FlexibleSpace(); 
-            GUI.DragWindow(new Rect(0, windowRect.height - 30, windowRect.width, 30));
-        }
-
-        void DrawSettingsGuideWindow(int windowID)
-        {
-            GUIStyle buttonStyle = new GUIStyle(GUI.skin.button);
-            buttonStyle.fontSize = 14;
-
-            if (GUI.Button(new Rect(guideWindowRect.width - 25, 5, 20, 20), "X"))
-            {
-                showSettingsGuide = false;
-                return;
-            }
-
-            float buttonWidth = (guideWindowRect.width - 40) / 7f;
-            float buttonY = 40f;
-
-            // Languages in alphabetical order
-            if (GUI.Button(new Rect(20, buttonY, buttonWidth, 35), "中文", buttonStyle))
-            {
-                currentLanguage = "ch";
-                LoadSettingsGuide("ch");
-            }
-            if (GUI.Button(new Rect(20 + buttonWidth, buttonY, buttonWidth, 35), "English", buttonStyle))
-            {
-                currentLanguage = "en";
-                LoadSettingsGuide("en");
-            }
-            if (GUI.Button(new Rect(20 + buttonWidth * 2, buttonY, buttonWidth, 35), "Español", buttonStyle))
-            {
-                currentLanguage = "es";
-                LoadSettingsGuide("es");
-            }
-            if (GUI.Button(new Rect(20 + buttonWidth * 3, buttonY, buttonWidth, 35), "Français", buttonStyle))
-            {
-                currentLanguage = "fr";
-                LoadSettingsGuide("fr");
-            }
-            if (GUI.Button(new Rect(20 + buttonWidth * 4, buttonY, buttonWidth, 35), "日本語", buttonStyle))
-            {
-                currentLanguage = "jp";
-                LoadSettingsGuide("jp");
-            }
-            if (GUI.Button(new Rect(20 + buttonWidth * 5, buttonY, buttonWidth, 35), "Português", buttonStyle))
-            {
-                currentLanguage = "po";
-                LoadSettingsGuide("po");
-            }
-            if (GUI.Button(new Rect(20 + buttonWidth * 6, buttonY, buttonWidth, 35), "Русский", buttonStyle))
-            {
-                currentLanguage = "ru";
-                LoadSettingsGuide("ru");
-            }
-
-            GUI.DragWindow(new Rect(0, 0, guideWindowRect.width - 120, 25));
-
-            float scrollViewY = buttonY + 45f;
-            float scrollViewHeight = guideWindowRect.height - scrollViewY - 10f;
-
-            GUILayout.BeginArea(new Rect(10, scrollViewY, guideWindowRect.width - 20, scrollViewHeight));
-            guideScrollPosition = GUILayout.BeginScrollView(guideScrollPosition, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
-            GUIStyle contentStyle = new GUIStyle(GUI.skin.label);
-            contentStyle.fontSize = 16;
-            contentStyle.wordWrap = true;
-            GUILayout.Label(settingsGuideContent);
-            GUILayout.EndScrollView();
-            GUILayout.EndArea();
-        }
-
-        void DrawBotNameSelectionWindow(int windowID)
-        {
-            if (GUI.Button(new Rect(botNameWindowRect.width - 25, 5, 20, 20), "X"))
-            {
-                showBotNameGUI = false;
-                return;
-            }
-
-            GUI.DragWindow(new Rect(0, 0, botNameWindowRect.width - 25, 20));
-            GUILayout.Space(10);
-
-            GUILayout.BeginVertical("box");
-
-            bool newChinese = GUILayout.Toggle(botNameLanguageSettings["ch"], " 使用中文名字");
-            if (newChinese != botNameLanguageSettings["ch"])
-            {
-                botNameLanguageSettings["ch"] = newChinese;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(10);
-
-            bool newEnglish = GUILayout.Toggle(botNameLanguageSettings["en"], " Use English Bot Names");
-            if (newEnglish != botNameLanguageSettings["en"])
-            {
-                botNameLanguageSettings["en"] = newEnglish;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(10);
-
-            bool newSpanish = GUILayout.Toggle(botNameLanguageSettings["es"], " usar nombres de bot en español");
-            if (newSpanish != botNameLanguageSettings["es"])
-            {
-                botNameLanguageSettings["es"] = newSpanish;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(10);
-
-            bool newFrench = GUILayout.Toggle(botNameLanguageSettings["fr"], " utiliser des noms de bot en français");
-            if (newFrench != botNameLanguageSettings["fr"])
-            {
-                botNameLanguageSettings["fr"] = newFrench;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(10);
-
-            bool newJapanese = GUILayout.Toggle(botNameLanguageSettings["jp"], " 日本語のボット名を使用する");
-            if (newJapanese != botNameLanguageSettings["jp"])
-            {
-                botNameLanguageSettings["jp"] = newJapanese;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(10);
-
-            bool newPortuguese = GUILayout.Toggle(botNameLanguageSettings["po"], " usar nomes de bot em português");
-            if (newPortuguese != botNameLanguageSettings["po"])
-            {
-                botNameLanguageSettings["po"] = newPortuguese;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(10);
-
-            bool newRussian = GUILayout.Toggle(botNameLanguageSettings["ru"], " использовать русские имена ботов");
-            if (newRussian != botNameLanguageSettings["ru"])
-            {
-                botNameLanguageSettings["ru"] = newRussian;
-                SaveSettingsToJson();
-            }
-
-            GUILayout.EndVertical();
-        }
-
-        void DrawMovementSettingsWindow(int windowID)
-        {
-            if (GUI.Button(new Rect(movementSettingsWindowRect.width - 25, 5, 20, 20), "X"))
-            {
-                showMovementSettingsGUI = false;
-                return;
-            }
-
-            GUI.DragWindow(new Rect(0, 0, movementSettingsWindowRect.width - 25, 20));
-            GUILayout.Space(10);
-
-            GUIStyle whiteLabelStyle = new GUIStyle(GUI.skin.label);
-            whiteLabelStyle.normal.textColor = Color.white;
 
             GUILayout.BeginVertical("box");
             GUILayout.Label("Basic movement (default on)  基础身法（默认开启）", GUIStyle.none);
             GUILayout.Space(5);
-            GUILayout.Label("Clean & Smooth, Bunny Hopping, no inertia, etc.", whiteLabelStyle);
-            GUILayout.Space(5);
-            GUILayout.Label("干净、流畅，可连跳，去除惯性等", whiteLabelStyle);
-            GUILayout.EndVertical();         
-            GUILayout.Space(5);
+            GUILayout.Label("Clean & Smooth, Bunny Hopping, no inertia, etc.  干净、流畅，可连跳，去除惯性等", GUI.skin.label);
+            GUILayout.EndVertical();
+            GUILayout.Space(10);
 
             GUILayout.BeginVertical("box");
             GUILayout.Label("Fast Pace Movement  快速身法", GUIStyle.none);
@@ -727,7 +744,7 @@ namespace JiangHu
             if (newSlide != enableSlide) { enableSlide = newSlide; SaveSettingsToJson(); }
             GUILayout.Space(5);
             GUILayout.EndVertical();
-            GUILayout.Space(5);
+            GUILayout.Space(10);
 
             GUILayout.BeginVertical("box");
             GUILayout.Label("Weapon Handling  武器操控", GUIStyle.none);
@@ -745,31 +762,132 @@ namespace JiangHu
             GUILayout.Space(5);
 
             GUILayout.EndVertical();
-            GUILayout.Space(5);
+            GUILayout.Space(10);
 
             GUILayout.BeginVertical("box");
             GUILayout.Label("View  视野", GUIStyle.none);
             GUILayout.Space(5);
             bool newWiderLook = GUILayout.Toggle(enableWiderFreelook, " Wider Freelook  更宽自由视角");
             if (newWiderLook != enableWiderFreelook) { enableWiderFreelook = newWiderLook; SaveSettingsToJson(); }
-            GUILayout.Space(5);
             GUILayout.EndVertical();
         }
 
-        void DrawRuleSettingsWindow(int windowID)
+        void DrawThreeBodyTab()
         {
-            if (GUI.Button(new Rect(ruleSettingsWindowRect.width - 25, 5, 20, 20), "X"))
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Dogtag Collect  狗牌搜集", GUIStyle.none);
+            GUILayout.Space(5);
+
+            bool newDogtagCollection = GUILayout.Toggle(enableDogtagCollection, " Enable (Use Three Body Bot Name)  开启。需使用三体人机名字");
+            if (newDogtagCollection != enableDogtagCollection)
             {
-                showRuleSettingsGUI = false;
-                return;
+                enableDogtagCollection = newDogtagCollection;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            bool newEnableBotName = GUILayout.Toggle(enableJianghuBotName, " Enable Three Body Bot Names  三体人机名字");
+            if (newEnableBotName != enableJianghuBotName)
+            {
+                enableJianghuBotName = newEnableBotName;
+                if (!enableJianghuBotName && enableDogtagCollection)
+                {
+                    enableDogtagCollection = false;
+                }
+                SaveSettingsToJson();
+            }
+            GUILayout.EndVertical();
+
+            GUILayout.Space(10);
+
+
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Name Languages  名字语言", GUIStyle.none);
+            GUILayout.Space(10);
+
+            bool newChinese = GUILayout.Toggle(botNameLanguageSettings["ch"], " 使用中文名字");
+            if (newChinese != botNameLanguageSettings["ch"])
+            {
+                botNameLanguageSettings["ch"] = newChinese;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newEnglish = GUILayout.Toggle(botNameLanguageSettings["en"], " Use English Bot Names");
+            if (newEnglish != botNameLanguageSettings["en"])
+            {
+                botNameLanguageSettings["en"] = newEnglish;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newSpanish = GUILayout.Toggle(botNameLanguageSettings["es"], " usar nombres de bot en español");
+            if (newSpanish != botNameLanguageSettings["es"])
+            {
+                botNameLanguageSettings["es"] = newSpanish;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newFrench = GUILayout.Toggle(botNameLanguageSettings["fr"], " utiliser des noms de bot en français");
+            if (newFrench != botNameLanguageSettings["fr"])
+            {
+                botNameLanguageSettings["fr"] = newFrench;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newJapanese = GUILayout.Toggle(botNameLanguageSettings["jp"], " 日本語のボット名を使用する");
+            if (newJapanese != botNameLanguageSettings["jp"])
+            {
+                botNameLanguageSettings["jp"] = newJapanese;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newPortuguese = GUILayout.Toggle(botNameLanguageSettings["po"], " usar nomes de bot em português");
+            if (newPortuguese != botNameLanguageSettings["po"])
+            {
+                botNameLanguageSettings["po"] = newPortuguese;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+
+            bool newRussian = GUILayout.Toggle(botNameLanguageSettings["ru"], " использовать русские имена ботов");
+            if (newRussian != botNameLanguageSettings["ru"])
+            {
+                botNameLanguageSettings["ru"] = newRussian;
+                SaveSettingsToJson();
             }
 
-            GUI.DragWindow(new Rect(0, 0, ruleSettingsWindowRect.width - 25, 20));
+            GUILayout.EndVertical();
 
+            GUILayout.Space(10);
 
-            // Upper Box
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Bot AI Settings  人机AI设置", GUIStyle.none);
+            GUILayout.Space(5);
+
+            bool newEnableBot = GUILayout.Toggle(enableJianghuBot, " Enable Boss Brain Bot  首领风格人机");
+            if (newEnableBot != enableJianghuBot)
+            {
+                enableJianghuBot = newEnableBot;
+                SaveSettingsToJson();
+            }
+            GUILayout.EndVertical();
+        }
+
+        void DrawRulesTab()
+        {
             GUILayout.BeginVertical("box");
             GUILayout.Label("Gameplay Rules", GUIStyle.none);
+            GUILayout.Space(5);
+
+            bool newQuestGen = GUILayout.Toggle(enableQuestGenerator, " Enable Random Vanilla Quest Generator (Disable Vanilla Quests first)  随机任务生成器，需先禁用原版任务");
+            if (newQuestGen != enableQuestGenerator)
+            {
+                enableQuestGenerator = newQuestGen;
+                SaveSettingsToJson();
+            }
             GUILayout.Space(5);
 
             bool newDisableQuests = GUILayout.Toggle(disableVanillaQuests, " Disable Vanilla Quests  禁原版任务");
@@ -883,17 +1001,10 @@ namespace JiangHu
                 addHideoutProductionLabryskeycard = newLabKey;
                 SaveSettingsToJson();
             }
-            GUILayout.Space(5);
-            bool newOneLife = GUILayout.Toggle(enableReplaceOneRaidWithOneLife, " Replace new quest 1 Raid requirement with 1 Life  新任务的单局完成改为一命完成 ***");
-            if (newOneLife != enableReplaceOneRaidWithOneLife)
-            {
-                enableReplaceOneRaidWithOneLife = newOneLife;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
             GUILayout.EndVertical();
 
-            // Bottom Box
+            // Core Rules
+            GUILayout.Space(10);
             GUILayout.BeginVertical("box");
             GUILayout.Label("Core Rules", GUIStyle.none);
             GUILayout.Space(5);
@@ -915,18 +1026,11 @@ namespace JiangHu
             GUILayout.EndVertical();
         }
 
-        void DrawCoreModulesWindow(int windowID)
+        void DrawCoreModulesTab()
         {
-            if (GUI.Button(new Rect(coreModulesWindowRect.width - 25, 5, 20, 20), "X"))
-            {
-                showCoreModulesGUI = false;
-                return;
-            }
-
-            GUI.DragWindow(new Rect(0, 0, coreModulesWindowRect.width - 25, 20));
-            GUILayout.Space(10);
-
             GUILayout.BeginVertical("box");
+            GUILayout.Label("Basic Modules  核心模块", GUIStyle.none);
+            GUILayout.Space(10);
 
             bool newTrader = GUILayout.Toggle(enableNewTrader, " Enable New Trader  启用新商人");
             if (newTrader != enableNewTrader) { enableNewTrader = newTrader; SaveSettingsToJson(); }
@@ -942,74 +1046,76 @@ namespace JiangHu
 
             bool newGreetingLog = GUILayout.Toggle(enableGreetingLog, " Enable Greeting Log  启用问候日志");
             if (newGreetingLog != enableGreetingLog) { enableGreetingLog = newGreetingLog; SaveSettingsToJson(); }
+            GUILayout.Space(5);
 
             GUILayout.EndVertical();
         }
 
-        void DrawStoryModeGuideWindow(int windowID)
+        // Guide windows
+        void DrawSettingsGuideWindow(int windowID)
         {
             GUIStyle buttonStyle = new GUIStyle(GUI.skin.button);
             buttonStyle.fontSize = 14;
 
-            if (GUI.Button(new Rect(storyModeWindowRect.width - 25, 5, 20, 20), "X"))
+            if (GUI.Button(new Rect(guideWindowRect.width - 25, 5, 20, 20), "X"))
             {
-                showStoryModeGuide = false;
+                showSettingsGuide = false;
                 return;
             }
 
-            float buttonWidth = (storyModeWindowRect.width - 40) / 7f;
+            float buttonWidth = (guideWindowRect.width - 40) / 7f;
             float buttonY = 40f;
 
             // Languages in alphabetical order
             if (GUI.Button(new Rect(20, buttonY, buttonWidth, 35), "中文", buttonStyle))
             {
                 currentLanguage = "ch";
-                LoadStoryModeGuide("ch");
+                LoadSettingsGuide("ch");
             }
             if (GUI.Button(new Rect(20 + buttonWidth, buttonY, buttonWidth, 35), "English", buttonStyle))
             {
                 currentLanguage = "en";
-                LoadStoryModeGuide("en");
+                LoadSettingsGuide("en");
             }
             if (GUI.Button(new Rect(20 + buttonWidth * 2, buttonY, buttonWidth, 35), "Español", buttonStyle))
             {
                 currentLanguage = "es";
-                LoadStoryModeGuide("es");
+                LoadSettingsGuide("es");
             }
             if (GUI.Button(new Rect(20 + buttonWidth * 3, buttonY, buttonWidth, 35), "Français", buttonStyle))
             {
                 currentLanguage = "fr";
-                LoadStoryModeGuide("fr");
+                LoadSettingsGuide("fr");
             }
             if (GUI.Button(new Rect(20 + buttonWidth * 4, buttonY, buttonWidth, 35), "日本語", buttonStyle))
             {
                 currentLanguage = "jp";
-                LoadStoryModeGuide("jp");
+                LoadSettingsGuide("jp");
             }
             if (GUI.Button(new Rect(20 + buttonWidth * 5, buttonY, buttonWidth, 35), "Português", buttonStyle))
             {
                 currentLanguage = "po";
-                LoadStoryModeGuide("po");
+                LoadSettingsGuide("po");
             }
             if (GUI.Button(new Rect(20 + buttonWidth * 6, buttonY, buttonWidth, 35), "Русский", buttonStyle))
             {
                 currentLanguage = "ru";
-                LoadStoryModeGuide("ru");
+                LoadSettingsGuide("ru");
             }
 
-            GUI.DragWindow(new Rect(0, 0, storyModeWindowRect.width - 120, 25));
-
             float scrollViewY = buttonY + 45f;
-            float scrollViewHeight = storyModeWindowRect.height - scrollViewY - 10f;
+            float scrollViewHeight = guideWindowRect.height - scrollViewY - 10f;
 
-            GUILayout.BeginArea(new Rect(10, scrollViewY, storyModeWindowRect.width - 20, scrollViewHeight));
-            storyModeScrollPosition = GUILayout.BeginScrollView(storyModeScrollPosition, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            GUILayout.BeginArea(new Rect(10, scrollViewY, guideWindowRect.width - 20, scrollViewHeight));
+            guideScrollPosition = GUILayout.BeginScrollView(guideScrollPosition, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
             GUIStyle contentStyle = new GUIStyle(GUI.skin.label);
             contentStyle.fontSize = 16;
             contentStyle.wordWrap = true;
-            GUILayout.Label(storyModeContent);
+            GUILayout.Label(settingsGuideContent);
             GUILayout.EndScrollView();
             GUILayout.EndArea();
+
+            GUI.DragWindow(new Rect(0, 0, guideWindowRect.width, guideWindowRect.height));
         }
     }
 }

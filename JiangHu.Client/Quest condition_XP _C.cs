@@ -27,7 +27,7 @@ namespace JiangHu
     public class XPConditionManager : MonoBehaviour
     {
         private Harmony harmony;
-        private static bool EnableNewRaidMode;
+        private static bool EnableArenaQuest;
 
         private void LoadConfig()
         {
@@ -35,14 +35,14 @@ namespace JiangHu
             if (!File.Exists(configPath)) return;
 
             var config = JObject.Parse(File.ReadAllText(configPath));
-            EnableNewRaidMode = config["Enable_Arena_Mode"]?.Value<bool>() ?? true;
+            EnableArenaQuest = config["Enable_Arena_Quest"]?.Value<bool>() ?? true;
         }
 
         void Start()
         {
             LoadConfig();
 
-            if (!EnableNewRaidMode) return;
+            if (!EnableArenaQuest) return;
 
             harmony = new Harmony("jianghu.xp");
             PatchConditionRegistry();
@@ -172,19 +172,44 @@ namespace JiangHu
                             {
                                 if (condition is ConditionCounterCreator counterCreator)
                                 {
+                                    // Check if this counter has RaidStatus condition
+                                    bool hasRaidStatus = false;
+                                    bool raidStatusPasses = false;
+
                                     foreach (var subCondition in counterCreator.Conditions)
                                     {
-                                        if (subCondition is ConditionStatistic statistic && statistic.target == "Exp")
+                                        if (subCondition is ConditionRaidStatus)
                                         {
-                                            var questCounter = quest.ConditionCountersManager?.GetCounter(counterCreator.id);
-                                            if (questCounter == null) continue;
+                                            hasRaidStatus = true;
 
-                                            questCounter.Value += xpGained;
+                                            bool buttonClicked = GetButtonClickedFlag();
+                                            string currentStatus = buttonClicked ? "JiangHu" : "Normal";
 
-                                            var progressChecker = quest.ProgressCheckers?[counterCreator];
-                                            if (progressChecker == null) continue;
+                                            var raidCondition = subCondition as ConditionRaidStatus;
+                                            raidStatusPasses = raidCondition.status != null &&
+                                                               raidCondition.status.Contains(currentStatus);
 
-                                            progressChecker.CallConditionChanged();
+                                            Console.WriteLine($"\x1b[35m📊 [Jiang Hu] RaidStatus check: {currentStatus} in [{string.Join(",", raidCondition.status)}] = {raidStatusPasses}\x1b[0m");
+                                            break;
+                                        }
+                                    }
+
+                                    if (!hasRaidStatus || raidStatusPasses)
+                                    {
+                                        foreach (var subCondition in counterCreator.Conditions)
+                                        {
+                                            if (subCondition is ConditionStatistic statistic && statistic.target == "Exp")
+                                            {
+                                                var questCounter = quest.ConditionCountersManager?.GetCounter(counterCreator.id);
+                                                if (questCounter == null) continue;
+
+                                                questCounter.Value += xpGained;
+
+                                                var progressChecker = quest.ProgressCheckers?[counterCreator];
+                                                if (progressChecker == null) continue;
+
+                                                progressChecker.CallConditionChanged();
+                                            }
                                         }
                                     }
                                 }
@@ -193,6 +218,25 @@ namespace JiangHu
                     }
                 }
                 catch { }
+            }
+
+            private static bool GetButtonClickedFlag()
+            {
+                try
+                {
+                    var randomExfilType = Type.GetType("JiangHu.ExfilRandomizer.RandomExfilDestinationPatch");
+                    if (randomExfilType != null)
+                    {
+                        var buttonClickedField = randomExfilType.GetField("_buttonClickedForThisRaid",
+                            System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+                        if (buttonClickedField != null)
+                        {
+                            return (bool)buttonClickedField.GetValue(null);
+                        }
+                    }
+                }
+                catch { }
+                return false;
             }
 
             public static void ResetTracking()

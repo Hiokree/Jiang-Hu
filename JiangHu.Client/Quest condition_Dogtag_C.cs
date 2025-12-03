@@ -53,8 +53,6 @@ namespace JiangHu
         {
             try
             {
-                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu DEBUG] Starting PatchConditionRegistry\x1b[0m");
-
                 var converter = new GClass1871();
                 var conditionType = typeof(ConditionHandoverDogtagWithNickname);
 

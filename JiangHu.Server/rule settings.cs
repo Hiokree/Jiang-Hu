@@ -607,7 +607,7 @@ namespace JiangHu.Server
                     };
                 }
 
-                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Prestige conditions and transfer configs replaced for {originalPrestige.Elements.Count} levels    新声望条件\x1b[0m");
+                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Prestige conditions and transfer configs replaced for {originalPrestige.Elements.Count} levels    新转生条件\x1b[0m");
             }
             catch (Exception ex)
             {
@@ -769,7 +769,7 @@ namespace JiangHu.Server
                 container.Properties.Grids = grids;
             }
 
-            Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Secure container filters cleared    安全容器过滤器已清空\x1b[0m");
+            Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Secure container Disabled    安全箱已禁用\x1b[0m");
         }
 
         // 🔹 Increase Head HP
@@ -899,11 +899,11 @@ namespace JiangHu.Server
                 };
 
                 tables.Hideout.Production.Recipes.Add(newRecipe);
-                Console.WriteLine("\x1b[36m🎮 [Jiang Hu] Lab keycard production added    迷宫钥匙制作蓝图\x1b[0m");
+                Console.WriteLine("\x1b[36m🎮 [Jiang Hu] Labrys keycard production added    迷宫钥匙制作配方\x1b[0m");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error adding Lab keycard production: {ex.Message} \x1b[0m");
+                Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error adding Labrys keycard production: {ex.Message} \x1b[0m");
             }
         }
 

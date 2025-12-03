@@ -47,7 +47,8 @@ namespace JiangHu.Server
                     WriteConfigSetting("Enable_New_Trader", true);
                     WriteConfigSetting("Enable_New_Item", true);
                     WriteConfigSetting("Enable_Main_Quest", true);
-                    WriteConfigSetting("Enable_Arena_Mode", true);
+                    WriteConfigSetting("Enable_XP_Mode", true);
+                    WriteConfigSetting("Enable_Arena_Quest", true);
                     WriteConfigSetting("Remove_VanillaQuest_XP_reward", true);
                     WriteConfigSetting("Increase_HeadHP", true);
                     WriteConfigSetting("Enable_Dogtag_Collection", true);
