@@ -97,28 +97,28 @@ namespace JiangHu.Server
                         WriteConfigSetting("Unlock_VanillaLocked_Customization", true);
                     }
 
-                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880300")) // "Prologue - Interchange"
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880200")) // "Prologue - Customs"
                     {
                         WriteConfigSetting("Unlock_VanilaTrader_TraderStanding", true);
                     }
 
-                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880600")) // "Prologue - Reserve"
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880300")) // "Prologue - Interchange"
                     {
                         WriteConfigSetting("Unlock_VanillaLocked_Items", true);
                     }
 
                     // skills
-                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880200")) // "Prologue - Customs"
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880400")) // "Prologue - Factory"
                     {
                         WriteConfigSetting("Enable_Wider_Freelook_Angle", true);
                     }
 
-                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880400")) // "Prologue - Factory"
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880500")) // "Prologue - Woods"
                     {
                         WriteConfigSetting("Enable_New_Movement", true);
                     }
 
-                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880500")) // "Prologue - Woods"
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880600")) // "Prologue - Reserve"
                     {
                         WriteConfigSetting("Enable_Slide", true);
                     }
@@ -143,7 +143,7 @@ namespace JiangHu.Server
                         WriteConfigSetting("Enable_Fast_Weapon_Switching", true);
                     }
 
-                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af886000")) // "Big Tarkov Family"
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af880c00")) // "Prologue - Labyrinth"
                     {
                         WriteConfigSetting("Enable_Fast_Movement", true);
                     }
@@ -159,18 +159,9 @@ namespace JiangHu.Server
                     }
 
                     // Challenges
-                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af887000")) // "The Survivalist"
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af884000")) // "Prologue"
                     {
                         WriteConfigSetting("Lock_Flea", true);
-                    }
-                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af884000")) // "Prologue"
-                    {
-                        WriteConfigSetting("Enable_Cash_Wipe", true);
-                    }
-
-                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af884000")) // "Prologue"
-                    {
-                        WriteConfigSetting("Cash_Wipe_Coefficiency", 0.1);
                     }
 
                     if (CheckQuestCompleted(pmc, "e983002c4ab4d229af885000")) // "Reaching The Oasis"
@@ -178,7 +169,17 @@ namespace JiangHu.Server
                         WriteConfigSetting("Enable_No_Insurance", true);
                     }
 
-                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af888000")) // "Long March"
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af886000")) // "Big Tarkov Family"
+                    {
+                        WriteConfigSetting("Enable_Cash_Wipe", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af886000")) // "Big Tarkov Family"
+                    {
+                        WriteConfigSetting("Cash_Wipe_Coefficiency", 0.1);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af887000")) // "The Survivalist"
                     {
                         WriteConfigSetting("Enable_empty_vanilla_shop", true);
                     }

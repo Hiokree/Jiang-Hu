@@ -48,8 +48,6 @@ namespace JiangHu.Server
 
         private bool _Change_Prestige_Conditions = false;
         private bool _Add_HideoutProduction_DSP = false;
-        private bool _Add_HideoutProduction_Labryskeycard = false;
-        private bool _Unlock_All_Labrys_Quests = false;
         private bool _Enable_Replace_OneRaid_with_OneLife = false;
         private bool _Remove_VanillaQuest_XP_reward = false;
 
@@ -124,12 +122,6 @@ namespace JiangHu.Server
                 if (config.TryGetValue("Increase_HeadHP", out var headValue))
                     _Increase_HeadHP = headValue.GetBoolean();
 
-                if (config.TryGetValue("Add_HideoutProduction_Labryskeycard", out var labKeycardValue))
-                    _Add_HideoutProduction_Labryskeycard = labKeycardValue.GetBoolean();
-
-                if (config.TryGetValue("Unlock_All_Labrys_Quests", out var labrysQuestsValue))
-                    _Unlock_All_Labrys_Quests = labrysQuestsValue.GetBoolean();
-
                 if (config.TryGetValue("Enable_Replace_OneRaid_with_OneLife", out var oneLifeValue))
                     _Enable_Replace_OneRaid_with_OneLife = oneLifeValue.GetBoolean();
 
@@ -184,12 +176,6 @@ namespace JiangHu.Server
 
                 if (_Increase_HeadHP)
                     IncreaseHeadHP();
-
-                if (_Add_HideoutProduction_Labryskeycard)
-                    AddHideoutProductionLabKeycard(tables);
-
-                if (_Unlock_All_Labrys_Quests)
-                    UnlockLabrysQuests(tables);
 
                 if (_Enable_Replace_OneRaid_with_OneLife)
                     ReplaceOneRaidWithOneLife(tables);
@@ -280,7 +266,7 @@ namespace JiangHu.Server
                     var originalCount = successRewards.Count;
                     successRewards.RemoveAll(reward => reward.Type == RewardType.AssortmentUnlock);
                     if (successRewards.Count != originalCount) modifiedCount++;
-                    if (!successRewards.Any()) quest.Rewards.Remove("Success");
+                    if (!successRewards.Any()) successRewards.Clear();
                 }
             }
 
@@ -350,7 +336,7 @@ namespace JiangHu.Server
                     var originalCount = successRewards.Count;
                     successRewards.RemoveAll(reward => reward.Type == RewardType.TraderStanding);
                     if (successRewards.Count != originalCount) modifiedCount++;
-                    if (!successRewards.Any()) quest.Rewards.Remove("Success");
+                    if (!successRewards.Any()) successRewards.Clear();
                 }
             }
 
@@ -373,7 +359,7 @@ namespace JiangHu.Server
                 {
                     var successRewards = quest.Rewards["Success"];
                     successRewards.RemoveAll(reward => reward.Type == RewardType.ProductionScheme);
-                    if (!successRewards.Any()) quest.Rewards.Remove("Success");
+                    if (!successRewards.Any()) successRewards.Clear();
                 }
             }
 
@@ -414,7 +400,7 @@ namespace JiangHu.Server
                     var originalCount = successRewards.Count;
                     successRewards.RemoveAll(reward => reward.Type == RewardType.CustomizationDirect);
                     if (successRewards.Count != originalCount) modifiedCount++;
-                    if (!successRewards.Any()) quest.Rewards.Remove("Success");
+                    if (!successRewards.Any()) successRewards.Clear();
                 }
             }
 
@@ -515,18 +501,23 @@ namespace JiangHu.Server
                     Id = new MongoId("e983002c4ab4d99999888200"),
                     AreaType = (HideoutAreas) 11,
                     Requirements = new List<Requirement>
-            {
-                new Requirement
-                {
-                    TemplateId = new MongoId("590c2e1186f77425357b6124"),
-                    Type = "Tool",
-                    Count = 1
-                }
-            },
+                    {
+                        new Requirement
+                        {
+                            TemplateId = new MongoId("590c2e1186f77425357b6124"),
+                            Type = "Tool",
+                            Count = 1
+                        },
+                        new Requirement
+                        {
+                            QuestId = new MongoId("e983002c4ab4d229af880700"),
+                            Type = "QuestComplete"
+                        }
+                    },
                     ProductionTime = 60,
                     EndProduct = new MongoId("62e910aaf957f2915e0a5e36"),
                     IsEncoded = true,
-                    Locked = false,
+                    Locked = true,
                     NeedFuelForAllProductionTime = true,
                     Continuous = false,
                     Count = 1,
@@ -535,6 +526,7 @@ namespace JiangHu.Server
                 };
 
                 tables.Hideout.Production.Recipes.Add(newRecipe);
+
                 Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Lighthouse DSP production recipe added    灯塔通行道具制作配方\x1b[0m");
             }
             catch (Exception ex)
@@ -806,136 +798,6 @@ namespace JiangHu.Server
             catch (Exception ex)
             {
                 Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error adjusting head HP: {ex.Message}  \x1b[0m");
-            }
-        }
-
-        // 🔹 Add Labrys Keycard Recipe
-        private void AddHideoutProductionLabKeycard(DatabaseTables tables)
-        {
-            try
-            {
-                if (!_Add_HideoutProduction_Labryskeycard)
-                    return;
-
-                var keycardItem = tables.Templates.Items["679b9819a2f2dd4da9023512"];
-                if (keycardItem == null)
-                {
-                    Console.WriteLine("⚠️ [Jiang Hu] Lab keycard item not found in templates");
-                    return;
-                }
-
-                var newRecipe = new HideoutProduction
-                {
-                    Id = new MongoId("e983002c4ab4d99999888201"),
-                    AreaType = (HideoutAreas) 11,
-                    Requirements = new List<Requirement>
-            {
-                new Requirement
-                {
-                    TemplateId = new MongoId("5734758f24597738025ee253"), // Golden neck chain
-                    Type = "Item",
-                    IsSpawnedInSession = true,
-                    Count = 1
-                },
-                new Requirement
-                {
-                    TemplateId = new MongoId("5c12688486f77426843c7d32"), // Paracord
-                    Type = "Item",
-                    IsSpawnedInSession = true,
-                    Count = 1
-                },
-                new Requirement
-                {
-                    TemplateId = new MongoId("61bf83814088ec1a363d7097"), // Sewing kit
-                    Type = "Item",
-                    IsSpawnedInSession = true,
-                    Count = 1
-                },
-                new Requirement
-                {
-                    TemplateId = new MongoId("59e3556c86f7741776641ac2"), // Ox bleach
-                    Type = "Item",
-                    IsSpawnedInSession = true,
-                    Count = 1
-                },
-                new Requirement
-                {
-                    TemplateId = new MongoId("59e361e886f774176c10a2a5"), // Bottle of hydrogen peroxide
-                    Type = "Item",
-                    IsSpawnedInSession = true,
-                    Count = 1
-                },
-                new Requirement
-                {
-                    TemplateId = new MongoId("5b4335ba86f7744d2837a264"), // Medical bloodset
-                    Type = "Item",
-                    IsSpawnedInSession = true,
-                    Count = 1
-                },
-                new Requirement
-                {
-                    TemplateId = new MongoId("590a3d9c86f774385926e510"), // Ultraviolet lamp
-                    Type = "Item",
-                    IsSpawnedInSession = true,
-                    Count = 1
-                },
-                new Requirement
-                {
-                    TemplateId = new MongoId("5d1b3f2d86f774253763b735"), // Disposable syringe
-                    Type = "Item",
-                    IsSpawnedInSession = true,
-                    Count = 1
-                }
-            },
-                    ProductionTime = 600,
-                    EndProduct = new MongoId("679b9819a2f2dd4da9023512"),
-                    IsEncoded = false,
-                    Locked = false,
-                    NeedFuelForAllProductionTime = false,
-                    Continuous = false,
-                    Count = 1,
-                    ProductionLimitCount = 0,
-                    IsCodeProduction = false
-                };
-
-                tables.Hideout.Production.Recipes.Add(newRecipe);
-                Console.WriteLine("\x1b[36m🎮 [Jiang Hu] Labrys keycard production added    迷宫钥匙制作配方\x1b[0m");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error adding Labrys keycard production: {ex.Message} \x1b[0m");
-            }
-        }
-
-        /// Unlock Labrys Quests
-        private void UnlockLabrysQuests(DatabaseTables tables)
-        {
-            try
-            {
-                const string targetLocation = "6733700029c367a3d40b02af";
-                const string newTraderId = "e983002c4ab4d99999888000";
-
-                var quests = tables.Templates.Quests;
-                int modifiedCount = 0;
-
-                foreach (var kvp in quests)
-                {
-                    string questId = kvp.Key.ToString();
-                    var quest = kvp.Value;
-
-                    if (quest.Location == targetLocation)
-                    {
-                        quest.TraderId = newTraderId;
-                        quest.Conditions.AvailableForStart?.Clear();
-                        modifiedCount++;
-                    }
-                }
-
-                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Unlocked {modifiedCount} Labrys quests    解锁迷宫任务\x1b[0m");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error in UnlockLabrysQuests: {ex.Message}\x1b[0m");
             }
         }
 

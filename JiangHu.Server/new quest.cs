@@ -22,7 +22,7 @@ public class NewQuestModule
     private readonly string _modPath;
     private bool _questsLoaded = false;
     private bool _Enable_JiangHu_quest = false;
-    private bool _Enable_Arena_Mode = false;
+    private bool _Enable_Arena_Quest = false;
     private bool _Enable_Dogtag_Collection = false;
     private bool _Enable_Quest_Generator = false;
 
@@ -47,7 +47,7 @@ public class NewQuestModule
             if (count > 0) loadedQuests["main"] = count;
         }
 
-        if (_Enable_Arena_Mode)
+        if (_Enable_Arena_Quest)
         {
             var count = LoadQuestFile("Arena_Quest.json");
             if (count > 0) loadedQuests["arena"] = count;
@@ -95,8 +95,8 @@ public class NewQuestModule
                 if (config.TryGetValue("Enable_Main_Quest", out var mainQuestValue))
                     _Enable_JiangHu_quest = mainQuestValue.GetBoolean();
 
-                if (config.TryGetValue("Enable_Arena_Mode", out var arenaValue))
-                    _Enable_Arena_Mode = arenaValue.GetBoolean();
+                if (config.TryGetValue("Enable_Arena_Quest", out var arenaValue))
+                    _Enable_Arena_Quest = arenaValue.GetBoolean();
 
                 if (config.TryGetValue("Enable_Dogtag_Collection", out var Dogtag_CollectionValue))
                     _Enable_Dogtag_Collection = Dogtag_CollectionValue.GetBoolean();

@@ -182,6 +182,13 @@ namespace JiangHu
             if (GUILayout.Button("▶▶", GUILayout.Height(25), GUILayout.Width(50)))
                 _musicPlayer.PlayNextSong(); 
             GUILayout.FlexibleSpace();
+
+            GUI.color = _musicPlayer.IsLoopingCurrentSong() ? Color.green : Color.white;
+            if (GUILayout.Button("◐", GUILayout.Height(25), GUILayout.Width(50)))
+                _musicPlayer.ToggleLoopCurrentSong();
+            GUI.color = Color.white;
+            GUILayout.FlexibleSpace();
+
             GUILayout.EndHorizontal();
             GUILayout.EndVertical();
 

@@ -18,6 +18,7 @@ namespace JiangHu
         private bool isPlaying = false;
         private float volume = 0.2f;
         private bool _musicEnabled = true;
+        private bool isLoopingCurrentSong = false;
 
         void Awake()
         {
@@ -103,7 +104,6 @@ namespace JiangHu
 
             if (!enabled)
             {
-                // Stop audio when disabled
                 if (audioSource != null && audioSource.isPlaying)
                 {
                     audioSource.Stop();
@@ -112,7 +112,6 @@ namespace JiangHu
             }
             else if (enabled)
             {
-                // Start music when enabled
                 isPlaying = true;
                 if (shuffledSongs.Length > 0)
                 {
@@ -123,7 +122,6 @@ namespace JiangHu
                 }
                 else
                 {
-                    // If no songs, scan for them
                     ScanAndShuffleSongs();
                     if (shuffledSongs.Length > 0)
                     {
@@ -131,7 +129,6 @@ namespace JiangHu
                     }
                 }
 
-                // Ensure music loop is running
                 if (musicCoroutine == null)
                 {
                     musicCoroutine = StartCoroutine(MusicLoop());
@@ -159,7 +156,7 @@ namespace JiangHu
             string musicPath = Path.Combine(Directory.GetCurrentDirectory(), "BepInEx", "plugins", "JiangHu.Client", "music");
             if (!Directory.Exists(musicPath)) Directory.CreateDirectory(musicPath);
 
-            var audioFiles = Directory.GetFiles(musicPath, "*.*", SearchOption.AllDirectories)
+            var audioFiles = Directory.GetFiles(musicPath, "*.*")
                 .Where(f =>
                 {
                     string ext = Path.GetExtension(f).ToLower();
@@ -211,7 +208,7 @@ namespace JiangHu
                     {
                         audioSource.clip = clip;
                         audioSource.Play();
-                        isPlaying = true; // Ensure this is set
+                        isPlaying = true; 
                     }
                 }
             }
@@ -231,8 +228,14 @@ namespace JiangHu
 
         public void PlayNextSong()
         {
-            if (!_musicEnabled) return; 
+            if (!_musicEnabled) return;
             if (shuffledSongs.Length == 0) return;
+
+            if (isLoopingCurrentSong)
+            {
+                isLoopingCurrentSong = false;
+            }
+
             if (audioSource != null && audioSource.isPlaying) audioSource.Stop();
             currentSongIndex = (currentSongIndex + 1) % shuffledSongs.Length;
             PlayCurrentSong();
@@ -240,8 +243,14 @@ namespace JiangHu
 
         public void PlayPreviousSong()
         {
-            if (!_musicEnabled) return; 
+            if (!_musicEnabled) return;
             if (shuffledSongs.Length == 0) return;
+
+            if (isLoopingCurrentSong)
+            {
+                isLoopingCurrentSong = false;
+            }
+
             if (audioSource != null && audioSource.isPlaying) audioSource.Stop();
             currentSongIndex = (currentSongIndex - 1 + shuffledSongs.Length) % shuffledSongs.Length;
             PlayCurrentSong();
@@ -268,6 +277,25 @@ namespace JiangHu
             }
         }
 
+        public void ToggleLoopCurrentSong()
+        {
+            isLoopingCurrentSong = !isLoopingCurrentSong;
+
+            if (isLoopingCurrentSong)
+            {
+                if (audioSource != null)
+                {
+                    audioSource.loop = false; 
+                }
+            }
+        }
+
+        // Add getter method
+        public bool IsLoopingCurrentSong()
+        {
+            return isLoopingCurrentSong;
+        }
+
         public void SetVolume(float newVolume)
         {
             volume = newVolume;
@@ -276,6 +304,11 @@ namespace JiangHu
 
         public void SetCurrentSongIndex(int index)
         {
+            if (isLoopingCurrentSong)
+            {
+                isLoopingCurrentSong = false;
+            }
+
             currentSongIndex = index;
             if (_musicEnabled && shuffledSongs.Length > 0)
             {
@@ -295,8 +328,15 @@ namespace JiangHu
 
                     if (isPlaying && shuffledSongs.Length > 0)
                     {
-                        currentSongIndex = (currentSongIndex + 1) % shuffledSongs.Length;
-                        PlayCurrentSong();
+                        if (isLoopingCurrentSong)
+                        {
+                            PlayCurrentSong();
+                        }
+                        else
+                        {
+                            currentSongIndex = (currentSongIndex + 1) % shuffledSongs.Length;
+                            PlayCurrentSong();
+                        }
                     }
                 }
             }

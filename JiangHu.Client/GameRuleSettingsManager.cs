@@ -22,8 +22,6 @@ namespace JiangHu
         private bool enableNoInsurance = false;
         private bool enableCashWipeAfterDeath = false;
         private bool addHideoutProductionDSP = true;
-        private bool addHideoutProductionLabryskeycard = true;
-        private bool unlockAllLabrysQuests = true;
         private bool usePreset = true;
         private bool enableQuestGenerator = true;
         private bool enableJianghuBot = true;
@@ -141,10 +139,6 @@ namespace JiangHu
                     enableCashWipeAfterDeath = (bool)configDict["Enable_Cash_Wipe"];
                 if (configDict.ContainsKey("Add_HideoutProduction_DSP") && configDict["Add_HideoutProduction_DSP"] is bool)
                     addHideoutProductionDSP = (bool)configDict["Add_HideoutProduction_DSP"];
-                if (configDict.ContainsKey("Add_HideoutProduction_Labryskeycard") && configDict["Add_HideoutProduction_Labryskeycard"] is bool)
-                    addHideoutProductionLabryskeycard = (bool)configDict["Add_HideoutProduction_Labryskeycard"];
-                if (configDict.ContainsKey("Unlock_All_Labrys_Quests") && configDict["Unlock_All_Labrys_Quests"] is bool)
-                    unlockAllLabrysQuests = (bool)configDict["Unlock_All_Labrys_Quests"];
                 if (configDict.ContainsKey("Use_Preset") && configDict["Use_Preset"] is bool)
                     usePreset = (bool)configDict["Use_Preset"];
                 if (configDict.ContainsKey("Enable_Quest_Generator") && configDict["Enable_Quest_Generator"] is bool)
@@ -260,8 +254,6 @@ namespace JiangHu
                 configObj["Enable_No_Insurance"] = enableNoInsurance;
                 configObj["Enable_Cash_Wipe"] = enableCashWipeAfterDeath;
                 configObj["Add_HideoutProduction_DSP"] = addHideoutProductionDSP;
-                configObj["Add_HideoutProduction_Labryskeycard"] = addHideoutProductionLabryskeycard;
-                configObj["Unlock_All_Labrys_Quests"] = unlockAllLabrysQuests;
                 configObj["Use_Preset"] = usePreset;
                 configObj["Enable_Quest_Generator"] = enableQuestGenerator;
                 configObj["Enable_Jianghu_Bot"] = enableJianghuBot;
@@ -930,7 +922,7 @@ namespace JiangHu
             }
             GUILayout.Space(5);
 
-            bool newUnlockCustomization = GUILayout.Toggle(unlockVanillaLockedCustomization, " Unlock Vanilla Locked Customization  解锁原版锁定装扮");
+            bool newUnlockCustomization = GUILayout.Toggle(unlockVanillaLockedCustomization, " Unlock Vanilla Locked Customization  解锁原版锁定藏身处装饰");
             if (newUnlockCustomization != unlockVanillaLockedCustomization)
             {
                 unlockVanillaLockedCustomization = newUnlockCustomization;
@@ -967,7 +959,7 @@ namespace JiangHu
             }
             GUILayout.Space(5);
 
-            GUILayout.Label("     Cash Wipe Coefficient  现金清除系数");
+            GUILayout.Label("     Cash Wipe Coefficiency  现金清除系数");
             GUILayout.Space(5);
             GUILayout.BeginHorizontal();
             GUILayout.Space(25);
@@ -987,20 +979,7 @@ namespace JiangHu
                 increaseHeadHP = newHeadHP;
                 SaveSettingsToJson();
             }
-            GUILayout.Space(5);
-            bool newUnlockLabrysQuests = GUILayout.Toggle(unlockAllLabrysQuests, " Unlock All Labrys Quests  解锁迷宫任务");
-            if (newUnlockLabrysQuests != unlockAllLabrysQuests)
-            {
-                unlockAllLabrysQuests = newUnlockLabrysQuests;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            bool newLabKey = GUILayout.Toggle(addHideoutProductionLabryskeycard, " Hideout Recipe: Labrys Keycard  制造迷宫钥匙");
-            if (newLabKey != addHideoutProductionLabryskeycard)
-            {
-                addHideoutProductionLabryskeycard = newLabKey;
-                SaveSettingsToJson();
-            }
+
             GUILayout.EndVertical();
 
             // Core Rules
