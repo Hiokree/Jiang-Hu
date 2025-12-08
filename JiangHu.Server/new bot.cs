@@ -34,7 +34,8 @@ namespace JiangHu.Server
                 "followerBirdEye",
                 "bossTagillaAgro",
                 "bossKillaAgro",
-                "tagillaHelperAgro"
+                "tagillaHelperAgro",
+                "sectantPriest"
         };
 
         public EnableJianghuBot(ConfigServer configServer)

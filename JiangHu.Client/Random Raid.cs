@@ -183,7 +183,7 @@ namespace JiangHu.Patches
                 rt.anchorMax = new Vector2(1f, 0f);
                 rt.pivot = new Vector2(1f, 0f);
 
-                rt.anchoredPosition = new Vector2(RightXPosition, RightYPosition);
+                rt.anchoredPosition = new Vector2(RightXPosition, RightYPosition - 100f);
 
                 rt.sizeDelta = originalSize;
                 rt.localScale = new Vector3(0.75f, 0.75f, 0.75f);
@@ -249,7 +249,7 @@ namespace JiangHu.Patches
 
                 var textField = typeof(DefaultUIButton).GetField("_text",
                     BindingFlags.NonPublic | BindingFlags.Instance);
-                textField.SetValue(jiangHuButton, "<color=#FF9900>江 湖</color>");
+                textField.SetValue(jiangHuButton, "<color=#a4cab6>江 湖</color>");
 
                 var fontSizeField = typeof(DefaultUIButton).GetField("_fontSize",
                     BindingFlags.NonPublic | BindingFlags.Instance);

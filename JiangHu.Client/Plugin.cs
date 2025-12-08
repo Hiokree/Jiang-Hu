@@ -1,13 +1,9 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
-using EFT;
-using EFT.InventoryLogic;
-using GPUInstancer;
 using HarmonyLib;
 using JiangHu.ExfilRandomizer;
 using JiangHu.Patches;
-using JiangHu.Patches;
-using System.Reflection;
+using System;
 using UnityEngine;
 
 namespace JiangHu
@@ -27,6 +23,9 @@ namespace JiangHu
         private ConfigEntry<KeyboardShortcut> ShowPlayerHotkey;
         private ConfigEntry<bool> ShowMusicPlayer;
 
+        private DeathMatch DeathMatch;
+
+
         void Awake()
         {
             ShowPlayerHotkey = Config.Bind("JiangHu World Shaper", "Show World Shaper Hotkey", new KeyboardShortcut(KeyCode.F4), "Hotkey to show/hide World Shaper");
@@ -34,7 +33,7 @@ namespace JiangHu
             ShowSettingsHotkey = Config.Bind("Game Settings Manager", "Show Setting Manager Hotkey", new KeyboardShortcut(KeyCode.F5), "Hotkey to show/hide Game settings manager");
             ShowSettingsManager = Config.Bind("Game Settings Manager", "Show Setting Manager", false, "Show/hide Game settings manager");
             ShowDescription = Config.Bind("About JiangHu", "Detailed Mod Info", true, "Show detailed mod information");
-
+          
 
             pluginObj = new GameObject("JiangHuPlugin");
             DontDestroyOnLoad(pluginObj);
@@ -43,7 +42,6 @@ namespace JiangHu
             pluginObj.AddComponent<DogtagConditionManager>();
             pluginObj.AddComponent<XPConditionManager>();
             pluginObj.AddComponent<RaidStatusConditionManager>();
-
 
             pluginObj.AddComponent<NewMovement>();
             pluginObj.AddComponent<RemoveAlpha>();
@@ -62,15 +60,25 @@ namespace JiangHu
             descriptionLoader = pluginObj.AddComponent<DescriptionLoader>();
             descriptionLoader.SetConfig(ShowDescription);
 
+            DeathMatch = pluginObj.AddComponent<DeathMatch>();
+            DeathMatch.Init();
+
             new MainMenuModifierPatch().Enable();
             new HideProgressCounterUIPatch().Enable();
             new RandomExfilDestinationPatch().Enable();
             new RaidEndDetectionPatch().Enable();
 
-            PatchUseRepairKitInRaid.Enable();
-
             new PatchSlotItemViewRefresh().Enable();
             new PatchGridViewShow().Enable();
+
+
+            var harmony = new Harmony("jianghu.all");
+            harmony.PatchAll();
+
+            new DeathMatchButtonPatch().Enable();
+
+            BossSpawnSystem.initialSpawnDone = false;
+
         }
 
         private void UpdateCursorState()
@@ -86,6 +94,10 @@ namespace JiangHu
 
         void Update()
         {
+            if (ruleSettingsManager == null)
+            {
+                return;
+            }
             if (ShowSettingsHotkey.Value.IsDown())
             {
                 ShowSettingsManager.Value = !ShowSettingsManager.Value;

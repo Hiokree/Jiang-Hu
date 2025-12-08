@@ -51,6 +51,9 @@ namespace JiangHu.Server
         private bool _Enable_Replace_OneRaid_with_OneLife = false;
         private bool _Remove_VanillaQuest_XP_reward = false;
 
+        private bool _Default_Match_Time = true;
+        private int _DeathMatch_Match_Time = 0;
+
         private readonly ConfigServer _configServer;
 
         public RuleSettings(SaveServer saveServer, DatabaseServer databaseServer, ConfigServer configServer, FenceService fenceService)
@@ -128,6 +131,11 @@ namespace JiangHu.Server
                 if (config.TryGetValue("Disable_Secure_Container", out var ContainerValue))
                     _Disable_Secure_Container = ContainerValue.GetBoolean();
 
+                if (config.TryGetValue("Default_Match_Time", out var defaultMatchTimeValue))
+                    _Default_Match_Time = defaultMatchTimeValue.GetBoolean();
+
+                if (config.TryGetValue("DeathMatch_Match_Time", out var matchTimeValue))
+                    _DeathMatch_Match_Time = matchTimeValue.GetInt32();
             }
             catch (Exception ex)
             {
@@ -183,6 +191,7 @@ namespace JiangHu.Server
                 if (_Disable_Secure_Container)
                     DisableSecureContainer(tables);
 
+                SetRaidTimeLength(tables);
             }
             catch (Exception ex)
             {
@@ -938,6 +947,49 @@ namespace JiangHu.Server
             catch (Exception ex)
             {
                 Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error replacing one-raid with one-life: {ex.Message} \x1b[0m");
+            }
+        }
+
+        // Raid Time
+        private void SetRaidTimeLength(DatabaseTables tables)
+        {
+            try
+            {
+                if (_Default_Match_Time)
+                {
+                    return;
+                }
+
+                if (_DeathMatch_Match_Time <= 0)
+                {
+                    return;
+                }
+
+                var locations = tables.Locations;
+                int modifiedCount = 0;
+
+                var locationsDict = locations.GetDictionary();
+
+                foreach (var kvp in locationsDict)
+                {
+                    var location = kvp.Value;
+
+                    location.Base.EscapeTimeLimit = (double) _DeathMatch_Match_Time;
+
+                    if (location.Base.EscapeTimeLimitCoop.HasValue)
+                        location.Base.EscapeTimeLimitCoop = _DeathMatch_Match_Time;
+
+                    if (location.Base.EscapeTimeLimitPVE.HasValue)
+                        location.Base.EscapeTimeLimitPVE = _DeathMatch_Match_Time;
+
+                    modifiedCount++;
+                }
+
+                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Set all map raid time to {_DeathMatch_Match_Time} minutes for {modifiedCount} locations    设置对局时间\x1b[0m");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\x1b[36m❌ [Jiang Hu] Error setting raid time: {ex.Message}\x1b[0m");
             }
         }
     }

@@ -59,7 +59,9 @@
     <Reference Include="Unity.TextMeshPro">
       <HintPath>$(GameManagedDir)\Unity.TextMeshPro.dll</HintPath>
     </Reference>
-
+	  <Reference Include="Unity.DissonanceVoip">
+		  <HintPath>$(GameManagedDir)\DissonanceVoip.dll</HintPath>
+	  </Reference>
 	<Reference Include="AnimationSystem.Types">
 		<HintPath>$(GameManagedDir)\AnimationSystem.Types.dll</HintPath>
 	</Reference>

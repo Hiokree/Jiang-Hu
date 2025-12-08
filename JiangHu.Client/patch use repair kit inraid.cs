@@ -8,23 +8,6 @@ using System.Reflection;
 
 namespace JiangHu.Patches
 {
-    public class PatchUseRepairKitInRaid
-    {
-        public static void Enable()
-        {
-            try
-            {
-                var harmony = new Harmony("com.jianghu.raidrepair");
-                harmony.PatchAll();
-                Console.WriteLine("🛠️ [Jiang Hu] Raid repair patch applied successfully");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"❌ [Jiang Hu] Error applying raid repair patch: {ex.Message}");
-            }
-        }
-    }
-
     [HarmonyPatch(typeof(ContextInteractionSwitcherClass))]
     [HarmonyPatch("Boolean_1", MethodType.Getter)]
     public class RaidCheckPatch

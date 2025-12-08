@@ -50,6 +50,10 @@ namespace JiangHu
         private bool enableXPMode = false; 
         private bool restartXPMode = false; 
         private bool enableArenaQuest = false;
+        private int deathMatchLives = 2;  
+        private int deathMatchStartingBots = 5;
+        private bool useDefaultMatchTime = true;
+        private int deathMatchMatchTime = 3600; 
 
         // Map settings
         private Dictionary<string, bool> mapSettings = new Dictionary<string, bool>
@@ -79,7 +83,11 @@ namespace JiangHu
         private Vector2 storyModeScrollPosition = Vector2.zero;
         private string storyModeContent = "";
 
-        private string currentLanguage = "en";
+        // death match guide
+        private Vector2 deathMatchGuideScrollPosition = Vector2.zero;
+        private string deathMatchGuideContent = "";
+
+        private string currentLanguage = "ch";
         private ConfigEntry<bool> showSettingsManager;
 
         // Tab 
@@ -87,10 +95,10 @@ namespace JiangHu
         private string[] tabNames = new string[] {
             "Game Mode  游戏模式",
             "Aporia  向阳而生",
-            "Physics  凌波微步",
+            "Death Match  樂園",
             "Three Body  三体",
-            "Gamge Rules  游戏规则",
-            "Core Modules  核心模块"
+            "Physics  凌波微步",
+            "Gamge Rules  游戏规则"            
         };
 
         public void SetConfig(ConfigEntry<bool> showSettingsManager)
@@ -101,6 +109,10 @@ namespace JiangHu
 
         void Update()
         {
+            if (showSettingsManager == null)
+            {
+                return;
+            }
             if (showSettingsManager.Value && !showGUI)
             {
                 showGUI = true;
@@ -224,6 +236,34 @@ namespace JiangHu
                     if (configDict.ContainsKey(configKey) && configDict[configKey] is bool)
                         mapSettings[mapName] = (bool)configDict[configKey];
                 }
+
+                // Death Match settings
+                if (configDict.ContainsKey("DeathMatch_Lives"))
+                {
+                    if (configDict["DeathMatch_Lives"] is long)
+                        deathMatchLives = (int)(long)configDict["DeathMatch_Lives"];
+                    else if (configDict["DeathMatch_Lives"] is double)
+                        deathMatchLives = (int)(double)configDict["DeathMatch_Lives"];
+                }
+
+                if (configDict.ContainsKey("DeathMatch_Starting_Bot"))
+                {
+                    if (configDict["DeathMatch_Starting_Bot"] is long)
+                        deathMatchStartingBots = (int)(long)configDict["DeathMatch_Starting_Bot"];
+                    else if (configDict["DeathMatch_Starting_Bot"] is double)
+                        deathMatchStartingBots = (int)(double)configDict["DeathMatch_Starting_Bot"];
+                }
+
+                if (configDict.ContainsKey("Default_Match_Time") && configDict["Default_Match_Time"] is bool)
+                    useDefaultMatchTime = (bool)configDict["Default_Match_Time"];
+
+                if (configDict.ContainsKey("DeathMatch_Match_Time"))
+                {
+                    if (configDict["DeathMatch_Match_Time"] is long)
+                        deathMatchMatchTime = (int)(long)configDict["DeathMatch_Match_Time"];
+                    else if (configDict["DeathMatch_Match_Time"] is double)
+                        deathMatchMatchTime = (int)(double)configDict["DeathMatch_Match_Time"];
+                }
             }
         }
 
@@ -296,6 +336,12 @@ namespace JiangHu
                     string configKey = $"Enable_{kvp.Key.Replace("4", "").Replace("_", "")}";
                     configObj[configKey] = kvp.Value;
                 }
+
+                // Death Match settings
+                configObj["DeathMatch_Lives"] = deathMatchLives;
+                configObj["DeathMatch_Starting_Bot"] = deathMatchStartingBots;
+                configObj["Default_Match_Time"] = useDefaultMatchTime;
+                configObj["DeathMatch_Match_Time"] = deathMatchMatchTime;
 
                 string json = JsonConvert.SerializeObject(configObj, Formatting.Indented);
                 File.WriteAllText(configPath, json);
@@ -392,16 +438,16 @@ namespace JiangHu
                     DrawArenaTab();
                     break;
                 case 2:
-                    DrawPhysicsTab();
+                    DrawDeathMatchTab();
                     break;
                 case 3: 
                     DrawThreeBodyTab();
                     break;
-                case 4: 
-                    DrawRulesTab();
+                case 4:
+                    DrawPhysicsTab();                    
                     break;
-                case 5: 
-                    DrawCoreModulesTab();
+                case 5:
+                    DrawRulesTab();                   
                     break;
             }
 
@@ -519,15 +565,72 @@ namespace JiangHu
 
             GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.5f));
 
-            // Jiang Hu Road Box
+            // UPPER BOX
             GUILayout.BeginVertical("box");
             GUILayout.Label("Jiang Hu Road  江湖行", GUIStyle.none);
             GUILayout.Space(5);
             GUILayout.Label("Randow Map + Transit. Click「江湖」button in main screen to play");
             GUILayout.Space(5);
             GUILayout.Label("随机地图、随机转移。点击主画面「江湖」按钮玩");
+            GUILayout.Space(5);
+            GUILayout.EndVertical();
+
             GUILayout.Space(10);
 
+            // MIDDLE BOX
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Dance on the Razor's Edge  惊鸿猎", GUIStyle.none);
+            GUILayout.Space(10);
+            GUILayout.Label("Nerf boss XP & True survival   降低首领击杀经验 & 真实生存");
+            GUILayout.Space(10);
+
+            bool xpMode = GUILayout.Toggle(enableXPMode, " Enable Dance on the Razor's Edge  开启惊鸿猎");
+            if (xpMode != enableXPMode)
+            {
+                enableXPMode = xpMode;
+                SaveSettingsToJson();
+            }
+
+            GUILayout.EndVertical();
+
+            GUILayout.Space(10);
+
+            // LOWER BOX
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Aporia  向阳而生", GUIStyle.none);
+            GUILayout.Space(5);
+            GUILayout.Label("Play「Jiang Hu Road」while enable「Dance on the Razor's Edge」");
+            GUILayout.Space(5);
+            GUILayout.Label("需玩江湖行并开启惊鸿猎");
+            GUILayout.Space(10);
+
+            bool arenaQuest = GUILayout.Toggle(enableArenaQuest, " Enable Aporia Quests  开启向阳而生任务");
+            if (arenaQuest != (enableXPMode && enableArenaQuest))
+            {
+                enableXPMode = arenaQuest;
+                enableArenaQuest = arenaQuest;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(10);
+
+            bool restartRaidMode = GUILayout.Toggle(restartXPMode, " Restart Aporia Quests  重置向阳而生任务");
+            if (restartRaidMode != restartXPMode)
+            {
+                restartXPMode = restartRaidMode;
+                SaveSettingsToJson();
+            }
+
+            GUILayout.EndVertical();
+
+            GUILayout.EndVertical(); 
+
+            // RIGHT COLUMN
+            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.5f - 25));
+
+
+            // Jiang Hu Road Box
+
+            GUILayout.BeginVertical("box");
             GUILayout.Label("Random Map Pool  随机地图池", GUIStyle.none);
             GUILayout.Space(5);
 
@@ -634,56 +737,6 @@ namespace JiangHu
                 SaveSettingsToJson();
             }
             GUILayout.Space(5);
-            GUILayout.EndVertical();
-
-            GUILayout.EndVertical(); 
-
-            // RIGHT COLUMN
-            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.5f - 25));
-
-            // UPPER BOX
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Dance on the Razor's Edge  惊鸿猎", GUIStyle.none);
-            GUILayout.Space(10);
-            GUILayout.Label("Nerf boss XP & True survival   降低首领击杀经验 & 真实生存");
-            GUILayout.Space(10);
-
-            bool xpMode = GUILayout.Toggle(enableXPMode, " Enable Dance on the Razor's Edge  开启惊鸿猎");
-            if (xpMode != enableXPMode)
-            {
-                enableXPMode = xpMode;
-                SaveSettingsToJson();
-            }
-
-            GUILayout.EndVertical();
-
-            GUILayout.Space(227);
-
-            // LOWER BOX
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("Aporia  向阳而生", GUIStyle.none);
-            GUILayout.Space(5);
-            GUILayout.Label("Play「Jiang Hu Road」while enable「Dance on the Razor's Edge」");
-            GUILayout.Space(5);
-            GUILayout.Label("需玩江湖行并开启惊鸿猎");
-            GUILayout.Space(10);
-
-            bool arenaQuest = GUILayout.Toggle(enableArenaQuest, " Enable Aporia Quests  开启向阳而生任务");
-            if (arenaQuest != (enableXPMode && enableArenaQuest))
-            {
-                enableXPMode = arenaQuest;
-                enableArenaQuest = arenaQuest;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(10);
-
-            bool restartRaidMode = GUILayout.Toggle(restartXPMode, " Restart Aporia Quests  重置向阳而生任务");
-            if (restartRaidMode != restartXPMode)
-            {
-                restartXPMode = restartRaidMode;
-                SaveSettingsToJson();
-            }
-
             GUILayout.EndVertical();
 
             GUILayout.EndVertical();
@@ -870,6 +923,11 @@ namespace JiangHu
 
         void DrawRulesTab()
         {
+            GUILayout.BeginHorizontal();
+
+            // LEFT COLUMN (60% width) - Gameplay Rules
+            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.6f));
+
             GUILayout.BeginVertical("box");
             GUILayout.Label("Gameplay Rules", GUIStyle.none);
             GUILayout.Space(5);
@@ -982,8 +1040,12 @@ namespace JiangHu
 
             GUILayout.EndVertical();
 
-            // Core Rules
-            GUILayout.Space(10);
+            GUILayout.EndVertical(); // End left column
+
+            // RIGHT COLUMN
+            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.4f - 25));
+
+            // Core Rules Box
             GUILayout.BeginVertical("box");
             GUILayout.Label("Core Rules", GUIStyle.none);
             GUILayout.Space(5);
@@ -1003,10 +1065,10 @@ namespace JiangHu
             }
             GUILayout.Space(5);
             GUILayout.EndVertical();
-        }
 
-        void DrawCoreModulesTab()
-        {
+            GUILayout.Space(10);
+
+            // Basic Modules Box 
             GUILayout.BeginVertical("box");
             GUILayout.Label("Basic Modules  核心模块", GUIStyle.none);
             GUILayout.Space(10);
@@ -1028,6 +1090,138 @@ namespace JiangHu
             GUILayout.Space(5);
 
             GUILayout.EndVertical();
+
+            GUILayout.EndVertical(); // End right column
+
+            GUILayout.EndHorizontal(); // End main horizontal layout
+        }
+
+        void DrawDeathMatchTab()
+        {
+            if (string.IsNullOrEmpty(deathMatchGuideContent))
+            {
+                LoadDeathMatchGuide(currentLanguage);
+            }
+
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Death Match  樂園", GUIStyle.none);
+            GUILayout.Space(5);
+            GUILayout.Label("Click「樂園」button in main screen to play  点击主画面「樂園」按钮玩");
+            GUILayout.Space(5);
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Lives/Teleports per raid  单局生命/传送次数: ", GUILayout.Width(350));
+            string livesInput = GUILayout.TextField(deathMatchLives.ToString(), GUILayout.Width(100));
+            if (int.TryParse(livesInput, out int newLives) && newLives >= 0)
+            {
+                if (newLives != deathMatchLives)
+                {
+                    deathMatchLives = newLives;
+                    SaveSettingsToJson();
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(10);
+
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Bosses at raid start  开局首领数量: ", GUILayout.Width(350));
+            string botsInput = GUILayout.TextField(deathMatchStartingBots.ToString(), GUILayout.Width(100));
+            if (int.TryParse(botsInput, out int newBots) && newBots >= 0)
+            {
+                if (newBots != deathMatchStartingBots)
+                {
+                    deathMatchStartingBots = newBots;
+                    SaveSettingsToJson();
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(10);
+
+            bool newUseDefaultTime = GUILayout.Toggle(useDefaultMatchTime, " Use Default Match Time  使用默认战局时长");
+            if (newUseDefaultTime != useDefaultMatchTime)
+            {
+                useDefaultMatchTime = newUseDefaultTime;
+                SaveSettingsToJson();
+            }
+
+            if (!useDefaultMatchTime)
+            {
+                GUILayout.Space(10);
+                GUILayout.Label("Set Match Time (will apply to all raid types)  自定义战局时间（会应用于所有战局类型）");
+                GUILayout.Space(10);
+                GUILayout.BeginHorizontal();
+                GUILayout.Label("Minutes  分钟: ", GUILayout.Width(250)); 
+                string timeInput = GUILayout.TextField(deathMatchMatchTime.ToString(), GUILayout.Width(100));
+                if (int.TryParse(timeInput, out int newTime) && newTime > 0)
+                {
+                    if (newTime != deathMatchMatchTime)
+                    {
+                        deathMatchMatchTime = newTime;
+                        SaveSettingsToJson();
+                    }
+                }
+                GUILayout.EndHorizontal();
+            }
+            else
+            {
+                GUILayout.Space(10);
+                GUILayout.Label("Customized time limit is DISABLED  自定义战局时长已禁用", GUI.skin.label);
+            }
+
+            GUILayout.EndVertical();
+
+            GUILayout.Space(10);
+
+            // horizontal layout for left-right columns
+            GUILayout.BeginHorizontal();
+
+            // LEFT COLUMN - Language buttons (15% width)
+            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.15f));
+
+            GUILayout.BeginVertical("box", GUILayout.Height(330));
+            GUILayout.Label("Death Match Guide", GUIStyle.none);
+            GUILayout.Space(5);
+            GUILayout.Label("死斗模式指南", GUIStyle.none);
+            GUILayout.Space(10);
+
+            GUILayout.BeginVertical();
+            GUILayout.FlexibleSpace();
+
+            if (GUILayout.Button("中文", GUILayout.ExpandHeight(true))) { currentLanguage = "ch"; LoadDeathMatchGuide("ch"); }
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("English", GUILayout.ExpandHeight(true))) { currentLanguage = "en"; LoadDeathMatchGuide("en"); }
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Español", GUILayout.ExpandHeight(true))) { currentLanguage = "es"; LoadDeathMatchGuide("es"); }
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Français", GUILayout.ExpandHeight(true))) { currentLanguage = "fr"; LoadDeathMatchGuide("fr"); }
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("日本語", GUILayout.ExpandHeight(true))) { currentLanguage = "jp"; LoadDeathMatchGuide("jp"); }
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Português", GUILayout.ExpandHeight(true))) { currentLanguage = "po"; LoadDeathMatchGuide("po"); }
+            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("Русский", GUILayout.ExpandHeight(true))) { currentLanguage = "ru"; LoadDeathMatchGuide("ru"); }
+
+            GUILayout.FlexibleSpace();
+            GUILayout.EndVertical();
+
+            GUILayout.EndVertical();
+
+            GUILayout.EndVertical();
+
+            // RIGHT COLUMN - Guide content (85% width)
+            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.85f - 20));
+
+            GUILayout.BeginVertical("box", GUILayout.Height(330));
+            deathMatchGuideScrollPosition = GUILayout.BeginScrollView(deathMatchGuideScrollPosition, GUILayout.ExpandHeight(true));
+            GUILayout.Label(deathMatchGuideContent, GUI.skin.label);
+            GUILayout.EndScrollView();
+            GUILayout.EndVertical();
+
+            GUILayout.EndVertical();
+
+            GUILayout.EndHorizontal();
         }
 
         // Guide windows
@@ -1095,6 +1289,27 @@ namespace JiangHu
             GUILayout.EndArea();
 
             GUI.DragWindow(new Rect(0, 0, guideWindowRect.width, guideWindowRect.height));
+        }
+
+        private void LoadDeathMatchGuide(string languageCode)
+        {
+            try
+            {
+                string guidePath = Path.Combine(Path.GetDirectoryName(Application.dataPath), "BepInEx", "plugins", "JiangHu.Client", "deathmatch_description", $"{languageCode}.md");
+
+                if (File.Exists(guidePath))
+                {
+                    deathMatchGuideContent = File.ReadAllText(guidePath);
+                }
+                else
+                {
+                    deathMatchGuideContent = $"# Death Match Guide - {languageCode}\n\nFile not found at: {guidePath}";
+                }
+            }
+            catch (System.Exception ex)
+            {
+                deathMatchGuideContent = $"# Death Match Guide\n\nError: {ex.Message}";
+            }
         }
     }
 }
