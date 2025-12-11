@@ -25,6 +25,9 @@ namespace JiangHu
 
         private DeathMatch DeathMatch;
 
+        private ConfigEntry<KeyboardShortcut> SpawnPMCHotkey;
+
+
 
         void Awake()
         {
@@ -33,7 +36,12 @@ namespace JiangHu
             ShowSettingsHotkey = Config.Bind("Game Settings Manager", "Show Setting Manager Hotkey", new KeyboardShortcut(KeyCode.F5), "Hotkey to show/hide Game settings manager");
             ShowSettingsManager = Config.Bind("Game Settings Manager", "Show Setting Manager", false, "Show/hide Game settings manager");
             ShowDescription = Config.Bind("About JiangHu", "Detailed Mod Info", true, "Show detailed mod information");
-          
+
+            SpawnPMCHotkey = Config.Bind("PMC Teammates", "Spawn PMC Teammate Hotkey",
+               new KeyboardShortcut(KeyCode.F8), "Hotkey to spawn a PMC teammate");
+
+
+
 
             pluginObj = new GameObject("JiangHuPlugin");
             DontDestroyOnLoad(pluginObj);
@@ -63,6 +71,11 @@ namespace JiangHu
             DeathMatch = pluginObj.AddComponent<DeathMatch>();
             DeathMatch.Init();
 
+
+            var pmcSpawner = pluginObj.AddComponent<PMCBotSpawner>();
+            pmcSpawner.Init(SpawnPMCHotkey);
+
+
             new MainMenuModifierPatch().Enable();
             new HideProgressCounterUIPatch().Enable();
             new RandomExfilDestinationPatch().Enable();
@@ -71,6 +84,7 @@ namespace JiangHu
             new PatchSlotItemViewRefresh().Enable();
             new PatchGridViewShow().Enable();
 
+            
 
             var harmony = new Harmony("jianghu.all");
             harmony.PatchAll();

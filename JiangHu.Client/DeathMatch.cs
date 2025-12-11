@@ -218,49 +218,126 @@ namespace JiangHu
         }
     }
 
+
     [HarmonyPatch]
     public class BotHostilityPatch
     {
-
         [HarmonyPatch(typeof(BotOwner), "method_10")]
         class BotActivatePatch
         {
             static void Postfix(BotOwner __instance)
             {
-                if (!DeathMatch.DeathMatchModeActive) return;
-
                 try
                 {
-                    Player mainPlayer = Singleton<GameWorld>.Instance?.MainPlayer;
-                    if (mainPlayer != null)
+                    Console.WriteLine($"🎮 [BotHostilityPatch] Postfix() - Bot activating: {__instance.Profile?.Id}");
+
+                    var mainPlayer = Singleton<GameWorld>.Instance?.MainPlayer;
+                    if (mainPlayer == null)
                     {
-                        __instance.BotsGroup.AddEnemy(mainPlayer, EBotEnemyCause.initial);
+                        Console.WriteLine($"❌ [BotHostilityPatch] No main player");
+                        return;
                     }
 
-                    var botGame = Singleton<IBotGame>.Instance;
-                    if (botGame == null) return;
+                    // Check if it's OUR PMC (by marker)
+                    var marker = __instance.gameObject.GetComponent<OurPMCMarker>();
+                    bool isOurPMC = marker != null;
 
-                    var allBots = botGame.BotsController.Bots.BotOwners
-                        .Where(b => b.BotState != EBotState.Disposed &&
-                                   b.BotState != EBotState.NonActive &&
-                                   b.Profile.Id != __instance.Profile.Id)
-                        .ToList();
+                    Console.WriteLine($"🎮 [BotHostilityPatch] isOurPMC: {isOurPMC}");
+                    Console.WriteLine($"🎮 [BotHostilityPatch] Role: {__instance.Profile.Info.Settings.Role}");
+                    Console.WriteLine($"🎮 [BotHostilityPatch] DeathMatchModeActive: {DeathMatch.DeathMatchModeActive}");
 
-                    if (!allBots.Any()) return;
-
-                    foreach (var otherBot in allBots)
+                    if (isOurPMC)
                     {
-                        __instance.BotsGroup.RemoveEnemy(otherBot);
-                        otherBot.BotsGroup.RemoveEnemy(__instance);
+                        Console.WriteLine($"✅ [BotHostilityPatch] Configuring OUR PMC...");
+
+                        // 1. Friendly to player
+                        __instance.BotsGroup.RemoveEnemy(mainPlayer);
+                        if (mainPlayer.BotsGroup != null)
+                            mainPlayer.BotsGroup.RemoveEnemy(__instance);
+                        Console.WriteLine($"✅ [BotHostilityPatch] OUR PMC friendly to player");
+
+                        // 2. Friendly to other OUR PMCs
+                        var botGame = Singleton<IBotGame>.Instance;
+                        if (botGame != null)
+                        {
+                            foreach (var otherBot in botGame.BotsController.Bots.BotOwners)
+                            {
+                                if (otherBot == null || otherBot.Profile.Id == __instance.Profile.Id)
+                                    continue;
+
+                                var otherMarker = otherBot.gameObject.GetComponent<OurPMCMarker>();
+                                if (otherMarker != null)
+                                {
+                                    // OUR PMC ↔ OUR PMC: Friendly
+                                    __instance.BotsGroup.RemoveEnemy(otherBot);
+                                    otherBot.BotsGroup.RemoveEnemy(__instance);
+                                    Console.WriteLine($"✅ [BotHostilityPatch] OUR PMC friendly to OUR PMC: {otherBot.Profile.Id}");
+                                }
+                                else
+                                {
+                                    // OUR PMC ↔ Others: Hostile
+                                    if (!__instance.BotsGroup.Enemies.ContainsKey(otherBot))
+                                        __instance.BotsGroup.AddEnemy(otherBot, EBotEnemyCause.initial);
+                                    Console.WriteLine($"🔥 [BotHostilityPatch] OUR PMC hostile to: {otherBot.Profile.Info.Settings.Role}");
+                                }
+                            }
+                        }
+                        return; // ⚡ OUR PMCs handled, skip vanilla logic
+                    }
+
+                    // ⚡ VANILLA BOTS: Different rules per raid type
+                    var botRole = __instance.Profile.Info.Settings.Role;
+                    bool isBoss = BossSpawnSystem.allBosses != null &&
+                                  BossSpawnSystem.allBosses.Contains(botRole);
+
+                    Console.WriteLine($"🎮 [BotHostilityPatch] Vanilla bot: {botRole}, isBoss: {isBoss}");
+
+                    if (DeathMatch.DeathMatchModeActive)
+                    {
+                        Console.WriteLine($"🔥 [BotHostilityPatch] DeathMatch mode - configuring...");
+
+                        // DEATHMATCH RAID: Boss-vs-Player hostility
+                        if (mainPlayer != null && isBoss)
+                        {
+                            // Boss ↔ Player: Hostile
+                            __instance.BotsGroup.AddEnemy(mainPlayer, EBotEnemyCause.initial);
+                            Console.WriteLine($"🔥 [BotHostilityPatch] Boss {botRole} hostile to player");
+                        }
+
+                        // Boss ↔ Boss: Friendly
+                        var botGameDM = Singleton<IBotGame>.Instance;
+                        if (botGameDM != null && isBoss)
+                        {
+                            var otherBosses = botGameDM.BotsController.Bots.BotOwners
+                                .Where(b => b != null &&
+                                       b.BotState != EBotState.Disposed &&
+                                       b.BotState != EBotState.NonActive &&
+                                       b.Profile.Id != __instance.Profile.Id &&
+                                       BossSpawnSystem.allBosses.Contains(b.Profile.Info.Settings.Role))
+                                .ToList();
+
+                            foreach (var otherBoss in otherBosses)
+                            {
+                                __instance.BotsGroup.RemoveEnemy(otherBoss);
+                                otherBoss.BotsGroup.RemoveEnemy(__instance);
+                                Console.WriteLine($"🤝 [BotHostilityPatch] Boss {botRole} friendly to {otherBoss.Profile.Info.Settings.Role}");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // ⚡ NORMAL RAID: Vanilla behavior
+                        Console.WriteLine($"🏞️ [BotHostilityPatch] Normal raid - vanilla behavior");
                     }
                 }
-                catch (System.Exception ex)
+                catch (Exception ex)
                 {
-                    Console.WriteLine($"🎮 [Jiang Hu] Bot hostility error: {ex.Message}");
+                    Console.WriteLine($"❌ [BotHostilityPatch] Postfix() - EXCEPTION: {ex.Message}\n{ex.StackTrace}");
                 }
             }
         }
     }
+
 
     public class BossSpawnSystem
     {
@@ -416,20 +493,23 @@ namespace JiangHu
         [HarmonyPatch(typeof(BotSpawner), "method_11")]
         class FinalSpawnInterceptPatch
         {
-            static bool Prefix(BotOwner bot, BotCreationDataClass data, Action<BotOwner> callback, bool shallBeGroup, Stopwatch stopWatch, BotSpawner __instance)
+            static bool Prefix(BotOwner bot, BotCreationDataClass data, Action<BotOwner> callback,
+                              bool shallBeGroup, Stopwatch stopWatch, BotSpawner __instance)
             {
-                if (!DeathMatch.DeathMatchModeActive) return true;
                 try
                 {
+                    if (!DeathMatch.DeathMatchModeActive) return true;
                     if (bot == null) return true;
 
-                    var botRole = bot.Profile.Info.Settings.Role;
-                    bool isBoss = BossSpawnSystem.allBosses != null && BossSpawnSystem.allBosses.Contains(botRole);
+                    var marker = bot.gameObject.GetComponent<OurPMCMarker>();
+                    if (marker != null) return true;
 
-                    if (isBoss)
-                    {
-                        return true;
-                    }
+                    var botRole = bot.Profile.Info.Settings.Role;
+                    if (botRole == WildSpawnType.pmcBEAR || botRole == WildSpawnType.pmcUSEC) return true;
+
+                    bool isBoss = BossSpawnSystem.allBosses != null &&
+                                  BossSpawnSystem.allBosses.Contains(botRole);
+                    if (isBoss) return true;
 
                     bot.LeaveData.RemoveFromMap();
                     UnityEngine.Object.Destroy(bot.gameObject);
@@ -444,7 +524,10 @@ namespace JiangHu
 
                     return false;
                 }
-                catch { return true; }
+                catch
+                {
+                    return true;
+                }
             }
         }
 
@@ -616,7 +699,7 @@ namespace JiangHu
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"🎮 [Jiang Hu] 光明顶 button error: {ex.Message}\n{ex.StackTrace}");
+                Console.WriteLine($"🎮 [Jiang Hu] 乐园 button error: {ex.Message}\n{ex.StackTrace}");
             }
         }
 

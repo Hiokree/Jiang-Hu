@@ -1,5 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="$(MSBuildProjectFullPath).user" Condition="Exists('$(MSBuildProjectFullPath).user')" />
+
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <OutputType>Library</OutputType>
@@ -7,7 +9,32 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    
+
+    <ModsDirectoryPath>$(SPTPath)\user\mods\$(MSBuildProjectName)</ModsDirectoryPath>
   </PropertyGroup>
+
+
+	<!-- Debug Configuration -->
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+	  <DefineConstants>DEBUG;TRACE;JIANGHU_DEV</DefineConstants>
+	  <DebugType>embedded</DebugType>
+	  <DebugSymbols>true</DebugSymbols>
+	  <Optimize>false</Optimize>
+	</PropertyGroup>
+
+	<!-- Release Configuration -->
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+	  <DefineConstants>TRACE</DefineConstants>
+	  <Optimize>true</Optimize>
+	  <DebugType>none</DebugType>
+	  <DebugSymbols>false</DebugSymbols>
+	</PropertyGroup>
+
+
+  <ItemGroup>
+    <None Include="$(MSBuildProjectFullPath).user" Condition="Exists('$(MSBuildProjectFullPath).user')" />
+  </ItemGroup>
 
   <ItemGroup>
     <!-- SPT DLL references -->
@@ -37,8 +64,16 @@
     <FrameworkReference Include="Microsoft.AspNetCore.App" />
   </ItemGroup>
 
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy &quot;$(TargetPath)&quot; &quot;D:\Escape From Tarkov.main\SPT\user\mods\JiangHu.Server\JiangHu.Server.dll&quot;" />
-  </Target>
+	<Target Name="CopyToSPT" AfterTargets="AfterBuild" 
+			Condition="'$(SPTPath)' != ''">
+	  <Message Importance="high" Text="📦 Copying $(Configuration) build to SPT..." />
+	  
+	  <!-- Just copy DLL - PDB is embedded inside -->
+	  <Copy SourceFiles="$(TargetPath)" 
+			DestinationFolder="$(ModsDirectoryPath)" 
+			SkipUnchangedFiles="true" />
+	  
+	  <Message Text="✅ $(Configuration) build copied" Importance="high" />
+	</Target>
 
 </Project>

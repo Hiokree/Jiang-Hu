@@ -1,5 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <!-- 1. Import .csproj.user first -->
+  <Import Project="$(MSBuildProjectFullPath).user" Condition="Exists('$(MSBuildProjectFullPath).user')" />
+
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <LangVersion>latest</LangVersion>
@@ -8,14 +11,35 @@
     <RunPostBuildEvent>Always</RunPostBuildEvent>
   </PropertyGroup>
 
-  <!-- === 🔧 Define key folders === -->
-  <PropertyGroup>
-    <GameManagedDir>D:\Escape From Tarkov.main\EscapeFromTarkov_Data\Managed</GameManagedDir>
-    <BepInExDir>D:\Escape From Tarkov.main\BepInEx</BepInExDir>
-	<ModDir>$(BepInExDir)\plugins\JiangHu.Client</ModDir>
+  <!-- 2. Debug/Release Configurations -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DefineConstants>DEBUG;TRACE;JIANGHU_DEV</DefineConstants>
+    <DebugType>embedded</DebugType>
+    <DebugSymbols>true</DebugSymbols>
+    <Optimize>false</Optimize>
   </PropertyGroup>
 
-  <!-- === 📦 References === -->
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <DefineConstants>TRACE</DefineConstants>
+    <Optimize>true</Optimize>
+    <DebugType>none</DebugType>
+    <DebugSymbols>false</DebugSymbols>
+  </PropertyGroup>
+
+  <!-- 3. Define paths using .csproj.user values -->
+  <PropertyGroup>
+    <BepInExDir>$(BepInExPath)</BepInExDir>
+    <GamePath>$(GamePath)</GamePath>
+    <GameManagedDir>$(GamePath)\EscapeFromTarkov_Data\Managed</GameManagedDir>
+    <ModDir>$(BepInExDir)\plugins\JiangHu.Client</ModDir>
+  </PropertyGroup>
+
+  <!-- 4. Include .csproj.user in project -->
+  <ItemGroup>
+    <None Include="$(MSBuildProjectFullPath).user" Condition="Exists('$(MSBuildProjectFullPath).user')" />
+  </ItemGroup>
+
+  <!-- 5. === 📦 References === -->
   <ItemGroup>
 
     <!-- 🧩 Core BepInEx -->
@@ -121,9 +145,21 @@
     </Reference>	  
   </ItemGroup>
 
-  <!-- === ⚡ Auto-copy built DLL to mod folder === -->
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="copy &quot;$(TargetPath)&quot; &quot;$(ModDir)\$(TargetFileName)&quot;" />
+	<ItemGroup>
+	<None Include="$(MSBuildProjectFullPath).user" Condition="Exists('$(MSBuildProjectFullPath).user')" />
+	</ItemGroup>
+
+  <!-- 6. Simplified auto-copy (PDB embedded) -->
+  <Target Name="CopyToBepInEx" AfterTargets="AfterBuild" 
+          Condition="'$(BepInExDir)' != ''">
+    <Message Importance="high" Text="🎮 Copying $(Configuration) client mod to $(ModDir)" />
+    
+    <!-- Just copy DLL - PDB is embedded inside -->
+    <Copy SourceFiles="$(TargetPath)" 
+          DestinationFolder="$(ModDir)" 
+          SkipUnchangedFiles="true" />
+    
+    <Message Text="✅ Client mod copied" Importance="high" />
   </Target>
 
 </Project>

@@ -536,7 +536,7 @@ namespace JiangHu.Server
 
                 tables.Hideout.Production.Recipes.Add(newRecipe);
 
-                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Lighthouse DSP production recipe added    灯塔通行道具制作配方\x1b[0m");
+                Console.WriteLine($"\x1b[36m🎮 [Jiang Hu] Lighthouse DSP production recipe added   灯塔通行道具制作配方\x1b[0m");
             }
             catch (Exception ex)
             {
