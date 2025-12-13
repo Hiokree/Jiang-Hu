@@ -229,12 +229,9 @@ namespace JiangHu
             {
                 try
                 {
-                    Console.WriteLine($"🎮 [BotHostilityPatch] Postfix() - Bot activating: {__instance.Profile?.Id}");
-
                     var mainPlayer = Singleton<GameWorld>.Instance?.MainPlayer;
                     if (mainPlayer == null)
                     {
-                        Console.WriteLine($"❌ [BotHostilityPatch] No main player");
                         return;
                     }
 
@@ -242,19 +239,13 @@ namespace JiangHu
                     var marker = __instance.gameObject.GetComponent<OurPMCMarker>();
                     bool isOurPMC = marker != null;
 
-                    Console.WriteLine($"🎮 [BotHostilityPatch] isOurPMC: {isOurPMC}");
-                    Console.WriteLine($"🎮 [BotHostilityPatch] Role: {__instance.Profile.Info.Settings.Role}");
-                    Console.WriteLine($"🎮 [BotHostilityPatch] DeathMatchModeActive: {DeathMatch.DeathMatchModeActive}");
 
                     if (isOurPMC)
                     {
-                        Console.WriteLine($"✅ [BotHostilityPatch] Configuring OUR PMC...");
-
                         // 1. Friendly to player
                         __instance.BotsGroup.RemoveEnemy(mainPlayer);
                         if (mainPlayer.BotsGroup != null)
                             mainPlayer.BotsGroup.RemoveEnemy(__instance);
-                        Console.WriteLine($"✅ [BotHostilityPatch] OUR PMC friendly to player");
 
                         // 2. Friendly to other OUR PMCs
                         var botGame = Singleton<IBotGame>.Instance;
@@ -271,14 +262,12 @@ namespace JiangHu
                                     // OUR PMC ↔ OUR PMC: Friendly
                                     __instance.BotsGroup.RemoveEnemy(otherBot);
                                     otherBot.BotsGroup.RemoveEnemy(__instance);
-                                    Console.WriteLine($"✅ [BotHostilityPatch] OUR PMC friendly to OUR PMC: {otherBot.Profile.Id}");
                                 }
                                 else
                                 {
                                     // OUR PMC ↔ Others: Hostile
                                     if (!__instance.BotsGroup.Enemies.ContainsKey(otherBot))
                                         __instance.BotsGroup.AddEnemy(otherBot, EBotEnemyCause.initial);
-                                    Console.WriteLine($"🔥 [BotHostilityPatch] OUR PMC hostile to: {otherBot.Profile.Info.Settings.Role}");
                                 }
                             }
                         }
@@ -290,18 +279,14 @@ namespace JiangHu
                     bool isBoss = BossSpawnSystem.allBosses != null &&
                                   BossSpawnSystem.allBosses.Contains(botRole);
 
-                    Console.WriteLine($"🎮 [BotHostilityPatch] Vanilla bot: {botRole}, isBoss: {isBoss}");
 
                     if (DeathMatch.DeathMatchModeActive)
                     {
-                        Console.WriteLine($"🔥 [BotHostilityPatch] DeathMatch mode - configuring...");
-
                         // DEATHMATCH RAID: Boss-vs-Player hostility
                         if (mainPlayer != null && isBoss)
                         {
                             // Boss ↔ Player: Hostile
                             __instance.BotsGroup.AddEnemy(mainPlayer, EBotEnemyCause.initial);
-                            Console.WriteLine($"🔥 [BotHostilityPatch] Boss {botRole} hostile to player");
                         }
 
                         // Boss ↔ Boss: Friendly
@@ -320,14 +305,8 @@ namespace JiangHu
                             {
                                 __instance.BotsGroup.RemoveEnemy(otherBoss);
                                 otherBoss.BotsGroup.RemoveEnemy(__instance);
-                                Console.WriteLine($"🤝 [BotHostilityPatch] Boss {botRole} friendly to {otherBoss.Profile.Info.Settings.Role}");
                             }
                         }
-                    }
-                    else
-                    {
-                        // ⚡ NORMAL RAID: Vanilla behavior
-                        Console.WriteLine($"🏞️ [BotHostilityPatch] Normal raid - vanilla behavior");
                     }
                 }
                 catch (Exception ex)
@@ -400,7 +379,6 @@ namespace JiangHu
                 if (spawner == null) return;
 
                 var nextBoss = bossQueue[currentSpawnIndex];
-                Console.WriteLine($"🎮 [Jiang Hu] Spawning boss: {nextBoss}");
 
                 var profileData = new BotProfileDataClass(
                     EPlayerSide.Savage,
@@ -435,7 +413,6 @@ namespace JiangHu
         public static void OnBossKilled(WildSpawnType bossType)
         {
             bossesKilled++;
-            Console.WriteLine($"🎮 [Jiang Hu] Boss killed: {bossType} ({bossesKilled} total)");
             SpawnNextBoss();
         }
 
@@ -563,7 +540,6 @@ namespace JiangHu
             public static void ClearProcessedIds()
             {
                 processedBotIds.Clear();
-                Console.WriteLine($"🎮 [Jiang Hu] Cleared processed bot IDs");
             }
         }
 
@@ -601,7 +577,6 @@ namespace JiangHu
         {
             if (exitStatus != ExitStatus.Transit)
             {
-                Console.WriteLine($"🎮 [Jiang Hu] Raid ended, disabling DeathMatch mode");
                 DeathMatch.DisableDeathMatchMode();
             }
         }

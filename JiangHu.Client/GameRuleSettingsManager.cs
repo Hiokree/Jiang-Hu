@@ -53,7 +53,8 @@ namespace JiangHu
         private int deathMatchLives = 2;  
         private int deathMatchStartingBots = 5;
         private bool useDefaultMatchTime = true;
-        private int deathMatchMatchTime = 3600; 
+        private int deathMatchMatchTime = 3600;
+        private bool showPMCteammate = true;
 
         // Map settings
         private Dictionary<string, bool> mapSettings = new Dictionary<string, bool>
@@ -219,6 +220,8 @@ namespace JiangHu
                     unlockVanillaLockedRecipe = (bool)configDict["Unlock_VanillaLocked_recipe"];
                 if (configDict.ContainsKey("Unlock_VanillaLocked_Customization") && configDict["Unlock_VanillaLocked_Customization"] is bool)
                     unlockVanillaLockedCustomization = (bool)configDict["Unlock_VanillaLocked_Customization"];
+                if (configDict.ContainsKey("Show_Teammate") && configDict["Show_Teammate"] is bool)
+                    showPMCteammate = (bool)configDict["Show_Teammate"];
 
                 // Cash wipe coefficient
                 if (configDict.ContainsKey("Cash_Wipe_Coefficiency"))
@@ -329,6 +332,7 @@ namespace JiangHu
                 configObj["Unlock_VanillaLocked_recipe"] = unlockVanillaLockedRecipe;
                 configObj["Unlock_VanillaLocked_Customization"] = unlockVanillaLockedCustomization;
                 configObj["Cash_Wipe_Coefficiency"] = cashWipeCoefficiency;
+                configObj["Show_Teammate"] = showPMCteammate;
 
                 // Map settings
                 foreach (var kvp in mapSettings)
@@ -925,19 +929,11 @@ namespace JiangHu
         {
             GUILayout.BeginHorizontal();
 
-            // LEFT COLUMN (60% width) - Gameplay Rules
+            // LEFT COLUMN (60% width)
             GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.6f));
 
             GUILayout.BeginVertical("box");
             GUILayout.Label("Gameplay Rules", GUIStyle.none);
-            GUILayout.Space(5);
-
-            bool newQuestGen = GUILayout.Toggle(enableQuestGenerator, " Enable Random Vanilla Quest Generator (Disable Vanilla Quests first)  随机任务生成器，需先禁用原版任务");
-            if (newQuestGen != enableQuestGenerator)
-            {
-                enableQuestGenerator = newQuestGen;
-                SaveSettingsToJson();
-            }
             GUILayout.Space(5);
 
             bool newDisableQuests = GUILayout.Toggle(disableVanillaQuests, " Disable Vanilla Quests  禁原版任务");
@@ -1040,11 +1036,6 @@ namespace JiangHu
 
             GUILayout.EndVertical();
 
-            GUILayout.EndVertical(); // End left column
-
-            // RIGHT COLUMN
-            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.4f - 25));
-
             // Core Rules Box
             GUILayout.BeginVertical("box");
             GUILayout.Label("Core Rules", GUIStyle.none);
@@ -1064,6 +1055,43 @@ namespace JiangHu
                 SaveSettingsToJson();
             }
             GUILayout.Space(5);
+            GUILayout.EndVertical();
+
+            GUILayout.EndVertical(); // End left column
+
+            // RIGHT COLUMN (40% width)
+            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.4f - 25));
+
+            // Random Vanilla Quest Generator Box
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Random Vanilla Quest Generator", GUIStyle.none);
+            GUILayout.Space(5);
+
+            bool newQuestGen = GUILayout.Toggle(enableQuestGenerator, " Enable Random Vanilla Quest Generator  随机任务生成器");
+            if (newQuestGen != enableQuestGenerator)
+            {
+                enableQuestGenerator = newQuestGen;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            GUILayout.Label("(Disable Vanilla Quests first  需先禁用原版任务)", GUI.skin.label);
+            GUILayout.EndVertical();
+
+            GUILayout.Space(10);
+
+            // Show PMC Teammate Box (NEW)
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("PMC Teammate", GUIStyle.none);
+            GUILayout.Space(5);
+
+            bool newShowTeammate = GUILayout.Toggle(showPMCteammate, " Show PMC Teammate in Raid  战局中显示PMC队友");
+            if (newShowTeammate != showPMCteammate)
+            {
+                showPMCteammate = newShowTeammate;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            GUILayout.Label("(Visual teammate indicator  视觉队友指示器)", GUI.skin.label);
             GUILayout.EndVertical();
 
             GUILayout.Space(10);

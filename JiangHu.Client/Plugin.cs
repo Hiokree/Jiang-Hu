@@ -1,5 +1,6 @@
 ﻿using BepInEx;
 using BepInEx.Configuration;
+using EFT;
 using HarmonyLib;
 using JiangHu.ExfilRandomizer;
 using JiangHu.Patches;
@@ -28,7 +29,6 @@ namespace JiangHu
         private ConfigEntry<KeyboardShortcut> SpawnPMCHotkey;
 
 
-
         void Awake()
         {
             ShowPlayerHotkey = Config.Bind("JiangHu World Shaper", "Show World Shaper Hotkey", new KeyboardShortcut(KeyCode.F4), "Hotkey to show/hide World Shaper");
@@ -39,8 +39,6 @@ namespace JiangHu
 
             SpawnPMCHotkey = Config.Bind("PMC Teammates", "Spawn PMC Teammate Hotkey",
                new KeyboardShortcut(KeyCode.F8), "Hotkey to spawn a PMC teammate");
-
-
 
 
             pluginObj = new GameObject("JiangHuPlugin");
@@ -74,7 +72,6 @@ namespace JiangHu
 
             var pmcSpawner = pluginObj.AddComponent<PMCBotSpawner>();
             pmcSpawner.Init(SpawnPMCHotkey);
-
 
             new MainMenuModifierPatch().Enable();
             new HideProgressCounterUIPatch().Enable();
