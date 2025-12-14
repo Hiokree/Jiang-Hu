@@ -1,7 +1,10 @@
-﻿using BepInEx.Configuration;
+﻿using EFT;
 using EFT.UI;
+using EFT.UI.Matchmaker;
 using EFT.UI.Screens;
+using HarmonyLib;
 using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -13,6 +16,8 @@ namespace JiangHu
 {
     public class ChangeBackground : MonoBehaviour
     {
+        private static ChangeBackground _instance;
+        private Harmony _harmony;
         private Texture2D _backgroundTexture;
         private GameObject _backgroundCanvas;
         private RawImage _bgImage;
@@ -24,10 +29,29 @@ namespace JiangHu
         private RenderTexture _currentRenderTexture;
         private bool _isVideoPrepared = false;
 
+
         public void Init()
         {
+            _instance = this;
             LoadBackgroundConfig();
             ScanBackgroundFiles();
+
+            _harmony = new Harmony("com.jianghu.splash");
+
+            var awakeMethod = AccessTools.Method(typeof(SplashScreenPanel), "Awake");
+            if (awakeMethod != null)
+            {
+                _harmony.Patch(awakeMethod,
+                    postfix: new HarmonyMethod(typeof(ChangeBackground), nameof(OnSplashScreenPanelAwake_Postfix)));
+            }
+
+            var method1 = AccessTools.Method(typeof(SplashScreenPanel), "method_1",
+                new[] { typeof(CanvasGroup), typeof(Action) });
+            if (method1 != null)
+            {
+                _harmony.Patch(method1,
+                    prefix: new HarmonyMethod(typeof(ChangeBackground), nameof(OnSplashScreenPanelMethod1_Prefix)));
+            }
 
             if (_backgroundEnabled)
             {
@@ -36,7 +60,6 @@ namespace JiangHu
                 {
                     _selectedBackgroundName = _availableBackgrounds[0];
                 }
-
                 LoadBackgroundTexture(_selectedBackgroundName);
                 Invoke(nameof(CreateBackgroundSystem), 2f);
             }
@@ -62,7 +85,7 @@ namespace JiangHu
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 Debug.LogError($"Error loading background config: {ex.Message}");
             }
@@ -145,8 +168,134 @@ namespace JiangHu
             return _backgroundEnabled;
         }
 
+        private static void OnSplashScreenPanelAwake_Postfix(SplashScreenPanel __instance)
+        {
+            if (_instance == null || !_instance._backgroundEnabled) return;
+            _instance.ReplaceSplashScreenImages(__instance);
+        }
+
+        private static bool OnSplashScreenPanelMethod1_Prefix(SplashScreenPanel __instance, CanvasGroup canvasGroup, Action callback)
+        {
+            if (_instance == null || !_instance._backgroundEnabled) return true;
+
+            var imageCanvasGroupField = AccessTools.Field(typeof(SplashScreenPanel), "_imageCanvasGroup");
+            if (imageCanvasGroupField == null) return true;
+
+            var imageCanvasGroup = imageCanvasGroupField.GetValue(__instance) as CanvasGroup;
+            if (imageCanvasGroup == null || canvasGroup != imageCanvasGroup) return true;
+
+            _instance.ReplaceSplashScreenImages(__instance);
+            return true;
+        }
+
+        private void ReplaceSplashScreenImages(SplashScreenPanel splashPanel)
+        {
+            try
+            {
+                var imagesField = AccessTools.Field(typeof(SplashScreenPanel), "_images");
+                if (imagesField == null) return;
+
+                var splashImages = imagesField.GetValue(splashPanel) as Image[];
+                if (splashImages == null || splashImages.Length == 0) return;
+
+                foreach (var image in splashImages)
+                {
+                    if (image == null) continue;
+
+                    var splashObject = image.gameObject;
+                    if (splashObject.GetComponent<RawImage>() != null) continue;
+
+                    var originalRect = image.rectTransform;
+                    DestroyImmediate(image);
+
+                    var rawImage = splashObject.AddComponent<RawImage>();
+                    rawImage.rectTransform.anchorMin = originalRect.anchorMin;
+                    rawImage.rectTransform.anchorMax = originalRect.anchorMax;
+                    rawImage.rectTransform.offsetMin = originalRect.offsetMin;
+                    rawImage.rectTransform.offsetMax = originalRect.offsetMax;
+
+                    if (!string.IsNullOrEmpty(_selectedBackgroundName))
+                    {
+                        ApplyCurrentBackgroundToRawImage(rawImage, splashObject);
+                    }
+                }
+            }
+            catch (Exception) { }
+        }
+
+        private void ApplyCurrentBackgroundToRawImage(RawImage rawImage, GameObject targetObject = null)
+        {
+            if (string.IsNullOrEmpty(_selectedBackgroundName)) return;
+
+            string backgroundPath = Path.Combine(Directory.GetCurrentDirectory(),
+                "BepInEx", "plugins", "JiangHu.Client", "background");
+
+            if (!Directory.Exists(backgroundPath)) return;
+
+            var files = Directory.GetFiles(backgroundPath, $"{_selectedBackgroundName}.*")
+                .Where(f => {
+                    string ext = Path.GetExtension(f).ToLower();
+                    return ext == ".jpg" || ext == ".jpeg" || ext == ".png" ||
+                           ext == ".mp4" || ext == ".webm" || ext == ".avi";
+                }).ToArray();
+
+            if (files.Length == 0) return;
+
+            string filePath = files[0];
+            string extension = Path.GetExtension(filePath).ToLower();
+
+            if (extension == ".mp4" || extension == ".webm" || extension == ".avi")
+            {
+                var videoPlayer = targetObject != null ?
+                    targetObject.AddComponent<VideoPlayer>() :
+                    rawImage.gameObject.AddComponent<VideoPlayer>();
+
+                videoPlayer.url = "file://" + filePath;
+                videoPlayer.isLooping = true;
+                videoPlayer.playOnAwake = true;
+                videoPlayer.renderMode = VideoRenderMode.MaterialOverride;
+
+                if (rawImage.GetComponent<Renderer>() != null)
+                {
+                    videoPlayer.targetMaterialRenderer = rawImage.GetComponent<Renderer>();
+                    videoPlayer.targetMaterialProperty = "_MainTex";
+                    var renderTexture = new RenderTexture(Screen.width, Screen.height, 24); 
+                    videoPlayer.targetTexture = renderTexture; 
+                    rawImage.texture = renderTexture; 
+                }
+                else
+                {
+                    var renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
+                    videoPlayer.targetTexture = renderTexture;
+                    rawImage.texture = renderTexture;
+                }
+
+                videoPlayer.audioOutputMode = VideoAudioOutputMode.Direct;
+                videoPlayer.EnableAudioTrack(0, false);
+                videoPlayer.SetDirectAudioMute(0, true);
+                videoPlayer.Play();
+            }
+            else
+            {
+                try
+                {
+                    byte[] bytes = File.ReadAllBytes(filePath);
+                    Texture2D texture = new Texture2D(Screen.width, Screen.height, TextureFormat.RGB24, false);
+                    texture.LoadImage(bytes);
+                    texture.Apply(true);
+                    texture.filterMode = FilterMode.Trilinear;
+                    texture.anisoLevel = 9;
+                    texture.wrapMode = TextureWrapMode.Clamp;
+                    rawImage.texture = texture;
+                    rawImage.uvRect = new Rect(0, 0, 1, 1);
+                }
+                catch (Exception) { }
+            }
+        }
+
         private void Update()
         {
+
             if (_backgroundCanvas == null) return;
 
             if (_bgImage != null && _currentRenderTexture != null && _bgImage.texture != _currentRenderTexture)
@@ -180,8 +329,8 @@ namespace JiangHu
 
         private bool IsInRaid()
         {
-            return CurrentScreenSingletonClass.Instance?.RootScreenType == EEftScreenType.FinalCountdown ||
-                   GClass2340.InRaid;
+            var currentScreen = CurrentScreenSingletonClass.Instance?.RootScreenType;
+            return currentScreen == EEftScreenType.BattleUI; 
         }
 
         private bool IsInWeaponModding()
@@ -189,7 +338,13 @@ namespace JiangHu
             var commonUI = CommonUI.Instance;
             if (commonUI == null) return false;
 
-            return (commonUI.EditBuildScreen != null && commonUI.EditBuildScreen.isActiveAndEnabled);
+            bool isWeaponModding = commonUI.WeaponModdingScreen != null &&
+                                  commonUI.WeaponModdingScreen.isActiveAndEnabled;
+
+            bool isEditBuild = commonUI.EditBuildScreen != null &&
+                              commonUI.EditBuildScreen.isActiveAndEnabled;
+
+            return isWeaponModding || isEditBuild;
         }
 
         private void ScanBackgroundFiles()
@@ -269,7 +424,7 @@ namespace JiangHu
 
                 return true;
             }
-            catch (System.Exception)
+            catch (Exception)
             {
                 return false;
             }
@@ -348,6 +503,15 @@ namespace JiangHu
             {
                 _selectedBackgroundName = backgroundName;
                 SaveBackgroundName(backgroundName);
+
+                var activeSplashScreens = FindObjectsOfType<SplashScreenPanel>();
+                foreach (var splashScreen in activeSplashScreens)
+                {
+                    if (splashScreen != null && splashScreen.gameObject.activeInHierarchy)
+                    {
+                        OnSplashScreenPanelAwake_Postfix(splashScreen);
+                    }
+                }
             }
         }
 
@@ -369,6 +533,9 @@ namespace JiangHu
 
         void OnDestroy()
         {
+            if (_instance == this) _instance = null;
+            _harmony?.UnpatchSelf();
+
             if (_backgroundTexture != null) Destroy(_backgroundTexture);
             if (_backgroundCanvas != null) Destroy(_backgroundCanvas);
             if (_videoPlayer != null)
