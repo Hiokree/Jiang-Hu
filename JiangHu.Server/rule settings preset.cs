@@ -70,12 +70,13 @@ namespace JiangHu.Server
                     WriteConfigSetting("Enable_Fast_Movement", false);
                     WriteConfigSetting("Enable_Fast_Leaning", false);
                     WriteConfigSetting("Enable_Fast_Pose_Transition", false);
-                    WriteConfigSetting("Enable_Jump_Higher", false);
+                    WriteConfigSetting("Enable_Double_Jump", false);
                     WriteConfigSetting("Enable_Slide", false);
                     WriteConfigSetting("Enable_Fast_Weapon_Switching", false);
                     WriteConfigSetting("Enable_Minimal_Aimpunch", false);
                     WriteConfigSetting("Enable_Fast_Aiming", false);
                     WriteConfigSetting("Enable_Wider_Freelook_Angle", false);
+                    WriteConfigSetting("Enable_Position_Swap", false);
 
                     // adjustable settings reset: Challenges
 
@@ -150,12 +151,17 @@ namespace JiangHu.Server
 
                     if (CheckQuestCompleted(pmc, "e983002c4ab4d999998880f0")) // "Oasis - Professional  Part 2"
                     {
-                        WriteConfigSetting("Enable_Jump_Higher", true);
+                        WriteConfigSetting("Enable_Double_Jump", true);
                     }
 
                     if (CheckQuestCompleted(pmc, "e983002c4ab4d999998880b0")) // "Oasis - Precise Identification  Part 2"
                     {
                         WriteConfigSetting("Enable_Fast_Aiming", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af885000")) // "Reaching The Oasis" 
+                    {
+                        WriteConfigSetting("Enable_Position_Swap", true);
                     }
 
                     // Challenges

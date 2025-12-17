@@ -55,6 +55,12 @@ namespace JiangHu
         private bool useDefaultMatchTime = true;
         private int deathMatchMatchTime = 3600;
         private bool showPMCteammate = true;
+        private bool enablePositionSwap = true;
+        private float swapDistance = 30f;
+        private float swapCooldown = 30f;
+        private bool enableDoubleJump = true;
+
+
 
         // Map settings
         private Dictionary<string, bool> mapSettings = new Dictionary<string, bool>
@@ -184,8 +190,6 @@ namespace JiangHu
                     enableFastLeaning = (bool)configDict["Enable_Fast_Leaning"];
                 if (configDict.ContainsKey("Enable_Fast_Pose_Transition") && configDict["Enable_Fast_Pose_Transition"] is bool)
                     enableFastPoseTransition = (bool)configDict["Enable_Fast_Pose_Transition"];
-                if (configDict.ContainsKey("Enable_Jump_Higher") && configDict["Enable_Jump_Higher"] is bool)
-                    enableJumpHigher = (bool)configDict["Enable_Jump_Higher"];
                 if (configDict.ContainsKey("Enable_Slide") && configDict["Enable_Slide"] is bool)
                     enableSlide = (bool)configDict["Enable_Slide"];
                 if (configDict.ContainsKey("Enable_Fast_Weapon_Switching") && configDict["Enable_Fast_Weapon_Switching"] is bool)
@@ -267,6 +271,30 @@ namespace JiangHu
                     else if (configDict["DeathMatch_Match_Time"] is double)
                         deathMatchMatchTime = (int)(double)configDict["DeathMatch_Match_Time"];
                 }
+
+
+                if (configDict.ContainsKey("Enable_Double_Jump") && configDict["Enable_Double_Jump"] is bool)
+                    enableDoubleJump = (bool)configDict["Enable_Double_Jump"];
+
+                // Swap Position
+                if (configDict.ContainsKey("Enable_Position_Swap") && configDict["Enable_Position_Swap"] is bool)
+                    enablePositionSwap = (bool)configDict["Enable_Position_Swap"];
+
+                if (configDict.ContainsKey("Swap_Distance"))
+                {
+                    if (configDict["Swap_Distance"] is long)
+                        swapDistance = (long)configDict["Swap_Distance"];
+                    else if (configDict["Swap_Distance"] is double)
+                        swapDistance = (float)(double)configDict["Swap_Distance"];
+                }
+
+                if (configDict.ContainsKey("Swap_Cooldown"))
+                {
+                    if (configDict["Swap_Cooldown"] is long)
+                        swapCooldown = (long)configDict["Swap_Cooldown"];
+                    else if (configDict["Swap_Cooldown"] is double)
+                        swapCooldown = (float)(double)configDict["Swap_Cooldown"];
+                }
             }
         }
 
@@ -313,7 +341,6 @@ namespace JiangHu
                 configObj["Enable_Fast_Movement"] = enableFastMovement;
                 configObj["Enable_Fast_Leaning"] = enableFastLeaning;
                 configObj["Enable_Fast_Pose_Transition"] = enableFastPoseTransition;
-                configObj["Enable_Jump_Higher"] = enableJumpHigher;
                 configObj["Enable_Slide"] = enableSlide;
                 configObj["Enable_Fast_Weapon_Switching"] = enableFastWeapon;
                 configObj["Enable_Minimal_Aimpunch"] = enableMinimalAimpunch;
@@ -350,7 +377,13 @@ namespace JiangHu
                 string json = JsonConvert.SerializeObject(configObj, Formatting.Indented);
                 File.WriteAllText(configPath, json);
 
-                Debug.Log("✅ [JiangHu] Settings saved to JSON");
+                configObj["Enable_Double_Jump"] = enableDoubleJump;
+
+                // Swap Position
+                configObj["Enable_Position_Swap"] = enablePositionSwap;
+                configObj["Swap_Distance"] = swapDistance;
+                configObj["Swap_Cooldown"] = swapCooldown;
+
             }
             catch (System.Exception ex)
             {
@@ -749,6 +782,11 @@ namespace JiangHu
 
         void DrawPhysicsTab()
         {
+            GUILayout.BeginHorizontal();
+
+            // LEFT COLUMN (50% width)
+            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.5f));
+
             GUILayout.BeginVertical("box");
             GUILayout.Label("Competitive FPS Style  竞技射击风格", GUIStyle.none);
             GUILayout.Space(5);
@@ -763,17 +801,17 @@ namespace JiangHu
             GUILayout.Space(10);
 
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Basic movement (default on)  基础身法（默认开启）", GUIStyle.none);
+            GUILayout.Label("Basic movement (default on)  入门身法（默认开启）", GUIStyle.none);
             GUILayout.Space(5);
-            GUILayout.Label("Clean & Smooth, Bunny Hopping, no inertia, etc.  干净、流畅，可连跳，去除惯性等", GUI.skin.label);
+            GUILayout.Label("Instant Response, Clean & Smooth  瞬时响应，干净流畅", GUI.skin.label);
             GUILayout.EndVertical();
             GUILayout.Space(10);
 
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Fast Pace Movement  快速身法", GUIStyle.none);
+            GUILayout.Label("Advanced Movement  精修身法", GUIStyle.none);
             GUILayout.Space(5);
 
-            bool newFastMove = GUILayout.Toggle(enableFastMovement, " Fast Movement  快速移动");
+            bool newFastMove = GUILayout.Toggle(enableFastMovement, " Fast Movement  神行术");
             if (newFastMove != enableFastMovement) { enableFastMovement = newFastMove; SaveSettingsToJson(); }
             GUILayout.Space(5);
 
@@ -785,8 +823,8 @@ namespace JiangHu
             if (newFastPose != enableFastPoseTransition) { enableFastPoseTransition = newFastPose; SaveSettingsToJson(); }
             GUILayout.Space(5);
 
-            bool newJumpHigher = GUILayout.Toggle(enableJumpHigher, " Jump Higher  轻功");
-            if (newJumpHigher != enableJumpHigher) { enableJumpHigher = newJumpHigher; SaveSettingsToJson(); }
+            bool newDoubleJump = GUILayout.Toggle(enableDoubleJump, " Enable Mid Air Jump  梯云纵");
+            if (newDoubleJump != enableDoubleJump) { enableDoubleJump = newDoubleJump; SaveSettingsToJson(); }
             GUILayout.Space(5);
 
             bool newSlide = GUILayout.Toggle(enableSlide, " Sprint Slide  滑铲");
@@ -819,6 +857,67 @@ namespace JiangHu
             bool newWiderLook = GUILayout.Toggle(enableWiderFreelook, " Wider Freelook  更宽自由视角");
             if (newWiderLook != enableWiderFreelook) { enableWiderFreelook = newWiderLook; SaveSettingsToJson(); }
             GUILayout.EndVertical();
+
+            GUILayout.EndVertical(); 
+
+            // RIGHT COLUMN (50% width)
+            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.5f - 25));
+
+            // Stellar Transposition Box
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Stellar Transposition  斗转星移", GUIStyle.none);
+            GUILayout.Space(5);
+
+            bool newPositionSwap = GUILayout.Toggle(enablePositionSwap, " Enable Position Swap  开启位置互换");
+            if (newPositionSwap != enablePositionSwap)
+            {
+                enablePositionSwap = newPositionSwap;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(10);
+            GUILayout.Label("When pressing the hotkey, your crosshair must be directly and precisely on the target, just like landing a shot, or it will not be triggered. set hotkey in F12");
+            GUILayout.Label("当按下快捷键时，准星必须直接并精确对准目标，就像子弹击中一样，否则不会触发。可在 F12 中设置快捷键");
+
+            GUILayout.Space(10);
+
+            // Swap Distance Input
+            GUILayout.Label("Swap Distance (meters)  互换距离（米）");
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(10);
+            string distanceInput = GUILayout.TextField(swapDistance.ToString("F1"), GUILayout.Width(100));
+            if (float.TryParse(distanceInput, out float newDistance) && newDistance >= 0 && newDistance <= 1000)
+            {
+                if (newDistance != swapDistance)
+                {
+                    swapDistance = newDistance;
+                    SaveSettingsToJson();
+                }
+            }
+            GUILayout.Label("m (0-1000)", GUILayout.Width(80));
+            GUILayout.EndHorizontal();
+            GUILayout.Space(10);
+
+            // Swap Cooldown Input
+            GUILayout.Label("Swap Cooldown (seconds)  技能冷却（秒）");
+            GUILayout.BeginHorizontal();
+            GUILayout.Space(10);
+            string cooldownInput = GUILayout.TextField(swapCooldown.ToString("F1"), GUILayout.Width(100));
+            if (float.TryParse(cooldownInput, out float newCooldown) && newCooldown >= 0)
+            {
+                if (newCooldown != swapCooldown)
+                {
+                    swapCooldown = newCooldown;
+                    SaveSettingsToJson();
+                }
+            }
+            GUILayout.Label("s", GUILayout.Width(30));
+            GUILayout.EndHorizontal();
+            GUILayout.Space(5);
+            GUILayout.EndVertical();
+
+            GUILayout.EndVertical(); 
+
+            GUILayout.EndHorizontal(); 
         }
 
         void DrawThreeBodyTab()

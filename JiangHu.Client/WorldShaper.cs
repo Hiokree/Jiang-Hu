@@ -14,7 +14,7 @@ namespace JiangHu
         private ConfigEntry<KeyboardShortcut> _hotkey;
         private ConfigEntry<bool> _showGUI;
 
-        private Rect windowRect = new Rect(20, 20, 360, 320);
+        private Rect windowRect = new Rect(20, 20, 360, 360);
         private bool _showBackgroundList = false;
         private bool _showMusicList = false;
         private Vector2 _musicScrollPosition;
@@ -24,6 +24,9 @@ namespace JiangHu
         private bool _musicEnabled = true;
         private bool _backgroundEnabled = true;
 
+        private bool _videoSoundEnabled = true;
+        private float _videoVolume = 0.5f;
+
         public void SetConfig(ConfigEntry<KeyboardShortcut> hotkey, ConfigEntry<bool> showGUIConfig, MusicPlayer musicPlayer, ChangeBackground changeBackground)
         {
             _hotkey = hotkey;
@@ -31,6 +34,12 @@ namespace JiangHu
             _musicPlayer = musicPlayer;
             _changeBackground = changeBackground;
             LoadConfigFromJson();
+
+            if (_changeBackground != null)
+            {
+                _changeBackground.SetVideoSoundEnabled(_videoSoundEnabled);
+                _changeBackground.SetVideoVolume(_videoVolume);
+            }
         }
 
         void Update()
@@ -51,13 +60,24 @@ namespace JiangHu
                 if (File.Exists(configPath))
                 {
                     string json = File.ReadAllText(configPath);
-                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, bool>>(json);
+                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json); // Change to object
                     if (configDict != null)
                     {
-                        if (configDict.ContainsKey("Enable_Music_Player"))
-                            _musicEnabled = configDict["Enable_Music_Player"];
-                        if (configDict.ContainsKey("Enable_Change_Background"))
-                            _backgroundEnabled = configDict["Enable_Change_Background"];
+                        if (configDict.ContainsKey("Enable_Music_Player") && configDict["Enable_Music_Player"] is bool)
+                            _musicEnabled = (bool)configDict["Enable_Music_Player"];
+                        if (configDict.ContainsKey("Enable_Change_Background") && configDict["Enable_Change_Background"] is bool)
+                            _backgroundEnabled = (bool)configDict["Enable_Change_Background"];
+
+                        if (configDict.ContainsKey("Enable_Video_Sound") && configDict["Enable_Video_Sound"] is bool)
+                            _videoSoundEnabled = (bool)configDict["Enable_Video_Sound"];
+
+                        if (configDict.ContainsKey("Video_Volume"))
+                        {
+                            if (configDict["Video_Volume"] is long)
+                                _videoVolume = (long)configDict["Video_Volume"] / 100f;
+                            else if (configDict["Video_Volume"] is double)
+                                _videoVolume = (float)(double)configDict["Video_Volume"] / 100f;
+                        }
                     }
                 }
             }
@@ -67,6 +87,7 @@ namespace JiangHu
             }
         }
 
+
         private void SaveConfigToJson()
         {
             try
@@ -74,15 +95,17 @@ namespace JiangHu
                 string modPath = Path.GetDirectoryName(Application.dataPath);
                 string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
 
-                Dictionary<string, bool> configDict = new Dictionary<string, bool>();
+                Dictionary<string, object> configDict = new Dictionary<string, object>(); 
                 if (File.Exists(configPath))
                 {
                     string existingJson = File.ReadAllText(configPath);
-                    configDict = JsonConvert.DeserializeObject<Dictionary<string, bool>>(existingJson) ?? new Dictionary<string, bool>();
+                    configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(existingJson) ?? new Dictionary<string, object>();
                 }
 
                 configDict["Enable_Music_Player"] = _musicEnabled;
                 configDict["Enable_Change_Background"] = _backgroundEnabled;
+                configDict["Enable_Video_Sound"] = _videoSoundEnabled;
+                configDict["Video_Volume"] = (int)(_videoVolume * 100); 
 
                 string json = JsonConvert.SerializeObject(configDict, Formatting.Indented);
                 File.WriteAllText(configPath, json);
@@ -121,6 +144,17 @@ namespace JiangHu
                 musicListRect = GUI.Window(12347, musicListRect, DrawMusicListWindow, "Music Files");
             }
         }
+
+        public bool GetVideoSoundEnabled()
+        {
+            return _videoSoundEnabled;
+        }
+
+        public float GetVideoVolume()
+        {
+            return _videoVolume;
+        }
+
 
         void DrawWorldShaperWindow(int windowID)
         {
@@ -223,7 +257,44 @@ namespace JiangHu
                     _backgroundEnabled = backgroundToggleState;
                     SaveConfigToJson();
                 }
-                GUILayout.Space(10);
+                GUILayout.Space(5);
+
+
+                if (_videoSoundEnabled)
+                {
+                    GUILayout.Space(5);
+                    GUILayout.BeginHorizontal();
+                    GUILayout.Label("Video Vol:", GUILayout.Width(60));
+                    float newVideoVol = GUILayout.HorizontalSlider(_videoVolume, 0f, 1f, GUILayout.Width(100));
+                    if (Mathf.Abs(newVideoVol - _videoVolume) > 0.01f)
+                    {
+                        _videoVolume = newVideoVol;
+                        _changeBackground.SetVideoVolume(_videoVolume);
+                        SaveConfigToJson();
+                    }
+                    GUILayout.EndHorizontal();
+                }
+
+                bool newVideoSound = GUILayout.Toggle(_videoSoundEnabled, " Enable Video Sound  开启视频声音");
+                if (newVideoSound != _videoSoundEnabled)
+                {
+                    _videoSoundEnabled = newVideoSound;
+                    _changeBackground.SetVideoSoundEnabled(_videoSoundEnabled);
+
+                    if (_videoSoundEnabled)
+                    {
+                        _musicPlayer.SetVolume(0f);
+                    }
+                    else
+                    {
+                        _musicPlayer.SetVolume(0.2f);
+                    }
+
+                    SaveConfigToJson();
+                }
+
+
+                GUILayout.Space(5);
 
                 if (GUILayout.Button(" Select Background       选择背景 ► ", GUILayout.Height(20)))
                 {

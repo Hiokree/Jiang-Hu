@@ -19,12 +19,13 @@ namespace JiangHu.Server
         private bool _Enable_Fast_Movement = false;
         private bool _Enable_Fast_Leaning = false;
         private bool _Enable_Fast_Pose_Transition = false;
-        private bool _Enable_Jump_Higher = false;
+        private bool _Enable_Double_Jump = false;
         private bool _Enable_Slide = false;
         private bool _Enable_Fast_Weapon_Switching = false;
         private bool _Enable_Minimal_Aimpunch = false;
         private bool _Enable_Fast_Aiming = false;
         private bool _Enable_Wider_Freelook_Angle = false;
+        private bool _Enable_Position_Swap = false;
 
         public MovementServerSide(DatabaseServer databaseServer, SaveServer saveServer)
         {
@@ -60,8 +61,8 @@ namespace JiangHu.Server
                     _Enable_Fast_Leaning = leaningValue.GetBoolean();
                 if (config.TryGetValue("Enable_Fast_Pose_Transition", out var poseValue))
                     _Enable_Fast_Pose_Transition = poseValue.GetBoolean();
-                if (config.TryGetValue("Enable_Jump_Higher", out var jumpValue))
-                    _Enable_Jump_Higher = jumpValue.GetBoolean();
+                if (config.TryGetValue("Enable_Double_Jump", out var jumpValue))
+                    _Enable_Double_Jump = jumpValue.GetBoolean();
                 if (config.TryGetValue("Enable_Slide", out var slideValue))
                     _Enable_Slide = slideValue.GetBoolean();
                 if (config.TryGetValue("Enable_Fast_Weapon_Switching", out var weaponSwitchValue))
@@ -72,6 +73,8 @@ namespace JiangHu.Server
                     _Enable_Fast_Aiming = aimingValue.GetBoolean();
                 if (config.TryGetValue("Enable_Wider_Freelook_Angle", out var freelookValue))
                     _Enable_Wider_Freelook_Angle = freelookValue.GetBoolean();
+                if (config.TryGetValue("Enable_Position_Swap", out var positionswapValue))
+                    _Enable_Position_Swap = positionswapValue.GetBoolean();
             }
             catch (Exception ex)
             {
@@ -92,12 +95,13 @@ namespace JiangHu.Server
             ApplyFastMovement();
             ApplyFastLeaning();
             ApplyFastPoseTransition();
-            ApplyJumpHigher();
+            ApplyDoubleJump();
             ApplySlide();
             ApplyFastWeaponSwitching();
             ApplyFastAiming();
             ApplyMinimalAimpunch();
-            ApplyWiderFreelookAngle();            
+            ApplyWiderFreelookAngle();
+            ApplyPositionSwap();
         }
 
         private void ApplyMovementSettings()
@@ -124,7 +128,6 @@ namespace JiangHu.Server
             inertia.MinMovementAccelerationRangeRight = new XYZ { X = 0.1f, Y = 1f, Z = 0f };
             inertia.MoveTimeRange = new XYZ { X = 0.05f, Y = 0.1f, Z = 0f };
             inertia.PenaltyPower = 0.5f;
-            inertia.PreSprintAccelerationLimits = new XYZ { X = 0.5f, Y = 1f, Z = 0f };
             inertia.ProneDirectionAccelerationRange = new XYZ { X = 0.5f, Y = 0.5f, Z = 0f };
             inertia.ProneSpeedAccelerationRange = new XYZ { X = 0.5f, Y = 0.5f, Z = 0f };
             inertia.SideTime = new XYZ { X = 0.2f, Y = 0.2f, Z = 0f };
@@ -133,7 +136,6 @@ namespace JiangHu.Server
             inertia.SpeedLimitAfterFallMin = new XYZ { X = 0.8f, Y = 1f, Z = 0f };
             inertia.SpeedLimitDurationMax = new XYZ { X = 0.5f, Y = 0.5f, Z = 0f };
             inertia.SpeedLimitDurationMin = new XYZ { X = 0.1f, Y = 0.3f, Z = 0f };
-            inertia.SprintAccelerationLimits = new XYZ { X = 0.5f, Y = 0.8f, Z = 0f };
             inertia.SprintBrakeInertia = new XYZ { X = 0.5f, Y = 10f, Z = 0f };
             inertia.SprintSpeedInertiaCurveMax = new XYZ { X = 1f, Y = 0.5f, Z = 0f };
             inertia.SprintSpeedInertiaCurveMin = new XYZ { X = 0.5f, Y = 1f, Z = 0f };
@@ -143,6 +145,9 @@ namespace JiangHu.Server
             inertia.TiltStartSideBackSpeed = new XYZ { X = 0.9f, Y = 0.9f, Z = 0f };
             inertia.WalkInertia = new XYZ { X = 0.05f, Y = 0.1f, Z = 0f };
             inertia.WeaponFlipSpeed = new XYZ { X = 1f, Y = 1f, Z = 0f };
+            inertia.PreSprintAccelerationLimits = new XYZ { X = 100f, Y = 100f, Z = 0f };
+            inertia.SprintAccelerationLimits = new XYZ { X = 100f, Y = 100f, Z = 0f };
+
         }
 
         private void ApplySlide()
@@ -200,10 +205,10 @@ namespace JiangHu.Server
             Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Fast Pose Transition enabled    快速姿态切换\x1b[0m");
         }
 
-        private void ApplyJumpHigher()
+        private void ApplyDoubleJump()
         {
-            if (!_Enable_Jump_Higher) return;
-            Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Jump Higher enabled    跳得更高\x1b[0m");
+            if (!_Enable_Double_Jump) return;
+            Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Double Jump enabled    梯云纵\x1b[0m");
         }
 
         private void ApplyFastWeaponSwitching()
@@ -218,5 +223,10 @@ namespace JiangHu.Server
             Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Wider Freelook Angle enabled    自由视角更广\x1b[0m");
         }
 
+        private void ApplyPositionSwap()
+        {
+            if (!_Enable_Position_Swap) return;
+            Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Stellar Transposition enabled    斗转星移\x1b[0m");
+        }
     }
 }

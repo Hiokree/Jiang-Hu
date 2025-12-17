@@ -142,7 +142,10 @@
     </Reference>
     <Reference Include="UnityEngine.VideoModule">
       <HintPath>$(GameManagedDir)\UnityEngine.VideoModule.dll</HintPath>
-    </Reference>	  
+    </Reference>
+	<Reference Include="UnityEngine.AIModule">
+		<HintPath>$(GameManagedDir)\UnityEngine.AIModule.dll</HintPath>
+	</Reference>	  
   </ItemGroup>
 
 	<ItemGroup>

@@ -28,6 +28,9 @@ namespace JiangHu
         private VideoPlayer _videoPlayer;
         private RenderTexture _currentRenderTexture;
         private bool _isVideoPrepared = false;
+        private bool _videoSoundEnabled = true;
+        private float _videoVolume = 0.5f;
+        private MusicPlayer _musicPlayer;
 
 
         public void Init()
@@ -78,10 +81,38 @@ namespace JiangHu
                 if (File.Exists(configPath))
                 {
                     string json = File.ReadAllText(configPath);
-                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, bool>>(json);
-                    if (configDict != null && configDict.ContainsKey("Enable_Change_Background"))
+                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json); // Change to object
+                    if (configDict != null)
                     {
-                        _backgroundEnabled = configDict["Enable_Change_Background"];
+                        if (configDict.ContainsKey("Enable_Change_Background") && configDict["Enable_Change_Background"] is bool)
+                            _backgroundEnabled = (bool)configDict["Enable_Change_Background"];
+
+                        if (configDict.ContainsKey("Enable_Video_Sound") && configDict["Enable_Video_Sound"] is bool)
+                            _videoSoundEnabled = (bool)configDict["Enable_Video_Sound"];
+
+                        if (configDict.ContainsKey("Video_Volume"))
+                        {
+                            if (configDict["Video_Volume"] is long)
+                                _videoVolume = (long)configDict["Video_Volume"] / 100f;
+                            else if (configDict["Video_Volume"] is double)
+                                _videoVolume = (float)(double)configDict["Video_Volume"] / 100f;
+                        }
+
+                        if (configDict.ContainsKey("Enable_Video_Sound") && configDict["Enable_Video_Sound"] is bool)
+                            _videoSoundEnabled = (bool)configDict["Enable_Video_Sound"];
+
+                        // Sync music volume based on video sound setting on load
+                        if (_musicPlayer != null)
+                        {
+                            if (_videoSoundEnabled)
+                            {
+                                _musicPlayer.SetVolume(0f);
+                            }
+                            else
+                            {
+                                _musicPlayer.SetVolume(0.5f);
+                            }
+                        }
                     }
                 }
             }
@@ -271,9 +302,9 @@ namespace JiangHu
                 }
 
                 videoPlayer.audioOutputMode = VideoAudioOutputMode.Direct;
-                videoPlayer.EnableAudioTrack(0, false);
-                videoPlayer.SetDirectAudioMute(0, true);
-                videoPlayer.Play();
+                videoPlayer.controlledAudioTrackCount = 1;
+                videoPlayer.EnableAudioTrack(0, _videoSoundEnabled);
+                videoPlayer.SetDirectAudioVolume(0, _videoSoundEnabled ? _videoVolume : 0f);
             }
             else
             {
@@ -458,8 +489,8 @@ namespace JiangHu
             _videoPlayer.aspectRatio = VideoAspectRatio.Stretch;
             _videoPlayer.audioOutputMode = VideoAudioOutputMode.Direct;
             _videoPlayer.controlledAudioTrackCount = 1;
-            _videoPlayer.EnableAudioTrack(0, false);
-            _videoPlayer.SetDirectAudioMute(0, true);
+            _videoPlayer.EnableAudioTrack(0, _videoSoundEnabled);
+            _videoPlayer.SetDirectAudioVolume(0, _videoSoundEnabled ? _videoVolume : 0f);
 
             _videoPlayer.renderMode = VideoRenderMode.RenderTexture;
 
@@ -530,6 +561,53 @@ namespace JiangHu
         {
             return _currentBackground;
         }
+
+        public void SetVideoSoundEnabled(bool enabled)
+        {
+            _videoSoundEnabled = enabled;
+            if (_videoPlayer != null)
+            {
+                _videoPlayer.EnableAudioTrack(0, enabled);
+                _videoPlayer.SetDirectAudioVolume(0, enabled ? _videoVolume : 0f);
+            }
+
+            if (_musicPlayer != null)
+            {
+                if (enabled)
+                {
+                    _musicPlayer.SetVolume(0f);
+                }
+                else
+                {
+                    _musicPlayer.SetVolume(0.5f);
+                }
+            }
+        }
+
+        public void SetVideoVolume(float volume)
+        {
+            _videoVolume = volume;
+            if (_videoPlayer != null && _videoSoundEnabled)
+            {
+                _videoPlayer.SetDirectAudioVolume(0, volume);
+            }
+        }
+
+        public bool GetVideoSoundEnabled()
+        {
+            return _videoSoundEnabled;
+        }
+
+        public float GetVideoVolume()
+        {
+            return _videoVolume;
+        }
+
+        public void SetMusicPlayer(MusicPlayer musicPlayer)
+        {
+            _musicPlayer = musicPlayer;
+        }
+
 
         void OnDestroy()
         {

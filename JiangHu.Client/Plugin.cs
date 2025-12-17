@@ -27,18 +27,23 @@ namespace JiangHu
         private DeathMatch DeathMatch;
 
         private ConfigEntry<KeyboardShortcut> SpawnPMCHotkey;
-
+        private ConfigEntry<KeyboardShortcut> SwapBotHotkey;
 
         void Awake()
         {
-            ShowPlayerHotkey = Config.Bind("JiangHu World Shaper", "Show World Shaper Hotkey", new KeyboardShortcut(KeyCode.F4), "Hotkey to show/hide World Shaper");
-            ShowMusicPlayer = Config.Bind("JiangHu World Shaper", "Show World Shaper", false, "Show/hide World Shaper");
-            ShowSettingsHotkey = Config.Bind("Game Settings Manager", "Show Setting Manager Hotkey", new KeyboardShortcut(KeyCode.F5), "Hotkey to show/hide Game settings manager");
-            ShowSettingsManager = Config.Bind("Game Settings Manager", "Show Setting Manager", false, "Show/hide Game settings manager");
-            ShowDescription = Config.Bind("About JiangHu", "Detailed Mod Info", true, "Show detailed mod information");
-
-            SpawnPMCHotkey = Config.Bind("PMC Teammates", "Spawn PMC Teammate Hotkey",
+            ShowPlayerHotkey = Config.Bind("JiangHu World Shaper  世界塑造器", "Hotkey", new KeyboardShortcut(KeyCode.F4), "Hotkey to show/hide World Shaper");
+            ShowMusicPlayer = Config.Bind("JiangHu World Shaper  世界塑造器", "Show World Shaper", false, "Show/hide World Shaper");
+            ShowSettingsHotkey = Config.Bind("Game Settings Manager  游戏设置管理器", "Hotkey", new KeyboardShortcut(KeyCode.F5), "Hotkey to show/hide Game settings manager");
+            ShowSettingsManager = Config.Bind("Game Settings Manager  游戏设置管理器", "Show Setting Manager", false, "Show/hide Game settings manager");
+            SpawnPMCHotkey = Config.Bind("PMC Teammates 人机队友", "Hotkey",
                new KeyboardShortcut(KeyCode.F8), "Hotkey to spawn a PMC teammate");
+            SwapBotHotkey = Config.Bind(
+                "Stellar Transposition  斗转星移",
+                "Hotkey",
+                new KeyboardShortcut(KeyCode.F10),
+                "Hotkey to instantly swap positions with the bot you're looking at"
+            );
+            ShowDescription = Config.Bind("About JiangHu 江湖手册", "Detailed Mod Info", true, "Show detailed mod information");
 
 
             pluginObj = new GameObject("JiangHuPlugin");
@@ -49,13 +54,19 @@ namespace JiangHu
             pluginObj.AddComponent<XPConditionManager>();
             pluginObj.AddComponent<RaidStatusConditionManager>();
 
-            pluginObj.AddComponent<NewMovement>();
+            var newMovement = pluginObj.AddComponent<NewMovement>();
+            newMovement.SetSwapHotkey(SwapBotHotkey);
+
+
             pluginObj.AddComponent<RemoveAlpha>();
 
             changeBackground = pluginObj.AddComponent<ChangeBackground>();
             changeBackground.Init();
 
             musicPlayer = pluginObj.AddComponent<MusicPlayer>();
+
+            changeBackground.SetMusicPlayer(musicPlayer);
+
 
             var worldShaper = pluginObj.AddComponent<WorldShaper>();
             worldShaper.SetConfig(ShowPlayerHotkey, ShowMusicPlayer, musicPlayer, changeBackground);
