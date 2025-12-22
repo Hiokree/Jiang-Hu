@@ -1,4 +1,5 @@
 ﻿using BepInEx.Configuration;
+using EFT.UI.Screens;
 using Newtonsoft.Json;
 using System.Collections;
 using System.Collections.Generic;
@@ -6,6 +7,7 @@ using System.IO;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Networking;
+using EFT;
 
 namespace JiangHu
 {
@@ -19,6 +21,10 @@ namespace JiangHu
         private float volume = 0.2f;
         private bool _musicEnabled = true;
         private bool isLoopingCurrentSong = false;
+        private bool _wasInRaidLastCheck = false;
+        private bool _blockPlayForRaid = false;
+        private float _raidEnterTime = 0f;
+
 
         void Awake()
         {
@@ -143,6 +149,12 @@ namespace JiangHu
 
         private void StartMusicInternal()
         {
+            if (IsInRaid())
+            {
+                isPlaying = false;
+                return;
+            }
+
             ScanAndShuffleSongs();
             if (shuffledSongs.Length == 0) return;
             isPlaying = true;
@@ -231,6 +243,8 @@ namespace JiangHu
             if (!_musicEnabled) return;
             if (shuffledSongs.Length == 0) return;
 
+            _blockPlayForRaid = false;
+
             if (isLoopingCurrentSong)
             {
                 isLoopingCurrentSong = false;
@@ -246,6 +260,8 @@ namespace JiangHu
             if (!_musicEnabled) return;
             if (shuffledSongs.Length == 0) return;
 
+            _blockPlayForRaid = false;
+
             if (isLoopingCurrentSong)
             {
                 isLoopingCurrentSong = false;
@@ -258,7 +274,7 @@ namespace JiangHu
 
         public void TogglePlayPause()
         {
-            if (!_musicEnabled) return; 
+            if (!_musicEnabled) return;
 
             if (audioSource != null && audioSource.isPlaying)
             {
@@ -267,11 +283,13 @@ namespace JiangHu
             }
             else if (audioSource != null && audioSource.clip != null)
             {
+                _blockPlayForRaid = false;
                 audioSource.Play();
                 isPlaying = true;
             }
             else if (shuffledSongs.Length > 0)
             {
+                _blockPlayForRaid = false;
                 isPlaying = true;
                 PlayCurrentSong();
             }
@@ -290,7 +308,6 @@ namespace JiangHu
             }
         }
 
-        // Add getter method
         public bool IsLoopingCurrentSong()
         {
             return isLoopingCurrentSong;
@@ -304,6 +321,8 @@ namespace JiangHu
 
         public void SetCurrentSongIndex(int index)
         {
+            _blockPlayForRaid = false; 
+
             if (isLoopingCurrentSong)
             {
                 isLoopingCurrentSong = false;
@@ -321,6 +340,31 @@ namespace JiangHu
             while (true)
             {
                 yield return new WaitForSeconds(0.5f);
+
+                bool isInRaidNow = IsInRaid();
+
+                if (isInRaidNow && _musicEnabled && !_wasInRaidLastCheck)
+                {
+                    if (audioSource != null && audioSource.isPlaying)
+                    {
+                        audioSource.Stop();
+                        isPlaying = false;
+                    }
+
+                    _raidEnterTime = Time.time;
+                    _blockPlayForRaid = true; 
+                }
+
+                _wasInRaidLastCheck = isInRaidNow;
+
+                if (_blockPlayForRaid)
+                {
+                    if (Time.time - _raidEnterTime >= 3f)
+                    {
+                        _blockPlayForRaid = false; 
+                    }
+                    continue; 
+                }
 
                 if (isPlaying && shuffledSongs.Length > 0 && audioSource != null && !audioSource.isPlaying)
                 {
@@ -366,6 +410,12 @@ namespace JiangHu
         public AudioSource GetAudioSource()
         {
             return audioSource;
+        }
+
+        private bool IsInRaid()
+        {
+            return CurrentScreenSingletonClass.Instance?.RootScreenType == EEftScreenType.FinalCountdown ||
+                   GClass2340.InRaid;
         }
     }
 }

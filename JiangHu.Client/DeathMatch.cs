@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 
@@ -34,13 +35,12 @@ namespace JiangHu
             DeathMatchModeActive = true;
             BossSpawnSystem.EnableBossSpawnSystem();
             BossSpawnSystem.initialSpawnDone = false;
-            Console.WriteLine($"🎮 [Jiang Hu] DeathMatch mode enabled");
         }
 
         public static void DisableDeathMatchMode()
         {
             DeathMatchModeActive = false;
-            Console.WriteLine($"🎮 [Jiang Hu] DeathMatch mode disabled");
+            BossSpawnSystem.systemActive = false;
         }
 
         void Update()
@@ -235,19 +235,19 @@ namespace JiangHu
                         return;
                     }
 
-                    // Check if it's OUR PMC (by marker)
-                    var marker = __instance.gameObject.GetComponent<OurPMCMarker>();
-                    bool isOurPMC = marker != null;
+                    // Check if it's OUR spawned Bots (by marker)
+                    var marker = __instance.gameObject.GetComponent<JiangHuBotMarker>();
+                    bool isOurBot = marker != null;
 
 
-                    if (isOurPMC)
+                    if (isOurBot)
                     {
                         // 1. Friendly to player
                         __instance.BotsGroup.RemoveEnemy(mainPlayer);
                         if (mainPlayer.BotsGroup != null)
                             mainPlayer.BotsGroup.RemoveEnemy(__instance);
 
-                        // 2. Friendly to other OUR PMCs
+                        // 2. Friendly to other OUR Bots
                         var botGame = Singleton<IBotGame>.Instance;
                         if (botGame != null)
                         {
@@ -256,28 +256,28 @@ namespace JiangHu
                                 if (otherBot == null || otherBot.Profile.Id == __instance.Profile.Id)
                                     continue;
 
-                                var otherMarker = otherBot.gameObject.GetComponent<OurPMCMarker>();
+                                var otherMarker = otherBot.gameObject.GetComponent<JiangHuBotMarker>();
                                 if (otherMarker != null)
                                 {
-                                    // OUR PMC ↔ OUR PMC: Friendly
+                                    // OUR Bot ↔ OUR Bot: Friendly
                                     __instance.BotsGroup.RemoveEnemy(otherBot);
                                     otherBot.BotsGroup.RemoveEnemy(__instance);
                                 }
                                 else
                                 {
-                                    // OUR PMC ↔ Others: Hostile
+                                    // OUR Bot ↔ Others: Hostile
                                     if (!__instance.BotsGroup.Enemies.ContainsKey(otherBot))
                                         __instance.BotsGroup.AddEnemy(otherBot, EBotEnemyCause.initial);
                                 }
                             }
                         }
-                        return; // ⚡ OUR PMCs handled, skip vanilla logic
+                        return; // ⚡ OUR Bots handled, skip vanilla logic
                     }
 
                     // ⚡ VANILLA BOTS: Different rules per raid type
                     var botRole = __instance.Profile.Info.Settings.Role;
-                    bool isBoss = BossSpawnSystem.allBosses != null &&
-                                  BossSpawnSystem.allBosses.Contains(botRole);
+                    bool isBoss = UniversalBotSpawner.allBosses != null &&
+                                  UniversalBotSpawner.allBosses.Contains(botRole);
 
 
                     if (DeathMatch.DeathMatchModeActive)
@@ -298,7 +298,7 @@ namespace JiangHu
                                        b.BotState != EBotState.Disposed &&
                                        b.BotState != EBotState.NonActive &&
                                        b.Profile.Id != __instance.Profile.Id &&
-                                       BossSpawnSystem.allBosses.Contains(b.Profile.Info.Settings.Role))
+                                       UniversalBotSpawner.allBosses.Contains(b.Profile.Info.Settings.Role))
                                 .ToList();
 
                             foreach (var otherBoss in otherBosses)
@@ -320,33 +320,13 @@ namespace JiangHu
 
     public class BossSpawnSystem
     {
-        private static List<WildSpawnType> bossQueue = new List<WildSpawnType>();
-        private static int currentSpawnIndex = 0;
+        public static List<WildSpawnType> bossQueue = new List<WildSpawnType>();
+        public static int currentSpawnIndex = 0;
         private static int bossesKilled = 0;
         public static bool systemActive = false;
         public static bool initialSpawnDone = false;
 
-        public static readonly WildSpawnType[] allBosses = new WildSpawnType[]
-        {
-            WildSpawnType.bossBully,
-            WildSpawnType.bossGluhar,
-            WildSpawnType.bossKilla,
-            WildSpawnType.bossKojaniy,
-            WildSpawnType.bossSanitar,
-            WildSpawnType.bossTagilla,
-            WildSpawnType.bossKnight,
-            WildSpawnType.bossZryachiy,
-            WildSpawnType.bossBoar,
-            WildSpawnType.bossBoarSniper,
-            WildSpawnType.bossKolontay,
-            WildSpawnType.bossPartisan,
-            WildSpawnType.followerBigPipe,
-            WildSpawnType.followerBirdEye,
-            WildSpawnType.bossTagillaAgro,
-            WildSpawnType.bossKillaAgro,
-            WildSpawnType.tagillaHelperAgro,
-            WildSpawnType.sectantPriest
-        };
+
 
         public static void EnableBossSpawnSystem()
         {
@@ -356,20 +336,29 @@ namespace JiangHu
             }
         }
 
-        private static void InitializeBossQueue()
+        public static void InitializeBossQueue()
         {
-            bossQueue = allBosses.OrderBy(x => UnityEngine.Random.value).ToList();
+            bossQueue = UniversalBotSpawner.allBosses.ToList();
+            for (int i = 0; i < bossQueue.Count; i++)
+            {
+                int j = UnityEngine.Random.Range(i, bossQueue.Count);
+                var temp = bossQueue[i];
+                bossQueue[i] = bossQueue[j];
+                bossQueue[j] = temp;
+            }
             currentSpawnIndex = 0;
             bossesKilled = 0;
         }
 
-        public static void SpawnNextBoss()
+        public static async Task SpawnNextBoss()
         {
+            int attemptIndex = currentSpawnIndex;
             try
             {
                 if (currentSpawnIndex >= bossQueue.Count)
                 {
                     InitializeBossQueue();
+                    attemptIndex = 0;
                 }
 
                 var botGame = Singleton<IBotGame>.Instance;
@@ -378,7 +367,7 @@ namespace JiangHu
                 var spawner = botGame.BotsController.BotSpawner;
                 if (spawner == null) return;
 
-                var nextBoss = bossQueue[currentSpawnIndex];
+                var nextBoss = bossQueue[attemptIndex];
 
                 var profileData = new BotProfileDataClass(
                     EPlayerSide.Savage,
@@ -387,13 +376,36 @@ namespace JiangHu
                     0f,
                     new BotSpawnParams()
                     {
-                        ShallBeGroup = new ShallBeGroupParams(true, true, 1)
+                        ShallBeGroup = new ShallBeGroupParams(true, true, 1),
+                        Id_spawn = $"JiangHu_DeathMatch|{Guid.NewGuid()}"
                     },
                     false
                 );
 
-                spawner.ActivateBotsWithoutWave(1, profileData);
-                currentSpawnIndex++;
+                var spawnZone = spawner.GetRandomBotZone(false); 
+                if (spawnZone != null)
+                {
+                    var bossLocationSpawn = new BossLocationSpawn()
+                    {
+                        BossZone = "",
+                        Time = 1f,
+                        Delay = 0f,
+                        TriggerId = $"JiangHu_DeathMatch|{Guid.NewGuid()}",
+                        TriggerName = "",
+                        BossChance = 100f,
+                        BossName = nextBoss.ToString(),
+                        BossDifficult = BotDifficulty.hard.ToString(),
+                        BossEscortAmount = "0",
+                        BossEscortDifficult = BotDifficulty.normal.ToString(),
+                        BossEscortType = WildSpawnType.followerBully.ToString(),
+                        ForceSpawn = true,
+                        IgnoreMaxBots = true
+                    };
+
+                    bossLocationSpawn.ParseMainTypesTypes();
+                    spawner.ActivateBotsByWave(bossLocationSpawn);
+                }
+                currentSpawnIndex = attemptIndex + 1;
             }
             catch (Exception ex)
             {
@@ -412,8 +424,14 @@ namespace JiangHu
 
         public static void OnBossKilled(WildSpawnType bossType)
         {
+            if (!DeathMatch.DeathMatchModeActive) return;
+
             bossesKilled++;
-            SpawnNextBoss();
+            SpawnNextBoss().ContinueWith(task =>
+            {
+                if (task.IsFaulted)
+                    Console.WriteLine($"🎮 [Jiang Hu] OnBossKilled spawn failed: {task.Exception}");
+            });
         }
 
         public static WildSpawnType? GetNextBossForWave()
@@ -427,43 +445,48 @@ namespace JiangHu
     [HarmonyPatch]
     public class BossSpawnPatches
     {
-        [HarmonyPatch(typeof(BossSpawnScenario), "smethod_0")]
-        class BossSpawnScenarioCreationPatch
+        [HarmonyPatch(typeof(GameWorld), "OnGameStarted")]
+        class DeathMatchGameStartPatch
         {
-            static void Postfix(ref BossSpawnScenario __result)
+            static void Postfix()
             {
-                if (!DeathMatch.DeathMatchModeActive) return;
                 try
                 {
-                    if (__result == null) return;
-
-                    __result.SpawnBossAction = (wave) =>
+                    if (DeathMatch.DeathMatchModeActive && !BossSpawnSystem.initialSpawnDone)
                     {
-                        if (BossSpawnSystem.systemActive && !BossSpawnSystem.initialSpawnDone)
+                        var gameWorld = Singleton<GameWorld>.Instance;
+                        if (gameWorld != null)
                         {
-                            BossSpawnSystem.OnRaidStarted();
-
-                            int startingBots = DeathMatchButtonPatch.GetStartingBotsFromConfig();
-                            for (int i = 0; i < startingBots; i++)
-                            {
-                                BossSpawnSystem.SpawnNextBoss();
-                            }
+                            gameWorld.StartCoroutine(DelayedDirectSpawn());
                         }
-                    };
+                    }
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine($"🎮 [Jiang Hu] Creation patch error: {ex.Message}");
+                    Console.WriteLine($"🎮 [DeathMatch] Game start error: {ex.Message}");
                 }
             }
-        }
 
-        [HarmonyPatch(typeof(BossSpawnScenario), "Run", typeof(List<BotZone>), typeof(EBotsSpawnMode))]
-        class BossSpawnOverridePatch
-        {
-            static bool Prefix(BossSpawnScenario __instance, List<BotZone> pmcZones, EBotsSpawnMode spawnMode)
+            private static System.Collections.IEnumerator DelayedDirectSpawn()
             {
-                return true;
+                yield return new WaitForSeconds(1f);
+
+                if (!BossSpawnSystem.initialSpawnDone && DeathMatch.DeathMatchModeActive)
+                {
+                    BossSpawnSystem.OnRaidStarted();
+
+                    int startingBots = DeathMatchButtonPatch.GetStartingBotsFromConfig();
+
+                    for (int i = 0; i < startingBots; i++)
+                    {
+                        BossSpawnSystem.SpawnNextBoss().ContinueWith(task =>
+                        {
+                            if (task.IsFaulted)
+                                Console.WriteLine($"🎮 [DeathMatch] Initial spawn failed: {task.Exception}");
+                        });
+                        yield return new WaitForSeconds(0.5f);
+                    }
+                }
             }
         }
 
@@ -473,99 +496,58 @@ namespace JiangHu
             static bool Prefix(BotOwner bot, BotCreationDataClass data, Action<BotOwner> callback,
                               bool shallBeGroup, Stopwatch stopWatch, BotSpawner __instance)
             {
-                try
+                if (!DeathMatch.DeathMatchModeActive &&
+                    !F12Manager.DisableVanillaBotSpawn.Value)
+                    return true;
+
+                var spawnData = bot.SpawnProfileData as BotProfileDataClass;
+
+                bool isOurBot = spawnData?.SpawnParams?.Id_spawn != null &&
+                               spawnData.SpawnParams.Id_spawn.StartsWith("JiangHu_");
+
+                if (!isOurBot)
                 {
-                    if (!DeathMatch.DeathMatchModeActive) return true;
-                    if (bot == null) return true;
-
-                    var marker = bot.gameObject.GetComponent<OurPMCMarker>();
-                    if (marker != null) return true;
-
-                    var botRole = bot.Profile.Info.Settings.Role;
-                    if (botRole == WildSpawnType.pmcBEAR || botRole == WildSpawnType.pmcUSEC) return true;
-
-                    bool isBoss = BossSpawnSystem.allBosses != null &&
-                                  BossSpawnSystem.allBosses.Contains(botRole);
-                    if (isBoss) return true;
-
                     bot.LeaveData.RemoveFromMap();
                     UnityEngine.Object.Destroy(bot.gameObject);
-
-                    if (bot.Profile.Info.Settings.IsFollower())
-                        __instance.FollowersBotsCount--;
-                    else if (bot.Profile.Info.Settings.IsBoss())
-                        __instance.BossBotsCount--;
-
-                    __instance.AllBotsCount--;
-                    __instance.InSpawnProcess--;
-
-                    return false;
+                    return false; 
                 }
-                catch
-                {
-                    return true;
-                }
+                return true; 
             }
         }
 
         [HarmonyPatch(typeof(BotSpawner), "BotDied")]
-        class AllBotDeathDetectionPatch
+        class SpawnNextBossOnDeathPatch
         {
-            private static System.Collections.Generic.HashSet<string> processedBotIds = new System.Collections.Generic.HashSet<string>();
+            private static HashSet<string> processedBotIds = new HashSet<string>();
 
             static void Postfix(BotOwner bot)
             {
                 if (!DeathMatch.DeathMatchModeActive) return;
+
                 try
                 {
-                    if (bot == null || bot.Profile == null) return;
+                    var spawnData = bot.SpawnProfileData as BotProfileDataClass;
 
+                    // 1. Must be OUR DeathMatch bot
+                    if (spawnData?.SpawnParams?.Id_spawn?.StartsWith("JiangHu_DeathMatch") != true)
+                        return;
+
+                    // 2. Must be a boss type
+                    var role = bot.Profile.Info.Settings.Role;
+                    if (!UniversalBotSpawner.allBosses.Contains(role))
+                        return;
+
+                    // 3. Duplicate death protection
                     string botId = bot.Profile.Id;
-
                     if (processedBotIds.Contains(botId))
                         return;
 
                     processedBotIds.Add(botId);
 
-                    var role = bot.Profile.Info.Settings.Role;
-
-                    if (BossSpawnSystem.allBosses.Contains(role))
-                    {
-                        BossSpawnSystem.OnBossKilled(role);
-                    }
+                    // 4. Spawn next boss
+                    BossSpawnSystem.OnBossKilled(role);
                 }
                 catch { }
-            }
-
-            public static void ClearProcessedIds()
-            {
-                processedBotIds.Clear();
-            }
-        }
-
-        [HarmonyPatch(typeof(GameWorld), "OnGameStarted")]
-        class RaidStartPatch
-        {
-            static void Postfix()
-            {
-                try
-                {
-                    AllBotDeathDetectionPatch.ClearProcessedIds();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"🎮 [Jiang Hu] Raid start error: {ex.Message}");
-                }
-            }
-        }
-
-        [HarmonyPatch(typeof(BotSpawner), "ActivateBotsByWave", typeof(BotWaveDataClass))]
-        class BlockNormalSpawnWavesPatch
-        {
-            static bool Prefix(BotWaveDataClass wave, BotSpawner __instance)
-            {
-                if (!DeathMatch.DeathMatchModeActive) return true;
-                return false;
             }
         }
     }
@@ -654,6 +636,13 @@ namespace JiangHu
                 {
                     DeathMatch.EnableDeathMatchMode();
 
+                    NotificationManagerClass.DisplayMessageNotification(
+                        "Boss Death Match 头目对决",
+                        ENotificationDurationType.Long,
+                        ENotificationIconType.Default,
+                        new Color(1f, 0.8f, 0f) // Gold color
+                    );
+
                     if (!TarkovApplication.Exist(out var app))
                     {
                         return;
@@ -668,7 +657,6 @@ namespace JiangHu
                     }
 
                     string randomMap = enabledMaps[UnityEngine.Random.Range(0, enabledMaps.Count)];
-                    Console.WriteLine($"🎮 [Jiang Hu] Starting raid on: {randomMap}");
                     app.InternalStartGame(randomMap, true, true);
                 });
             }
@@ -726,7 +714,6 @@ namespace JiangHu
                         if (enabledMaps.Count == 0)
                         {
                             enabledMaps.AddRange(mapConfigKeys.Keys);
-                            Console.WriteLine($"🎮 [Jiang Hu] No maps enabled, using all maps");
                         }
                     }
                     else
@@ -736,7 +723,6 @@ namespace JiangHu
                 }
                 else
                 {
-                    Console.WriteLine($"🎮 [Jiang Hu] Config file not found, using default maps");
                     enabledMaps.AddRange(new[] {
                         "Woods", "factory4_day", "factory4_night", "bigmap", "Shoreline",
                         "Interchange", "RezervBase", "laboratory", "Lighthouse", "TarkovStreets",
@@ -746,7 +732,6 @@ namespace JiangHu
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"🎮 [Jiang Hu] Config read error: {ex.Message}\n{ex.StackTrace}");
                 enabledMaps.AddRange(new[] {
                     "Woods", "factory4_day", "factory4_night", "bigmap", "Shoreline",
                     "Interchange", "RezervBase", "laboratory", "Lighthouse", "TarkovStreets",

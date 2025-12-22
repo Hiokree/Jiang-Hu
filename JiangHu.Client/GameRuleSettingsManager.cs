@@ -13,6 +13,8 @@ namespace JiangHu
 {
     public class RuleSettingsManager : MonoBehaviour
     {
+        private ConfigEntry<KeyboardShortcut> settingsHotkey;
+
         private bool disableVanillaQuests = true;
         private bool unlockVanillaLockedItems = true;
         private bool changePrestigeCondition = true;
@@ -31,7 +33,6 @@ namespace JiangHu
         private bool enableFastMovement = true;
         private bool enableFastLeaning = true;
         private bool enableFastPoseTransition = true;
-        private bool enableJumpHigher = true;
         private bool enableSlide = true;
         private bool enableFastWeapon = true;
         private bool enableWiderFreelook = true;
@@ -54,13 +55,12 @@ namespace JiangHu
         private int deathMatchStartingBots = 5;
         private bool useDefaultMatchTime = true;
         private int deathMatchMatchTime = 3600;
-        private bool showPMCteammate = true;
         private bool enablePositionSwap = true;
         private float swapDistance = 30f;
         private float swapCooldown = 30f;
         private bool enableDoubleJump = true;
-
-
+        private float spawnCooldown = 5f;
+        private bool enableFastMovementBot = false;
 
         // Map settings
         private Dictionary<string, bool> mapSettings = new Dictionary<string, bool>
@@ -95,7 +95,6 @@ namespace JiangHu
         private string deathMatchGuideContent = "";
 
         private string currentLanguage = "ch";
-        private ConfigEntry<bool> showSettingsManager;
 
         // Tab 
         private int selectedTab = 0;
@@ -108,26 +107,26 @@ namespace JiangHu
             "Gamge Rules  游戏规则"            
         };
 
-        public void SetConfig(ConfigEntry<bool> showSettingsManager)
+        public void SetConfig(ConfigEntry<KeyboardShortcut> hotkey)
         {
-            this.showSettingsManager = showSettingsManager;
+            this.settingsHotkey = hotkey;
             LoadSettingsFromJson();
+            showGUI = false; 
+        }
+
+        public bool IsGUIVisible()
+        {
+            return showGUI;
         }
 
         void Update()
         {
-            if (showSettingsManager == null)
+            if (settingsHotkey == null) return;
+
+            if (settingsHotkey.Value.IsDown())
             {
-                return;
-            }
-            if (showSettingsManager.Value && !showGUI)
-            {
-                showGUI = true;
-            }
-            else if (!showSettingsManager.Value && showGUI)
-            {
-                showGUI = false;
-                showSettingsGuide = false;
+                showGUI = !showGUI; 
+                showSettingsGuide = false; 
             }
         }
 
@@ -224,8 +223,8 @@ namespace JiangHu
                     unlockVanillaLockedRecipe = (bool)configDict["Unlock_VanillaLocked_recipe"];
                 if (configDict.ContainsKey("Unlock_VanillaLocked_Customization") && configDict["Unlock_VanillaLocked_Customization"] is bool)
                     unlockVanillaLockedCustomization = (bool)configDict["Unlock_VanillaLocked_Customization"];
-                if (configDict.ContainsKey("Show_Teammate") && configDict["Show_Teammate"] is bool)
-                    showPMCteammate = (bool)configDict["Show_Teammate"];
+                if (configDict.ContainsKey("Enable_Fast_Movement_Bot") && configDict["Enable_Fast_Movement_Bot"] is bool)
+                    enableFastMovementBot = (bool)configDict["Enable_Fast_Movement_Bot"];
 
                 // Cash wipe coefficient
                 if (configDict.ContainsKey("Cash_Wipe_Coefficiency"))
@@ -272,11 +271,9 @@ namespace JiangHu
                         deathMatchMatchTime = (int)(double)configDict["DeathMatch_Match_Time"];
                 }
 
-
                 if (configDict.ContainsKey("Enable_Double_Jump") && configDict["Enable_Double_Jump"] is bool)
                     enableDoubleJump = (bool)configDict["Enable_Double_Jump"];
 
-                // Swap Position
                 if (configDict.ContainsKey("Enable_Position_Swap") && configDict["Enable_Position_Swap"] is bool)
                     enablePositionSwap = (bool)configDict["Enable_Position_Swap"];
 
@@ -359,7 +356,8 @@ namespace JiangHu
                 configObj["Unlock_VanillaLocked_recipe"] = unlockVanillaLockedRecipe;
                 configObj["Unlock_VanillaLocked_Customization"] = unlockVanillaLockedCustomization;
                 configObj["Cash_Wipe_Coefficiency"] = cashWipeCoefficiency;
-                configObj["Show_Teammate"] = showPMCteammate;
+                configObj["Spawn_Cooldown"] = spawnCooldown;
+                configObj["Enable_Fast_Movement_Bot"] = enableFastMovementBot;
 
                 // Map settings
                 foreach (var kvp in mapSettings)
@@ -454,7 +452,6 @@ namespace JiangHu
             if (GUI.Button(new Rect(windowRect.width - 25, 5, 20, 20), "X"))
             {
                 showGUI = false;
-                showSettingsManager.Value = false;
                 return;
             }
 
@@ -618,7 +615,7 @@ namespace JiangHu
             GUILayout.BeginVertical("box");
             GUILayout.Label("Dance on the Razor's Edge  惊鸿猎", GUIStyle.none);
             GUILayout.Space(10);
-            GUILayout.Label("Nerf boss XP & True survival   降低首领击杀经验 & 真实生存");
+            GUILayout.Label("Nerf boss XP & True survival   降低头目击杀经验 & 真实生存");
             GUILayout.Space(10);
 
             bool xpMode = GUILayout.Toggle(enableXPMode, " Enable Dance on the Razor's Edge  开启惊鸿猎");
@@ -858,6 +855,19 @@ namespace JiangHu
             if (newWiderLook != enableWiderFreelook) { enableWiderFreelook = newWiderLook; SaveSettingsToJson(); }
             GUILayout.EndVertical();
 
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Kung Fu Bot  功夫人机", GUIStyle.none);
+            bool newFastMovement = GUILayout.Toggle(enableFastMovementBot, " Bot Use New Movement  人机使用凌波微步");
+            if (newFastMovement != enableFastMovementBot)
+            {
+                enableFastMovementBot = newFastMovement;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            GUILayout.Label("(As you master each martial art, bots will learn and use it as well)");
+            GUILayout.Label("(随着你掌握每一门武功，人机也会学会并使用)");
+            GUILayout.EndVertical();
+
             GUILayout.EndVertical(); 
 
             // RIGHT COLUMN (50% width)
@@ -1015,7 +1025,7 @@ namespace JiangHu
             GUILayout.Label("Bot AI Settings  人机AI设置", GUIStyle.none);
             GUILayout.Space(5);
 
-            bool newEnableBot = GUILayout.Toggle(enableJianghuBot, " Enable Boss Brain Bot  首领风格人机");
+            bool newEnableBot = GUILayout.Toggle(enableJianghuBot, " Enable Boss Brain Bot  头目风格人机");
             if (newEnableBot != enableJianghuBot)
             {
                 enableJianghuBot = newEnableBot;
@@ -1032,7 +1042,7 @@ namespace JiangHu
             GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.6f));
 
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Gameplay Rules", GUIStyle.none);
+            GUILayout.Label("Gameplay Rules 自定义玩法", GUIStyle.none);
             GUILayout.Space(5);
 
             bool newDisableQuests = GUILayout.Toggle(disableVanillaQuests, " Disable Vanilla Quests  禁原版任务");
@@ -1137,7 +1147,7 @@ namespace JiangHu
 
             // Core Rules Box
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Core Rules", GUIStyle.none);
+            GUILayout.Label("Core Rules 基础设定", GUIStyle.none);
             GUILayout.Space(5);
 
             bool newPrestige = GUILayout.Toggle(changePrestigeCondition, " Change Prestige Conditions  改变升级荣誉条件");
@@ -1161,9 +1171,30 @@ namespace JiangHu
             // RIGHT COLUMN (40% width)
             GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.4f - 25));
 
+            // Bot Spawner Box
+            GUILayout.BeginVertical("box");
+            GUILayout.Label("Bot Spawner 点将台", GUIStyle.none);
+            GUILayout.Space(5);
+            GUILayout.Label("Set hotkeys, bot type, hostility type，and indicator in F12");
+            GUILayout.Label("在F12设置按键，人机类型、敌友关系和局内显示");
+            GUILayout.Space(5);
+            GUILayout.Label("Cooldown (seconds)  冷却时间(秒):");
+            string cooldownInput = GUILayout.TextField(spawnCooldown.ToString("F1"), GUILayout.Width(100));
+            if (float.TryParse(cooldownInput, out float parsedCooldown) && parsedCooldown >= 0.1f)
+            {
+                spawnCooldown = parsedCooldown;
+                SaveSettingsToJson();
+            }
+            GUILayout.Space(5);
+            GUILayout.Label("Spawn/Remove specific bot. Instant removal, but may take multiple tries for them to enter the map. Spawned teammate will be teleported to the nearest entry point, and spawned enemy won't be too far away too");
+            GUILayout.Label("召唤/移除特定人机。瞬间移除，但其入局时或需尝试多次。召唤的队友会被传送到最近的入局点，召唤的敌人也不会离你很远");
+            GUILayout.EndVertical();
+
+            GUILayout.Space(10);
+
             // Random Vanilla Quest Generator Box
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Random Vanilla Quest Generator", GUIStyle.none);
+            GUILayout.Label("Random Vanilla Quest Generator 随机任务生成器", GUIStyle.none);
             GUILayout.Space(5);
 
             bool newQuestGen = GUILayout.Toggle(enableQuestGenerator, " Enable Random Vanilla Quest Generator  随机任务生成器");
@@ -1178,26 +1209,9 @@ namespace JiangHu
 
             GUILayout.Space(10);
 
-            // Show PMC Teammate Box (NEW)
-            GUILayout.BeginVertical("box");
-            GUILayout.Label("PMC Teammate", GUIStyle.none);
-            GUILayout.Space(5);
-
-            bool newShowTeammate = GUILayout.Toggle(showPMCteammate, " Show PMC Teammate in Raid  战局中显示PMC队友");
-            if (newShowTeammate != showPMCteammate)
-            {
-                showPMCteammate = newShowTeammate;
-                SaveSettingsToJson();
-            }
-            GUILayout.Space(5);
-            GUILayout.Label("(Visual teammate indicator  视觉队友指示器)", GUI.skin.label);
-            GUILayout.EndVertical();
-
-            GUILayout.Space(10);
-
             // Basic Modules Box 
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Basic Modules  核心模块", GUIStyle.none);
+            GUILayout.Label("Basic Modules  基础模块", GUIStyle.none);
             GUILayout.Space(10);
 
             bool newTrader = GUILayout.Toggle(enableNewTrader, " Enable New Trader  启用新商人");
@@ -1252,7 +1266,7 @@ namespace JiangHu
             GUILayout.Space(10);
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Bosses at raid start  开局首领数量: ", GUILayout.Width(350));
+            GUILayout.Label("Bosses at raid start  开局头目数量: ", GUILayout.Width(350));
             string botsInput = GUILayout.TextField(deathMatchStartingBots.ToString(), GUILayout.Width(100));
             if (int.TryParse(botsInput, out int newBots) && newBots >= 0)
             {

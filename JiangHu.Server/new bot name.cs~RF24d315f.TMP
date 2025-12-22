@@ -38,10 +38,13 @@ public class JianghuBotName
             }
 
             var botTypes = _databaseService.GetBots().Types;
+            var bossTypes = GetBossTypes();
             var replacedCount = 0;
 
             foreach (var (botTypeId, botType) in botTypes)
             {
+                if (bossTypes.Contains(botTypeId)) continue;
+
                 botType.FirstNames = customNames;
                 botType.LastNames = new List<string>();
                 replacedCount++;
@@ -140,5 +143,16 @@ public class JianghuBotName
         }
         catch { }
         return new Dictionary<string, JsonElement>();
+    }
+
+    private HashSet<string> GetBossTypes()
+    {
+        return new HashSet<string>
+        {
+            "bosskilla", "bossbully", "bossknight", "bosskojaniy", "bosssanitar",
+            "bosstagilla", "bossgluhar", "bosszryachiy", "bossboar",
+            "bosskolontay", "bosspartisan", "followerbigpipe", "followerbirdeye",
+            "bosstagillaagro", "bosskillaagro", "sectantPries"
+        };
     }
 }

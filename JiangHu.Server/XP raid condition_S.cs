@@ -115,7 +115,7 @@ namespace JiangHu.Server
                     }
                 }
                 Console.WriteLine("\x1b[91m🍂 [Jiang Hu] Dance on the Razor's Edge enabled    惊鸿猎\x1b[0m");
-                Console.WriteLine("\x1b[91m🍂 [Jiang Hu] Boss kill XP adjusted    调整击杀首领经验\x1b[0m");
+                Console.WriteLine("\x1b[91m🍂 [Jiang Hu] Boss kill XP adjusted    调整击杀头目经验\x1b[0m");
             }
             catch (Exception ex)
             {

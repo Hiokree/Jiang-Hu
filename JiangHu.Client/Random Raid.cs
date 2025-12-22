@@ -1,21 +1,22 @@
 ﻿using Comfort.Common; 
 using EFT;
 using EFT; 
+using EFT.Communications;
 using EFT.UI;
 using EFT.UI.Matchmaker;
+using Newtonsoft.Json;
 using SPT.Reflection.Patching;
 using SPT.Reflection.Utils;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
 using Random = System.Random;
-using System.IO;
-using Newtonsoft.Json;
 
 namespace JiangHu.Patches
 {
@@ -268,6 +269,14 @@ namespace JiangHu.Patches
                 {
 
                     JiangHu.ExfilRandomizer.RandomExfilDestinationPatch.SetButtonClickedForThisRaid();
+
+                    NotificationManagerClass.DisplayMessageNotification(
+                        "Random Raid 随机战局",
+                        ENotificationDurationType.Long,
+                        ENotificationIconType.Default,
+                        new Color(1f, 0.8f, 0f) // Gold color
+                    );
+
                     try
                     {
                         if (!TarkovApplication.Exist(out var app))

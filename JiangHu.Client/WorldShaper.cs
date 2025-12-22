@@ -11,8 +11,8 @@ namespace JiangHu
     {
         private MusicPlayer _musicPlayer;
         private ChangeBackground _changeBackground;
+        private WorldShaper worldShaper;
         private ConfigEntry<KeyboardShortcut> _hotkey;
-        private ConfigEntry<bool> _showGUI;
 
         private Rect windowRect = new Rect(20, 20, 360, 360);
         private bool _showBackgroundList = false;
@@ -27,10 +27,10 @@ namespace JiangHu
         private bool _videoSoundEnabled = true;
         private float _videoVolume = 0.5f;
 
-        public void SetConfig(ConfigEntry<KeyboardShortcut> hotkey, ConfigEntry<bool> showGUIConfig, MusicPlayer musicPlayer, ChangeBackground changeBackground)
+        public void SetConfig(ConfigEntry<KeyboardShortcut> hotkey, bool initialShowState, MusicPlayer musicPlayer, ChangeBackground changeBackground)
         {
             _hotkey = hotkey;
-            _showGUI = showGUIConfig;
+            showGUI = initialShowState;
             _musicPlayer = musicPlayer;
             _changeBackground = changeBackground;
             LoadConfigFromJson();
@@ -42,12 +42,16 @@ namespace JiangHu
             }
         }
 
+        public bool IsGUIVisible()
+        {
+            return showGUI;
+        }
+
         void Update()
         {
             if (_hotkey.Value.IsDown())
             {
                 showGUI = !showGUI;
-                _showGUI.Value = showGUI;
             }
         }
 
@@ -118,7 +122,7 @@ namespace JiangHu
 
         void OnGUI()
         {
-            if (!_showGUI.Value) return;
+            if (!showGUI) return;
 
             windowRect = GUI.Window(12345, windowRect, DrawWorldShaperWindow, "World Shaper    世界塑造器");
 
@@ -161,7 +165,7 @@ namespace JiangHu
             if (GUI.Button(new Rect(windowRect.width - 25, 5, 20, 20), "X"))
             {
                 showGUI = false;
-                _showGUI.Value = false;
+                showGUI = false;
                 return;
             }
 
