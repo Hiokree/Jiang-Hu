@@ -345,14 +345,21 @@ namespace JiangHu
 
                 if (isInRaidNow && _musicEnabled && !_wasInRaidLastCheck)
                 {
+
                     if (audioSource != null && audioSource.isPlaying)
                     {
-                        audioSource.Stop();
+                        StartCoroutine(FadeOutAudioSource(3f)); 
                         isPlaying = false;
                     }
 
                     _raidEnterTime = Time.time;
                     _blockPlayForRaid = true; 
+                }
+
+                if (!isInRaidNow && _wasInRaidLastCheck && _musicEnabled)
+                {
+                    _blockPlayForRaid = false;
+                    isPlaying = true;
                 }
 
                 _wasInRaidLastCheck = isInRaidNow;
@@ -368,7 +375,7 @@ namespace JiangHu
 
                 if (isPlaying && shuffledSongs.Length > 0 && audioSource != null && !audioSource.isPlaying)
                 {
-                    yield return new WaitForSeconds(3f);
+                    yield return new WaitForSeconds(2f);
 
                     if (isPlaying && shuffledSongs.Length > 0)
                     {
@@ -386,6 +393,32 @@ namespace JiangHu
             }
         }
 
+        private IEnumerator FadeOutAudioSource(float fadeDuration)
+        {
+            if (audioSource == null) yield break;
+
+            float startVolume = audioSource.volume;
+            float timer = 0f;
+
+            while (timer < fadeDuration)
+            {
+                if (audioSource == null) yield break;
+
+                timer += Time.deltaTime;
+
+                float t = timer / fadeDuration;
+                float easedT = t * t * t; 
+
+                audioSource.volume = Mathf.Lerp(startVolume, 0f, easedT);
+                yield return null;
+            }
+
+            if (audioSource != null)
+            {
+                audioSource.Stop();
+                audioSource.volume = startVolume;
+            }
+        }
 
         public float GetVolume()
         {

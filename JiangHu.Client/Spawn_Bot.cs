@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using UnityEngine;
+using UnityEngine.Rendering;
 using static JiangHu.F12Manager;
 
 namespace JiangHu
@@ -67,7 +68,7 @@ namespace JiangHu
                 {
                     SpawnUniversalBot();
                 }
-                else if (_killHotkey?.Value.IsDown() == true)  
+                else if (_killHotkey?.Value.IsDown() == true)
                 {
                     RemoveBotsBySettings();
                 }
@@ -75,12 +76,12 @@ namespace JiangHu
         }
 
         public void Init(ConfigEntry<KeyboardShortcut> spawnHotkey,
-                         ConfigEntry<KeyboardShortcut> killHotkey,  
+                         ConfigEntry<KeyboardShortcut> killHotkey,
                          ConfigEntry<HostilityType> hostilityConfig,
                          Dictionary<WildSpawnType, ConfigEntry<bool>> botTypeConfigs)
         {
             _spawnHotkey = spawnHotkey;
-            _killHotkey = killHotkey; 
+            _killHotkey = killHotkey;
             _hostilityConfig = hostilityConfig;
             _botTypeConfigs = botTypeConfigs;
         }
@@ -92,7 +93,7 @@ namespace JiangHu
             // ALWAYS get current enabled bot types from config
             foreach (var kvp in _botTypeConfigs)
             {
-                if (kvp.Value.Value) 
+                if (kvp.Value.Value)
                 {
                     _botQueue.Add(kvp.Key);
                 }
@@ -618,6 +619,83 @@ namespace JiangHu
         }
     }
 
+    [HarmonyPatch(typeof(BotsGroup), "CheckAndAddEnemy")]
+    class BotsGroupCheckAndAddEnemyPatch
+    {
+        static bool Prefix(IPlayer player, bool ignoreAI, BotsGroup __instance, ref bool __result)
+        {
+            try
+            {
+                bool isJiangHuGroup = false;
+                HostilityType? groupHostility = null;
+
+                foreach (var member in __instance.Members)
+                {
+                    var marker = member.gameObject.GetComponent<JiangHuBotMarker>();
+                    if (marker != null)
+                    {
+                        isJiangHuGroup = true;
+                        groupHostility = marker.HostilityType;
+                        break;
+                    }
+                }
+
+                if (!isJiangHuGroup) return true;
+
+                // For FRIENDLY JiangHu bots, don't add player as enemy
+                if (groupHostility == HostilityType.Friendly)
+                {
+                    var mainPlayer = Singleton<GameWorld>.Instance?.MainPlayer;
+                    if (mainPlayer != null && player.ProfileId == mainPlayer.ProfileId)
+                    {
+                        __result = false;
+                        return false;
+                    }
+                }
+            }
+            catch { }
+            return true;
+        }
+    }
+
+    [HarmonyPatch(typeof(BotsGroup), "AddEnemy")]
+    class BotsGroupAddEnemyPatch
+    {
+        static bool Prefix(IPlayer person, EBotEnemyCause cause, BotsGroup __instance)
+        {
+            try
+            {
+                bool isJiangHuGroup = false;
+                HostilityType? groupHostility = null;
+
+                foreach (var member in __instance.Members)
+                {
+                    var marker = member.gameObject.GetComponent<JiangHuBotMarker>();
+                    if (marker != null)
+                    {
+                        isJiangHuGroup = true;
+                        groupHostility = marker.HostilityType;
+                        break;
+                    }
+                }
+
+                if (!isJiangHuGroup) return true;
+
+                // For FRIENDLY JiangHu bots, don't add player as enemy
+                if (groupHostility == HostilityType.Friendly)
+                {
+                    var mainPlayer = Singleton<GameWorld>.Instance?.MainPlayer;
+                    if (mainPlayer != null && person.ProfileId == mainPlayer.ProfileId)
+                    {
+                        return false;
+                    }
+                }
+            }
+            catch { }
+            return true;
+        }
+    }
+
     public class BotMarkerController : MonoBehaviour
     {
         private const float UpdateInterval = 0.25f;
@@ -934,6 +1012,8 @@ namespace JiangHu
         }
     }
 
+
+
     [HarmonyPatch(typeof(GameWorld), "OnGameStarted")]
     class GameWorldStartPatch
     {
@@ -942,7 +1022,328 @@ namespace JiangHu
         {
             var existing = __instance.GetComponent<BotMarkerController>();
             if (existing != null) UnityEngine.Object.Destroy(existing);
-            __instance.gameObject.AddComponent<BotMarkerController>();
+            if (F12Manager.ShowBotIndicator.Value)
+            {
+                __instance.gameObject.AddComponent<BotMarkerController>();
+            }
+
+            var existingHighlighter = __instance.GetComponent<BotBodyHighlighter>();
+            if (existingHighlighter != null) UnityEngine.Object.Destroy(existingHighlighter);
+            if (F12Manager.ShowBotBodyHighlight.Value)
+            {
+                __instance.gameObject.AddComponent<BotBodyHighlighter>();
+            }
+        }
+    }
+
+
+
+    public class BotBodyHighlighter : MonoBehaviour
+    {
+        private Camera _camera;
+        private Material _highlightMaterial;
+        private readonly Dictionary<string, BotHighlightInfo> _highlightedBots = new();
+        private bool _isInitialized = false;
+        private GameWorld _gameWorld;
+        private bool _lastHighlightEnabled = true;
+        private bool _lastHighlightAllBots = false;
+        private bool _lastHighlightTeammates = true;
+        private bool _lastHighlightOpponents = true;
+        private bool _lastHighlightAllJiangHu = false;
+
+
+        private class BotHighlightInfo
+        {
+            public BotOwner Bot;
+            public Renderer[] Renderers;
+            public HostilityType Hostility;
+            public bool IsJiangHuBot;
+            public bool IsAlive = true;
+            public Material[] OriginalMaterials;
+        }
+
+        void Start()
+        {
+            if (!F12Manager.ShowBotBodyHighlight.Value)
+            {
+                Destroy(this);
+                return;
+            }
+
+            try
+            {
+                _gameWorld = Singleton<GameWorld>.Instance;
+                _camera = Camera.main;
+
+                if (_gameWorld == null || _camera == null)
+                {
+                    Destroy(this);
+                    return;
+                }
+
+                _highlightMaterial = new Material(Shader.Find("Sprites/Default"));
+                _highlightMaterial.color = F12Manager.FriendlyBotColor.Value;
+                _highlightMaterial.SetFloat("_Mode", 2); 
+                _highlightMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                _highlightMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                _highlightMaterial.SetInt("_ZWrite", 0);
+                _highlightMaterial.DisableKeyword("_ALPHATEST_ON");
+                _highlightMaterial.EnableKeyword("_ALPHABLEND_ON");
+                _highlightMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                _highlightMaterial.renderQueue = 3000; 
+
+                _isInitialized = true;
+            }
+            catch (Exception ex)
+            {
+                Destroy(this);
+            }
+        }
+
+        void Update()
+        {
+            if (!_isInitialized || !F12Manager.ShowBotBodyHighlight.Value)
+            {
+                if (_highlightedBots.Count > 0)
+                {
+                    ClearAllHighlights();
+                }
+                return;
+            }
+
+            CheckHighlightSettingsChanged();
+
+
+            if (!_isInitialized || !F12Manager.ShowBotBodyHighlight.Value)
+                return;
+
+            if (_gameWorld?.AllAlivePlayersList != null)
+            {
+                foreach (Player player in _gameWorld.AllAlivePlayersList)
+                {
+                    if (player == null || player.IsYourPlayer)
+                        continue;
+
+                    var botOwner = player.AIData?.BotOwner;
+                    if (botOwner == null || botOwner.IsDead)
+                        continue;
+
+                    ProcessBot(botOwner);
+                }
+            }
+            CleanupDeadBots();
+        }
+
+        private void CheckHighlightSettingsChanged()
+        {
+            bool settingsChanged = false;
+
+            if (_lastHighlightEnabled != F12Manager.ShowBotBodyHighlight.Value ||
+                _lastHighlightAllBots != F12Manager.HighlightAllBots.Value ||
+                _lastHighlightTeammates != F12Manager.ShowJiangHuTeammateHighlight.Value ||
+                _lastHighlightOpponents != F12Manager.HighlightJiangHuOpponents.Value ||
+                _lastHighlightAllJiangHu != F12Manager.ShowJiangHuBotsHighlight.Value)
+            {
+                settingsChanged = true;
+                _lastHighlightEnabled = F12Manager.ShowBotBodyHighlight.Value;
+                _lastHighlightAllBots = F12Manager.HighlightAllBots.Value;
+                _lastHighlightTeammates = F12Manager.ShowJiangHuTeammateHighlight.Value;
+                _lastHighlightOpponents = F12Manager.HighlightJiangHuOpponents.Value;
+                _lastHighlightAllJiangHu = F12Manager.ShowJiangHuBotsHighlight.Value;
+            }
+
+            if (settingsChanged)
+            {
+                ReEvaluateAllBots();
+            }
+        }
+
+        private void ReEvaluateAllBots()
+        {
+            List<string> botIds = new List<string>(_highlightedBots.Keys);
+
+            foreach (string botId in botIds)
+            {
+                if (_highlightedBots.TryGetValue(botId, out var botInfo))
+                {
+                    if (botInfo.Bot == null || botInfo.Bot.IsDead)
+                    {
+                        RestoreBotMaterials(botInfo);
+                        _highlightedBots.Remove(botId);
+                        continue;
+                    }
+
+                    var marker = botInfo.Bot.gameObject.GetComponent<JiangHuBotMarker>();
+                    bool isJiangHuBot = marker != null;
+                    bool shouldHighlight = false;
+
+                    if (isJiangHuBot)
+                    {
+                        var hostility = marker.HostilityType;
+
+                        if (F12Manager.ShowJiangHuTeammateHighlight.Value && hostility == HostilityType.Friendly)
+                            shouldHighlight = true;
+                        else if (F12Manager.HighlightJiangHuOpponents.Value && hostility == HostilityType.Enemy)
+                            shouldHighlight = true;
+                        else if (F12Manager.ShowJiangHuBotsHighlight.Value)
+                            shouldHighlight = true;
+                    }
+
+                    if (F12Manager.HighlightAllBots.Value)
+                        shouldHighlight = true;
+
+                    if (!shouldHighlight)
+                    {
+                        RestoreBotMaterials(botInfo);
+                        _highlightedBots.Remove(botId);
+                    }
+                }
+            }
+        }
+
+        private void ClearAllHighlights()
+        {
+            foreach (var kvp in _highlightedBots)
+            {
+                RestoreBotMaterials(kvp.Value);
+            }
+            _highlightedBots.Clear();
+        }
+
+
+        void OnDestroy()
+        {
+            foreach (var kvp in _highlightedBots)
+            {
+                RestoreBotMaterials(kvp.Value);
+            }
+            _highlightedBots.Clear();
+
+            if (_highlightMaterial != null)
+            {
+                Destroy(_highlightMaterial);
+            }
+        }
+
+        private void ProcessBot(BotOwner bot)
+        {
+            string botId = bot.name;
+
+            if (_highlightedBots.ContainsKey(botId))
+            {
+                _highlightedBots[botId].IsAlive = !bot.IsDead;
+                return;
+            }
+
+            var marker = bot.gameObject.GetComponent<JiangHuBotMarker>();
+            bool isJiangHuBot = marker != null;
+            bool shouldShow = false;
+
+            if (isJiangHuBot)
+            {
+                var hostility = marker.HostilityType;
+
+                if (F12Manager.ShowJiangHuTeammateHighlight.Value && hostility == HostilityType.Friendly)
+                    shouldShow = true;
+                else if (F12Manager.HighlightJiangHuOpponents.Value && hostility == HostilityType.Enemy)
+                    shouldShow = true;
+                else if (F12Manager.ShowJiangHuBotsHighlight.Value)
+                    shouldShow = true;
+            }
+
+            if (F12Manager.HighlightAllBots.Value)
+                shouldShow = true;
+
+            if (!shouldShow) return;
+
+            var renderers = bot.GetComponentsInChildren<Renderer>();
+            if (renderers.Length == 0)
+                return;
+
+            var originalMaterials = new List<Material[]>();
+            foreach (var renderer in renderers)
+            {
+                originalMaterials.Add(renderer.sharedMaterials);
+            }
+
+            Color highlightColor = GetHighlightColor(isJiangHuBot ? marker.HostilityType : HostilityType.Neutral);
+            Material highlightMat = new Material(_highlightMaterial);
+            highlightMat.color = highlightColor;
+
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                var renderer = renderers[i];
+                var materials = new List<Material>(renderer.sharedMaterials);
+                materials.Add(highlightMat);
+                renderer.sharedMaterials = materials.ToArray();
+            }
+
+            var botInfo = new BotHighlightInfo
+            {
+                Bot = bot,
+                Renderers = renderers,
+                Hostility = isJiangHuBot ? marker.HostilityType : HostilityType.Neutral,
+                IsJiangHuBot = isJiangHuBot,
+                IsAlive = !bot.IsDead,
+                OriginalMaterials = originalMaterials.SelectMany(arr => arr).ToArray()
+            };
+
+            _highlightedBots[botId] = botInfo;
+        }
+
+        private Color GetHighlightColor(HostilityType hostility)
+        {
+            switch (hostility)
+            {
+                case HostilityType.Friendly:
+                    return F12Manager.FriendlyBotColor.Value;
+                case HostilityType.Enemy:
+                    return F12Manager.EnemyBotColor.Value;
+                case HostilityType.Neutral:
+                    return F12Manager.NeutralBotColor.Value;
+                default:
+                    return F12Manager.FriendlyBotColor.Value;
+            }
+        }
+
+        private void RestoreBotMaterials(BotHighlightInfo botInfo)
+        {
+            if (botInfo.Renderers == null || botInfo.OriginalMaterials == null)
+                return;
+
+            int materialIndex = 0;
+            for (int i = 0; i < botInfo.Renderers.Length; i++)
+            {
+                var renderer = botInfo.Renderers[i];
+                if (renderer != null && materialIndex < botInfo.OriginalMaterials.Length)
+                {
+                    var originalCount = renderer.sharedMaterials.Length - 1;
+                    var originalMats = new Material[originalCount];
+                    Array.Copy(botInfo.OriginalMaterials, materialIndex, originalMats, 0, originalCount);
+                    renderer.sharedMaterials = originalMats;
+                    materialIndex += originalCount;
+                }
+            }
+        }
+
+        private void CleanupDeadBots()
+        {
+            List<string> toRemove = new List<string>();
+
+            foreach (var kvp in _highlightedBots)
+            {
+                var botInfo = kvp.Value;
+                if (botInfo.Bot == null || botInfo.Bot.IsDead || !botInfo.IsAlive)
+                {
+                    RestoreBotMaterials(botInfo);
+                    toRemove.Add(kvp.Key);
+                }
+            }
+
+            foreach (var key in toRemove)
+            {
+                _highlightedBots.Remove(key);
+            }
         }
     }
 }

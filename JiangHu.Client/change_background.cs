@@ -11,7 +11,6 @@ using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.Video;
-using EFT;
 
 namespace JiangHu
 {
@@ -32,9 +31,7 @@ namespace JiangHu
         private bool _videoSoundEnabled = true;
         private float _videoVolume = 0.5f;
         private MusicPlayer _musicPlayer;
-        private bool _wasInRaidLastCheck = false;
-        private bool _blockVideoSoundForRaid = false;
-        private float _raidEnterTime = 0f;
+
 
         public void Init()
         {
@@ -84,7 +81,7 @@ namespace JiangHu
                 if (File.Exists(configPath))
                 {
                     string json = File.ReadAllText(configPath);
-                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json); 
+                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json); // Change to object
                     if (configDict != null)
                     {
                         if (configDict.ContainsKey("Enable_Change_Background") && configDict["Enable_Change_Background"] is bool)
@@ -104,6 +101,7 @@ namespace JiangHu
                         if (configDict.ContainsKey("Enable_Video_Sound") && configDict["Enable_Video_Sound"] is bool)
                             _videoSoundEnabled = (bool)configDict["Enable_Video_Sound"];
 
+                        // Sync music volume based on video sound setting on load
                         if (_musicPlayer != null)
                         {
                             if (_videoSoundEnabled)
@@ -292,9 +290,9 @@ namespace JiangHu
                 {
                     videoPlayer.targetMaterialRenderer = rawImage.GetComponent<Renderer>();
                     videoPlayer.targetMaterialProperty = "_MainTex";
-                    var renderTexture = new RenderTexture(Screen.width, Screen.height, 24); 
-                    videoPlayer.targetTexture = renderTexture; 
-                    rawImage.texture = renderTexture; 
+                    var renderTexture = new RenderTexture(Screen.width, Screen.height, 24);
+                    videoPlayer.targetTexture = renderTexture;
+                    rawImage.texture = renderTexture;
                 }
                 else
                 {
@@ -306,15 +304,7 @@ namespace JiangHu
                 videoPlayer.audioOutputMode = VideoAudioOutputMode.Direct;
                 videoPlayer.controlledAudioTrackCount = 1;
                 videoPlayer.EnableAudioTrack(0, _videoSoundEnabled);
-
-                if (_blockVideoSoundForRaid && Time.time - _raidEnterTime < 3f)
-                {
-                    videoPlayer.SetDirectAudioVolume(0, 0f); 
-                }
-                else
-                {
-                    videoPlayer.SetDirectAudioVolume(0, _videoSoundEnabled ? _videoVolume : 0f);
-                }
+                videoPlayer.SetDirectAudioVolume(0, _videoSoundEnabled ? _videoVolume : 0f);
             }
             else
             {
@@ -336,37 +326,6 @@ namespace JiangHu
 
         private void Update()
         {
-            bool isInRaidNow = IsInRaidForVideo();
-
-            if (isInRaidNow && !_wasInRaidLastCheck && _backgroundEnabled)
-            {
-                if (_videoPlayer != null && _videoPlayer.isPlaying)
-                {
-                    _videoPlayer.SetDirectAudioVolume(0, 0f); 
-                }
-
-                _raidEnterTime = Time.time;
-                _blockVideoSoundForRaid = true; 
-            }
-
-            _wasInRaidLastCheck = isInRaidNow;
-
-            if (_blockVideoSoundForRaid && _videoPlayer != null)
-            {
-                if (Time.time - _raidEnterTime < 3f)
-                {
-                    _videoPlayer.SetDirectAudioVolume(0, 0f); 
-                }
-                else
-                {
-                    _blockVideoSoundForRaid = false; 
-                                               
-                    if (_videoSoundEnabled)
-                    {
-                        _videoPlayer.SetDirectAudioVolume(0, _videoVolume);
-                    }
-                }
-            }
 
             if (_backgroundCanvas == null) return;
 
@@ -388,9 +347,17 @@ namespace JiangHu
             }
 
             bool shouldBeActive = ShouldBackgroundBeActive();
+
+            bool wasActive = _backgroundCanvas.activeSelf;
+
             if (_backgroundCanvas.activeSelf != shouldBeActive)
             {
                 _backgroundCanvas.SetActive(shouldBeActive);
+            }
+
+            if (!wasActive && shouldBeActive && !string.IsNullOrEmpty(_selectedBackgroundName))
+            {
+                LoadBackgroundTexture(_selectedBackgroundName);
             }
         }
 
@@ -402,7 +369,7 @@ namespace JiangHu
         private bool IsInRaid()
         {
             var currentScreen = CurrentScreenSingletonClass.Instance?.RootScreenType;
-            return currentScreen == EEftScreenType.BattleUI; 
+            return currentScreen == EEftScreenType.BattleUI;
         }
 
         private bool IsInWeaponModding()
@@ -417,12 +384,6 @@ namespace JiangHu
                               commonUI.EditBuildScreen.isActiveAndEnabled;
 
             return isWeaponModding || isEditBuild;
-        }
-
-        private bool IsInRaidForVideo()
-        {
-            return CurrentScreenSingletonClass.Instance?.RootScreenType == EEftScreenType.FinalCountdown ||
-                   GClass2340.InRaid;
         }
 
         private void ScanBackgroundFiles()
@@ -537,16 +498,6 @@ namespace JiangHu
             _videoPlayer.audioOutputMode = VideoAudioOutputMode.Direct;
             _videoPlayer.controlledAudioTrackCount = 1;
             _videoPlayer.EnableAudioTrack(0, _videoSoundEnabled);
-
-            if (_blockVideoSoundForRaid && Time.time - _raidEnterTime < 3f)
-            {
-                _videoPlayer.SetDirectAudioVolume(0, 0f); 
-            }
-            else
-            {
-                _videoPlayer.SetDirectAudioVolume(0, _videoSoundEnabled ? _videoVolume : 0f);
-            }
-
             _videoPlayer.SetDirectAudioVolume(0, _videoSoundEnabled ? _videoVolume : 0f);
 
             _videoPlayer.renderMode = VideoRenderMode.RenderTexture;
@@ -621,8 +572,6 @@ namespace JiangHu
 
         public void SetVideoSoundEnabled(bool enabled)
         {
-            _blockVideoSoundForRaid = false;
-
             _videoSoundEnabled = enabled;
             if (_videoPlayer != null)
             {
@@ -646,7 +595,7 @@ namespace JiangHu
         public void SetVideoVolume(float volume)
         {
             _videoVolume = volume;
-            if (_videoPlayer != null && _videoSoundEnabled && !_blockVideoSoundForRaid)
+            if (_videoPlayer != null && _videoSoundEnabled)
             {
                 _videoPlayer.SetDirectAudioVolume(0, volume);
             }

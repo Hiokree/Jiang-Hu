@@ -10,6 +10,7 @@ namespace JiangHu
         public static ConfigEntry<KeyboardShortcut> WorldShaperHotkey;
         public static ConfigEntry<KeyboardShortcut> ShowSettingsHotkey;
         public static ConfigEntry<KeyboardShortcut> SwapBotHotkey;
+        public static ConfigEntry<KeyboardShortcut> BattleScreenHotkey;
         public static ConfigEntry<bool> ShowDescription;
 
         public static ConfigEntry<KeyboardShortcut> UniversalSpawnHotkey;
@@ -28,29 +29,46 @@ namespace JiangHu
         public static ConfigEntry<bool> ShowBotType;
         public static ConfigEntry<bool> ShowBotName;
 
+        public static ConfigEntry<bool> ShowBotBodyHighlight;
+        public static ConfigEntry<bool> HighlightAllBots;
+        public static ConfigEntry<bool> HighlightJiangHuOpponents;
+        public static ConfigEntry<bool> ShowJiangHuTeammateHighlight;
+        public static ConfigEntry<bool> ShowJiangHuBotsHighlight;
+        public static ConfigEntry<Color> FriendlyBotColor;
+        public static ConfigEntry<Color> EnemyBotColor;
+        public static ConfigEntry<Color> NeutralBotColor;
+
+
+
         public static void Init(ConfigFile config)
         {
             const string sectionBotspawn = "- Bot Spawner 点将台 -";
-            const string sectionShowBot = "In raid Indicator 局内显示";
+            const string sectionShowBot = "- Bot Marker 万象 -";
             const string section1 = "Regular  常规";
             const string section2 = "Bosses 头目";
             const string section3 = "Followers 狗腿";
             const string section4 = "Infected 丧尸";
             const string section5 = "Special 特殊";
 
-
             WorldShaperHotkey = config.Bind(
                 "",
                 "World Shaper 世界塑造器",
                 new KeyboardShortcut(KeyCode.F4),
                 new ConfigDescription("Hotkey to show/hide the World Shaper interface (music player + background changer)", null,
-                    new ConfigurationManagerAttributes { Order = 553 }));
+                    new ConfigurationManagerAttributes { Order = 554 }));
 
             ShowSettingsHotkey = config.Bind(
                 "",
                 "Game Settings Manager 游戏管理中心",
                 new KeyboardShortcut(KeyCode.F5),
                 new ConfigDescription("Hotkey to show/hide Game settings manager", null,
+                    new ConfigurationManagerAttributes { Order = 553 }));
+
+            BattleScreenHotkey = config.Bind(
+                "",
+                "Battle Screen 锋镝录",
+                new KeyboardShortcut(KeyCode.F8),
+                new ConfigDescription("Hotkey to show/hide the Battle Screen interface", null,
                     new ConfigurationManagerAttributes { Order = 552 }));
 
             SwapBotHotkey = config.Bind(
@@ -68,90 +86,147 @@ namespace JiangHu
                     new ConfigurationManagerAttributes { Order = 550 }));
 
 
-            UniversalSpawnHotkey = config.Bind(
-                sectionBotspawn,
-                "Spawn Bot Hotkey 召唤",
-                new KeyboardShortcut(KeyCode.F6),
-                new ConfigDescription("Spawn bot based on current settings", null,
-                    new ConfigurationManagerAttributes { Order = 511 }));
-
-            RemoveBotHotkey = config.Bind(
-                sectionBotspawn,
-                "Remove Bot Hotkey 移除",
-                new KeyboardShortcut(KeyCode.F7),
-                new ConfigDescription("Remove bot matching current settings", null,
-                    new ConfigurationManagerAttributes { Order = 510 }));
-
-            BotHostility = config.Bind(
-                sectionBotspawn,
-                "Hostility 敌友",
-                HostilityType.Friendly,
-                new ConfigDescription("Bot hostility towards player", null,
-                    new ConfigurationManagerAttributes { Order = 509 }));
-
-            DisableVanillaBotSpawn = config.Bind(
-                sectionBotspawn,
-                "Disable Vanilla Bot Spawn 禁止系统刷人机",
+            ShowBotBodyHighlight = config.Bind(
+                sectionShowBot,
+                "Enable Bot Body Highlight 开启画皮",
                 true,
-                new ConfigDescription("Remove all vanilla spawned bots", null,
-                    new ConfigurationManagerAttributes { Order = 508 }));
+                new ConfigDescription("Enable colored body highlight on bots", null,
+                    new ConfigurationManagerAttributes { Order = 525 }));
 
-            const string guiSection = "";
+            ShowJiangHuTeammateHighlight = config.Bind(
+                sectionShowBot,
+                "Highlight JiangHu Teammates 江湖队友画皮",
+                true,
+                new ConfigDescription("Highlight friendly JiangHu bots with green color", null,
+                    new ConfigurationManagerAttributes { Order = 524 }));
+
+            HighlightJiangHuOpponents = config.Bind(
+                sectionShowBot,
+                "Highlight JiangHu Opponents 江湖对手画皮",
+                true,
+                new ConfigDescription("Highlight enemy JiangHu bots with red color", null,
+                    new ConfigurationManagerAttributes { Order = 523 }));
+
+            ShowJiangHuBotsHighlight = config.Bind(
+                sectionShowBot,
+                "Highlight All JiangHu Bots 江湖众生画皮",
+                false,
+                new ConfigDescription("Highlight all JiangHu bots regardless of hostility", null,
+                    new ConfigurationManagerAttributes { Order = 522 }));
+
+            HighlightAllBots = config.Bind(
+                sectionShowBot,
+                "Highlight All Bots 所有人机画皮",
+                false,
+                new ConfigDescription("Highlight all bots, not just JiangHu spawned bots", null,
+                    new ConfigurationManagerAttributes { Order = 521 }));
+
+            FriendlyBotColor = config.Bind(
+                sectionShowBot,
+                "Friendly Highlight 队友色",
+                new Color(0.27f, 0.72f, 0.27f, 0.7f), // Green
+                new ConfigDescription("Highlight Color for friendly", null,
+                    new ConfigurationManagerAttributes { Order = 520 }));
+
+            EnemyBotColor = config.Bind(
+                sectionShowBot,
+                "Enemy Highlight 对手色",
+                new Color(0.96f, 0.27f, 0.02f, 0.7f), // Red
+                new ConfigDescription("Highlight Color for enemy", null,
+                    new ConfigurationManagerAttributes { Order = 519 }));
+
+            NeutralBotColor = config.Bind(
+                sectionShowBot,
+                "Neutral Highlight 中立色",
+                new Color(0.5f, 0.5f, 0.5f, 0.5f), // Gray
+                new ConfigDescription("Highlight Color for neutral", null,
+                    new ConfigurationManagerAttributes { Order = 518 }));
 
             ShowBotIndicator = config.Bind(
                 sectionShowBot,
-                "Show Bot Indicator 开启显示仪",
+                "Show Bot Indicator 开启草标",
                 true,
                 new ConfigDescription("Enable indicator", null,
-                    new ConfigurationManagerAttributes { Order = 507 }));
+                    new ConfigurationManagerAttributes { Order = 517 }));
 
             ShowJiangHuTeammate = config.Bind(
                 sectionShowBot,
-                "Show JiangHu Teammate 显示江湖队友",
+                "Show JiangHu Teammate 江湖队友草标",
                 true,
                 new ConfigDescription("Show friendly JiangHu marked bots", null,
-                    new ConfigurationManagerAttributes { Order = 506 }));
+                    new ConfigurationManagerAttributes { Order = 516 }));
 
             ShowJiangHuOpponent = config.Bind(
                 sectionShowBot,
-                "Show JiangHu Opponent 显示江湖对手",
+                "Show JiangHu Opponent 江湖对手草标",
                 true,
                 new ConfigDescription("Show enemy JiangHu marked bots (includes DeathMatch bosses)", null,
-                    new ConfigurationManagerAttributes { Order = 505 }));
+                    new ConfigurationManagerAttributes { Order = 515 }));
 
             ShowJiangHuBots = config.Bind(
                 sectionShowBot,
-                "Show JiangHu Bots 显示江湖众生",
+                "Show JiangHu Bots 江湖众生草标",
                 false,
                 new ConfigDescription("Show all JiangHu marked bots", null,
-                    new ConfigurationManagerAttributes { Order = 504 }));
+                    new ConfigurationManagerAttributes { Order = 514 }));
 
             ShowAllBots = config.Bind(
                 sectionShowBot,
-                "Show All Bots 显示所有人机",
+                "Show All Bots 所有人机草标",
                 false,
                 new ConfigDescription("Show all bots", null,
-                    new ConfigurationManagerAttributes { Order = 503 }));
+                    new ConfigurationManagerAttributes { Order = 513 }));
 
             ShowBotName = config.Bind(
                 sectionShowBot,
                 "Show Bot Name 显示名字",
                 true,
                 new ConfigDescription("Show bot name", null,
-                    new ConfigurationManagerAttributes { Order = 502 }));
+                    new ConfigurationManagerAttributes { Order = 512 }));
 
             ShowBotType = config.Bind(
                 sectionShowBot,
                 "Show Bot Type 显示类型",
                 true,
                 new ConfigDescription("Show bot type", null,
-                    new ConfigurationManagerAttributes { Order = 501 }));
+                    new ConfigurationManagerAttributes { Order = 511 }));
 
             ShowDistance = config.Bind(
                 sectionShowBot,
                 "Show Distance 显示距离",
                 true,
                 new ConfigDescription("Show distance", null,
+                    new ConfigurationManagerAttributes { Order = 510 }));
+
+            const string guiSection = "";
+
+
+            UniversalSpawnHotkey = config.Bind(
+                sectionBotspawn,
+                "Spawn Bot Hotkey 召唤",
+                new KeyboardShortcut(KeyCode.F6),
+                new ConfigDescription("Spawn bot based on current settings", null,
+                    new ConfigurationManagerAttributes { Order = 503 }));
+
+            RemoveBotHotkey = config.Bind(
+                sectionBotspawn,
+                "Remove Bot Hotkey 移除",
+                new KeyboardShortcut(KeyCode.F7),
+                new ConfigDescription("Remove bot matching current settings", null,
+                    new ConfigurationManagerAttributes { Order = 502 }));
+
+            BotHostility = config.Bind(
+                sectionBotspawn,
+                "Hostility 敌友",
+                HostilityType.Friendly,
+                new ConfigDescription("Bot hostility towards player", null,
+                    new ConfigurationManagerAttributes { Order = 501 }));
+
+            DisableVanillaBotSpawn = config.Bind(
+                sectionBotspawn,
+                "Disable Vanilla Bot Spawn 禁止系统刷人机",
+                true,
+                new ConfigDescription("Remove all vanilla spawned bots", null,
                     new ConfigurationManagerAttributes { Order = 500 }));
 
             // Regular Bots Section

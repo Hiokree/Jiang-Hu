@@ -45,7 +45,7 @@ namespace JiangHu
             musicPlayer = pluginObj.AddComponent<MusicPlayer>();
             changeBackground.SetMusicPlayer(musicPlayer);
 
-            var worldShaper = pluginObj.AddComponent<WorldShaper>();
+            worldShaper = pluginObj.AddComponent<WorldShaper>();
             worldShaper.SetConfig(F12Manager.WorldShaperHotkey, false, musicPlayer, changeBackground);
 
             pluginObj.AddComponent<RemoveAlpha>();
@@ -65,6 +65,8 @@ namespace JiangHu
 
             DeathMatch = pluginObj.AddComponent<DeathMatch>();
             DeathMatch.Init();
+
+            pluginObj.AddComponent<BattleScreenPlugin>();
 
             var universalSpawner = pluginObj.AddComponent<UniversalBotSpawner>();
             universalSpawner.Init(F12Manager.UniversalSpawnHotkey,

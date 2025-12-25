@@ -11,7 +11,6 @@ namespace JiangHu
     {
         private MusicPlayer _musicPlayer;
         private ChangeBackground _changeBackground;
-        private WorldShaper worldShaper;
         private ConfigEntry<KeyboardShortcut> _hotkey;
 
         private Rect windowRect = new Rect(20, 20, 360, 360);

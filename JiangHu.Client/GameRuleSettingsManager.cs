@@ -455,7 +455,7 @@ namespace JiangHu
                 return;
             }
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             // Tab navigation
             selectedTab = GUILayout.Toolbar(selectedTab, tabNames, GUILayout.Height(30));
@@ -542,7 +542,7 @@ namespace JiangHu
 
             GUILayout.EndVertical();
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             // horizontal layout for left-right columns
             GUILayout.BeginHorizontal();
@@ -554,7 +554,7 @@ namespace JiangHu
             GUILayout.Label("Story Mode Guide", GUIStyle.none);
             GUILayout.Space(5);
             GUILayout.Label("剧情模式指南", GUIStyle.none);
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             GUILayout.BeginVertical();
             GUILayout.FlexibleSpace(); 
@@ -609,14 +609,14 @@ namespace JiangHu
             GUILayout.Space(5);
             GUILayout.EndVertical();
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             // MIDDLE BOX
             GUILayout.BeginVertical("box");
             GUILayout.Label("Dance on the Razor's Edge  惊鸿猎", GUIStyle.none);
-            GUILayout.Space(10);
+            GUILayout.Space(5);
             GUILayout.Label("Nerf boss XP & True survival   降低头目击杀经验 & 真实生存");
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             bool xpMode = GUILayout.Toggle(enableXPMode, " Enable Dance on the Razor's Edge  开启惊鸿猎");
             if (xpMode != enableXPMode)
@@ -627,7 +627,7 @@ namespace JiangHu
 
             GUILayout.EndVertical();
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             // LOWER BOX
             GUILayout.BeginVertical("box");
@@ -636,7 +636,7 @@ namespace JiangHu
             GUILayout.Label("Play「Jiang Hu Road」while enable「Dance on the Razor's Edge」");
             GUILayout.Space(5);
             GUILayout.Label("需玩江湖行并开启惊鸿猎");
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             bool arenaQuest = GUILayout.Toggle(enableArenaQuest, " Enable Aporia Quests  开启向阳而生任务");
             if (arenaQuest != (enableXPMode && enableArenaQuest))
@@ -645,7 +645,7 @@ namespace JiangHu
                 enableArenaQuest = arenaQuest;
                 SaveSettingsToJson();
             }
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             bool restartRaidMode = GUILayout.Toggle(restartXPMode, " Restart Aporia Quests  重置向阳而生任务");
             if (restartRaidMode != restartXPMode)
@@ -795,14 +795,14 @@ namespace JiangHu
                 SaveSettingsToJson();
             }
             GUILayout.EndVertical();
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             GUILayout.BeginVertical("box");
             GUILayout.Label("Basic movement (default on)  入门身法（默认开启）", GUIStyle.none);
             GUILayout.Space(5);
             GUILayout.Label("Instant Response, Clean & Smooth  瞬时响应，干净流畅", GUI.skin.label);
             GUILayout.EndVertical();
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             GUILayout.BeginVertical("box");
             GUILayout.Label("Advanced Movement  精修身法", GUIStyle.none);
@@ -828,7 +828,7 @@ namespace JiangHu
             if (newSlide != enableSlide) { enableSlide = newSlide; SaveSettingsToJson(); }
             GUILayout.Space(5);
             GUILayout.EndVertical();
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             GUILayout.BeginVertical("box");
             GUILayout.Label("Weapon Handling  武器操控", GUIStyle.none);
@@ -846,7 +846,7 @@ namespace JiangHu
             GUILayout.Space(5);
 
             GUILayout.EndVertical();
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             GUILayout.BeginVertical("box");
             GUILayout.Label("View  视野", GUIStyle.none);
@@ -864,8 +864,8 @@ namespace JiangHu
                 SaveSettingsToJson();
             }
             GUILayout.Space(5);
-            GUILayout.Label("(As you master each martial art, bots will learn and use it as well)");
-            GUILayout.Label("(随着你掌握每一门武功，人机也会学会并使用)");
+            GUILayout.Label("As you master each martial art, bots will learn and use it as well");
+            GUILayout.Label("随着你掌握每一门武功，人机也会学会并使用");
             GUILayout.EndVertical();
 
             GUILayout.EndVertical(); 
@@ -884,16 +884,16 @@ namespace JiangHu
                 enablePositionSwap = newPositionSwap;
                 SaveSettingsToJson();
             }
-            GUILayout.Space(10);
+            GUILayout.Space(5);
             GUILayout.Label("When pressing the hotkey, your crosshair must be directly and precisely on the target, just like landing a shot, or it will not be triggered. set hotkey in F12");
             GUILayout.Label("当按下快捷键时，准星必须直接并精确对准目标，就像子弹击中一样，否则不会触发。可在 F12 中设置快捷键");
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             // Swap Distance Input
             GUILayout.Label("Swap Distance (meters)  互换距离（米）");
             GUILayout.BeginHorizontal();
-            GUILayout.Space(10);
+            GUILayout.Space(5);
             string distanceInput = GUILayout.TextField(swapDistance.ToString("F1"), GUILayout.Width(100));
             if (float.TryParse(distanceInput, out float newDistance) && newDistance >= 0 && newDistance <= 1000)
             {
@@ -905,12 +905,12 @@ namespace JiangHu
             }
             GUILayout.Label("m (0-1000)", GUILayout.Width(80));
             GUILayout.EndHorizontal();
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             // Swap Cooldown Input
             GUILayout.Label("Swap Cooldown (seconds)  技能冷却（秒）");
             GUILayout.BeginHorizontal();
-            GUILayout.Space(10);
+            GUILayout.Space(5);
             string cooldownInput = GUILayout.TextField(swapCooldown.ToString("F1"), GUILayout.Width(100));
             if (float.TryParse(cooldownInput, out float newCooldown) && newCooldown >= 0)
             {
@@ -955,12 +955,12 @@ namespace JiangHu
             }
             GUILayout.EndVertical();
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
 
             GUILayout.BeginVertical("box");
             GUILayout.Label("Name Languages  名字语言", GUIStyle.none);
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             bool newChinese = GUILayout.Toggle(botNameLanguageSettings["ch"], " 使用中文名字");
             if (newChinese != botNameLanguageSettings["ch"])
@@ -1019,7 +1019,7 @@ namespace JiangHu
 
             GUILayout.EndVertical();
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             GUILayout.BeginVertical("box");
             GUILayout.Label("Bot AI Settings  人机AI设置", GUIStyle.none);
@@ -1190,7 +1190,7 @@ namespace JiangHu
             GUILayout.Label("召唤/移除特定人机。瞬间移除，但其入局时或需尝试多次。召唤的队友会被传送到最近的入局点，召唤的敌人也不会离你很远");
             GUILayout.EndVertical();
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             // Random Vanilla Quest Generator Box
             GUILayout.BeginVertical("box");
@@ -1207,12 +1207,12 @@ namespace JiangHu
             GUILayout.Label("(Disable Vanilla Quests first  需先禁用原版任务)", GUI.skin.label);
             GUILayout.EndVertical();
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             // Basic Modules Box 
             GUILayout.BeginVertical("box");
             GUILayout.Label("Basic Modules  基础模块", GUIStyle.none);
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             bool newTrader = GUILayout.Toggle(enableNewTrader, " Enable New Trader  启用新商人");
             if (newTrader != enableNewTrader) { enableNewTrader = newTrader; SaveSettingsToJson(); }
@@ -1263,7 +1263,7 @@ namespace JiangHu
             }
             GUILayout.EndHorizontal();
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("Bosses at raid start  开局头目数量: ", GUILayout.Width(350));
@@ -1278,7 +1278,7 @@ namespace JiangHu
             }
             GUILayout.EndHorizontal();
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             bool newUseDefaultTime = GUILayout.Toggle(useDefaultMatchTime, " Use Default Match Time  使用默认战局时长");
             if (newUseDefaultTime != useDefaultMatchTime)
@@ -1289,9 +1289,9 @@ namespace JiangHu
 
             if (!useDefaultMatchTime)
             {
-                GUILayout.Space(10);
+                GUILayout.Space(5);
                 GUILayout.Label("Set Match Time (will apply to all raid types)  自定义战局时间（会应用于所有战局类型）");
-                GUILayout.Space(10);
+                GUILayout.Space(5);
                 GUILayout.BeginHorizontal();
                 GUILayout.Label("Minutes  分钟: ", GUILayout.Width(250)); 
                 string timeInput = GUILayout.TextField(deathMatchMatchTime.ToString(), GUILayout.Width(100));
@@ -1307,13 +1307,13 @@ namespace JiangHu
             }
             else
             {
-                GUILayout.Space(10);
+                GUILayout.Space(5);
                 GUILayout.Label("Customized time limit is DISABLED  自定义战局时长已禁用", GUI.skin.label);
             }
 
             GUILayout.EndVertical();
 
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             // horizontal layout for left-right columns
             GUILayout.BeginHorizontal();
@@ -1325,7 +1325,7 @@ namespace JiangHu
             GUILayout.Label("Death Match Guide", GUIStyle.none);
             GUILayout.Space(5);
             GUILayout.Label("死斗模式指南", GUIStyle.none);
-            GUILayout.Space(10);
+            GUILayout.Space(5);
 
             GUILayout.BeginVertical();
             GUILayout.FlexibleSpace();

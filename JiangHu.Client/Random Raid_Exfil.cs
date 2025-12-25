@@ -231,5 +231,26 @@ namespace JiangHu.ExfilRandomizer
                 Console.WriteLine($"\x1b[31m❌ [Jiang Hu] Location cache error: {ex.Message}\x1b[0m");
             }
         }
+
+        public static bool IsRandomRaidActive()
+        {
+            return _buttonClickedForThisRaid;
+        }
+
+        public static void ValidateStateInMenu()
+        {
+            try
+            {
+                var gameWorld = Singleton<GameWorld>.Instance;
+                bool isInMenu = gameWorld == null;
+
+                if (isInMenu && _buttonClickedForThisRaid)
+                {
+                    ResetAfterRaid();
+                    RestoreAllOriginals();
+                }
+            }
+            catch { }
+        }
     }
 }

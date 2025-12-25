@@ -61,6 +61,26 @@ namespace JiangHu
                 Instance = null;
         }
 
+        public static void ValidateStateInMenu()
+        {
+            try
+            {
+                var gameWorld = Singleton<GameWorld>.Instance;
+                bool isInMenu = gameWorld == null;
+
+                if (isInMenu && DeathMatchModeActive)
+                {
+                    DeathMatch.DisableDeathMatchMode();
+
+                    if (Instance != null)
+                    {
+                        Instance.teleportCount = 0;
+                    }
+                }
+            }
+            catch { }
+        }
+
 
         public bool TryStartDeathTeleport(Player targetPlayer, EDamageType damageType)
         {
@@ -587,6 +607,7 @@ namespace JiangHu
 
             try
             {
+                DeathMatch.ValidateStateInMenu();
                 var escapeField = typeof(MenuScreen).GetField("_playButton",
                     BindingFlags.NonPublic | BindingFlags.Instance);
                 var templateButton = (DefaultUIButton)escapeField.GetValue(menuScreen);

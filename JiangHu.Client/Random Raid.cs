@@ -47,12 +47,14 @@ namespace JiangHu.Patches
 
         }
 
-        private static System.Collections.IEnumerator FinalFixDelayed(MenuScreen menuScreen)
+        private static IEnumerator FinalFixDelayed(MenuScreen menuScreen)
         {
             yield return new WaitForSeconds(0.1f);
 
             try
             {
+                CleanCrashedState();
+
                 ProcessEscapeButton(menuScreen);
 
                 ProcessLeftButtons(menuScreen);
@@ -267,8 +269,9 @@ namespace JiangHu.Patches
                 jiangHuButton.OnClick.RemoveAllListeners();
                 jiangHuButton.OnClick.AddListener(() =>
                 {
+                    ExfilRandomizer.RandomExfilDestinationPatch.ValidateStateInMenu();
 
-                    JiangHu.ExfilRandomizer.RandomExfilDestinationPatch.SetButtonClickedForThisRaid();
+                    ExfilRandomizer.RandomExfilDestinationPatch.SetButtonClickedForThisRaid();
 
                     NotificationManagerClass.DisplayMessageNotification(
                         "Random Raid 随机战局",
@@ -376,6 +379,31 @@ namespace JiangHu.Patches
 
             return enabledMaps;
         }
+
+        private static void CleanCrashedState()
+        {
+            try
+            {
+                var gameWorld = Singleton<GameWorld>.Instance;
+                bool isInMenu = gameWorld == null;
+
+                if (isInMenu)
+                {
+                    Console.WriteLine("✅ [Menu] Checking for crashed states...");
+
+                    // Clean Random Raid state
+                    JiangHu.ExfilRandomizer.RandomExfilDestinationPatch.ValidateStateInMenu();
+
+                    // Clean DeathMatch state (if DeathMatch class exists)
+                    // Note: You need to add DeathMatch.ValidateStateInMenu() too
+                    // DeathMatch.ValidateStateInMenu();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"❌ [Menu] Crash check error: {ex.Message}");
+            }
+        }
     }
 
     internal class HideProgressCounterUIPatch : ModulePatch
@@ -426,11 +454,8 @@ namespace JiangHu.Patches
         [PatchPostfix]
         private static void Postfix(string profileId, ExitStatus exitStatus, string exitName, float delay)
         {
-            Console.WriteLine($"\x1b[35m🏁 [Jiang Hu] LocalGame.Stop() called - Status: {exitStatus}\x1b[0m");
-
             if (exitStatus != ExitStatus.Transit)
             {
-                Console.WriteLine($"\x1b[35m🏁 [Jiang Hu] RAID ENDED (not transit) - Resetting flag\x1b[0m");
                 JiangHu.ExfilRandomizer.RandomExfilDestinationPatch.ResetAfterRaid();
             }
             else

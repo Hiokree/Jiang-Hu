@@ -56,6 +56,7 @@ namespace JiangHu.Server
                     WriteConfigSetting("Add_HideoutProduction_DSP", true);
                     WriteConfigSetting("Disable_Vanilla_Quests", true);
                     WriteConfigSetting("Lock_Flea", false);
+                    WriteConfigSetting("Enable_Fast_Movement_Bot", true);
 
                     // adjustable settings reset: Rewards
 

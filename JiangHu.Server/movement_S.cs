@@ -26,6 +26,7 @@ namespace JiangHu.Server
         private bool _Enable_Fast_Aiming = false;
         private bool _Enable_Wider_Freelook_Angle = false;
         private bool _Enable_Position_Swap = false;
+        private bool _Enable_Fast_Movement_Bot = true;
 
         public MovementServerSide(DatabaseServer databaseServer, SaveServer saveServer)
         {
@@ -75,6 +76,8 @@ namespace JiangHu.Server
                     _Enable_Wider_Freelook_Angle = freelookValue.GetBoolean();
                 if (config.TryGetValue("Enable_Position_Swap", out var positionswapValue))
                     _Enable_Position_Swap = positionswapValue.GetBoolean();
+                if (config.TryGetValue("Enable_Fast_Movement_Bot", out var botMovementValue))
+                    _Enable_Fast_Movement_Bot = botMovementValue.GetBoolean();
             }
             catch (Exception ex)
             {
@@ -102,6 +105,7 @@ namespace JiangHu.Server
             ApplyMinimalAimpunch();
             ApplyWiderFreelookAngle();
             ApplyPositionSwap();
+            ApplyFastMovementBot();
         }
 
         private void ApplyMovementSettings()
@@ -227,6 +231,12 @@ namespace JiangHu.Server
         {
             if (!_Enable_Position_Swap) return;
             Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Stellar Transposition enabled    斗转星移\x1b[0m");
+        }
+
+        private void ApplyFastMovementBot()
+        {
+            if (!_Enable_Fast_Movement_Bot) return;
+            Console.WriteLine($"\x1b[93m⚔️ [Jiang Hu] Kung Fu Bot enabled    功夫人机\x1b[0m");
         }
     }
 }
