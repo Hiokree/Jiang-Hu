@@ -52,7 +52,6 @@ namespace JiangHu
         private bool restartXPMode = false; 
         private bool enableArenaQuest = false;
         private int deathMatchLives = 2;  
-        private int deathMatchStartingBots = 5;
         private bool useDefaultMatchTime = true;
         private int deathMatchMatchTime = 3600;
         private bool enablePositionSwap = true;
@@ -61,6 +60,53 @@ namespace JiangHu
         private bool enableDoubleJump = true;
         private float spawnCooldown = 5f;
         private bool enableFastMovementBot = false;
+        private int ourSquadNumber = 2; 
+        private int enemyTeamNumber = 3;  
+        private int enemySquadNumber = 3;
+
+
+        private Dictionary<string, int> botWeightSettings = new Dictionary<string, int>
+        {
+            { "PMC_BEAR", 1 },
+            { "PMC_USEC", 1 },
+            { "Scav", 1 },
+            { "Raider", 1 },
+            { "Rogue", 1 },
+            { "Smuggler", 1 },
+            { "Cultist Warrior", 1 },
+            { "Scav Sniper", 1 },
+            { "Reshala", 1 },
+            { "Gluhar", 1 },
+            { "Shturman", 1 },
+            { "Sanitar", 1 },
+            { "Knight", 1 },
+            { "Big Pipe", 1 },
+            { "Bird Eye", 1 },
+            { "Kaban", 1 },
+            { "Kolontay", 1 },
+            { "Cultist Priest", 1 },
+            { "Zryachiy", 1 },
+            { "Partisan", 1 },
+            { "Killa", 1 },
+            { "Tagilla", 1 },
+            { "Tagilla (Aggro)", 1 },
+            { "Killa (Aggro)", 1 },
+            { "Shturman Follower", 1 },
+            { "Sanitar Follower", 1 },
+            { "Zryachiy Follower", 1 },
+            { "Kaban Follower", 1 },
+            { "Kaban Close Guard 1", 1 },
+            { "Kaban Close Guard 2", 1 },
+            { "Kaban Sniper Guard", 1 },
+            { "Kolontay Assault Follower", 1 },
+            { "Kolontay Security Follower", 1 },
+            { "Tagilla Helper", 1 },
+            { "Cultist Herald", 1 },
+            { "Cultist Ghost", 1 },
+            { "Cultist Oni", 1 },
+            { "Cultist Priest (Event)", 1 },
+            { "Infected Tagilla", 1 }
+        };
 
         // Map settings
         private Dictionary<string, bool> mapSettings = new Dictionary<string, bool>
@@ -78,7 +124,7 @@ namespace JiangHu
         };
 
         // Window rect
-        private Rect windowRect = new Rect(Screen.width / 2 - 450, Screen.height / 2 - 300, 1200, 700);
+        private Rect windowRect = new Rect(Screen.width / 2 - 450, Screen.height / 2 - 300, 1200, 720);
         private bool showGUI = false;
 
         // Guide windows
@@ -90,9 +136,10 @@ namespace JiangHu
         private Vector2 storyModeScrollPosition = Vector2.zero;
         private string storyModeContent = "";
 
-        // death match guide
+        // War Game guide
         private Vector2 deathMatchGuideScrollPosition = Vector2.zero;
         private string deathMatchGuideContent = "";
+        private Vector2 botWeightsScrollPosition = Vector2.zero;
 
         private string currentLanguage = "ch";
 
@@ -101,7 +148,7 @@ namespace JiangHu
         private string[] tabNames = new string[] {
             "Game Mode  游戏模式",
             "Aporia  向阳而生",
-            "Death Match  樂園",
+            "Wonderland  樂園",
             "Three Body  三体",
             "Physics  凌波微步",
             "Gamge Rules  游戏规则"            
@@ -191,6 +238,8 @@ namespace JiangHu
                     enableFastPoseTransition = (bool)configDict["Enable_Fast_Pose_Transition"];
                 if (configDict.ContainsKey("Enable_Slide") && configDict["Enable_Slide"] is bool)
                     enableSlide = (bool)configDict["Enable_Slide"];
+                if (configDict.ContainsKey("Enable_Double_Jump") && configDict["Enable_Double_Jump"] is bool)
+                    enableDoubleJump = (bool)configDict["Enable_Double_Jump"];
                 if (configDict.ContainsKey("Enable_Fast_Weapon_Switching") && configDict["Enable_Fast_Weapon_Switching"] is bool)
                     enableFastWeapon = (bool)configDict["Enable_Fast_Weapon_Switching"];
                 if (configDict.ContainsKey("Enable_Minimal_Aimpunch") && configDict["Enable_Minimal_Aimpunch"] is bool)
@@ -243,7 +292,7 @@ namespace JiangHu
                         mapSettings[mapName] = (bool)configDict[configKey];
                 }
 
-                // Death Match settings
+                // War Game settings
                 if (configDict.ContainsKey("DeathMatch_Lives"))
                 {
                     if (configDict["DeathMatch_Lives"] is long)
@@ -251,18 +300,14 @@ namespace JiangHu
                     else if (configDict["DeathMatch_Lives"] is double)
                         deathMatchLives = (int)(double)configDict["DeathMatch_Lives"];
                 }
-
-                if (configDict.ContainsKey("DeathMatch_Starting_Bot"))
-                {
-                    if (configDict["DeathMatch_Starting_Bot"] is long)
-                        deathMatchStartingBots = (int)(long)configDict["DeathMatch_Starting_Bot"];
-                    else if (configDict["DeathMatch_Starting_Bot"] is double)
-                        deathMatchStartingBots = (int)(double)configDict["DeathMatch_Starting_Bot"];
-                }
-
+                if (configDict.ContainsKey("Our_SquadNumber"))
+                    ourSquadNumber = Convert.ToInt32(configDict["Our_SquadNumber"]);
+                if (configDict.ContainsKey("Enemy_Team_Number"))
+                    enemyTeamNumber = Convert.ToInt32(configDict["Enemy_Team_Number"]);
+                if (configDict.ContainsKey("Enemy_SquadNumber"))
+                    enemySquadNumber = Convert.ToInt32(configDict["Enemy_SquadNumber"]);
                 if (configDict.ContainsKey("Default_Match_Time") && configDict["Default_Match_Time"] is bool)
                     useDefaultMatchTime = (bool)configDict["Default_Match_Time"];
-
                 if (configDict.ContainsKey("DeathMatch_Match_Time"))
                 {
                     if (configDict["DeathMatch_Match_Time"] is long)
@@ -270,9 +315,14 @@ namespace JiangHu
                     else if (configDict["DeathMatch_Match_Time"] is double)
                         deathMatchMatchTime = (int)(double)configDict["DeathMatch_Match_Time"];
                 }
+                foreach (var kvp in botWeightSettings.ToList())
+                {
+                    if (configDict.ContainsKey(kvp.Key))
+                    {
+                        botWeightSettings[kvp.Key] = Convert.ToInt32(configDict[kvp.Key]);
+                    }
+                }
 
-                if (configDict.ContainsKey("Enable_Double_Jump") && configDict["Enable_Double_Jump"] is bool)
-                    enableDoubleJump = (bool)configDict["Enable_Double_Jump"];
 
                 if (configDict.ContainsKey("Enable_Position_Swap") && configDict["Enable_Position_Swap"] is bool)
                     enablePositionSwap = (bool)configDict["Enable_Position_Swap"];
@@ -284,7 +334,6 @@ namespace JiangHu
                     else if (configDict["Swap_Distance"] is double)
                         swapDistance = (float)(double)configDict["Swap_Distance"];
                 }
-
                 if (configDict.ContainsKey("Swap_Cooldown"))
                 {
                     if (configDict["Swap_Cooldown"] is long)
@@ -313,6 +362,7 @@ namespace JiangHu
                     configObj = new JObject();
                 }
 
+
                 configObj["Disable_Vanilla_Quests"] = disableVanillaQuests;
                 configObj["Unlock_VanillaLocked_Items"] = unlockVanillaLockedItems;
                 configObj["Change_Prestige_Conditions"] = changePrestigeCondition;
@@ -339,6 +389,7 @@ namespace JiangHu
                 configObj["Enable_Fast_Leaning"] = enableFastLeaning;
                 configObj["Enable_Fast_Pose_Transition"] = enableFastPoseTransition;
                 configObj["Enable_Slide"] = enableSlide;
+                configObj["Enable_Double_Jump"] = enableDoubleJump;
                 configObj["Enable_Fast_Weapon_Switching"] = enableFastWeapon;
                 configObj["Enable_Minimal_Aimpunch"] = enableMinimalAimpunch;
                 configObj["Enable_Fast_Aiming"] = enableFastAiming;
@@ -366,22 +417,26 @@ namespace JiangHu
                     configObj[configKey] = kvp.Value;
                 }
 
-                // Death Match settings
-                configObj["DeathMatch_Lives"] = deathMatchLives;
-                configObj["DeathMatch_Starting_Bot"] = deathMatchStartingBots;
-                configObj["Default_Match_Time"] = useDefaultMatchTime;
-                configObj["DeathMatch_Match_Time"] = deathMatchMatchTime;
-
-                string json = JsonConvert.SerializeObject(configObj, Formatting.Indented);
-                File.WriteAllText(configPath, json);
-
-                configObj["Enable_Double_Jump"] = enableDoubleJump;
-
                 // Swap Position
                 configObj["Enable_Position_Swap"] = enablePositionSwap;
                 configObj["Swap_Distance"] = swapDistance;
                 configObj["Swap_Cooldown"] = swapCooldown;
 
+                // War Game settings
+                configObj["DeathMatch_Lives"] = deathMatchLives;
+                configObj["Default_Match_Time"] = useDefaultMatchTime;
+                configObj["DeathMatch_Match_Time"] = deathMatchMatchTime;
+                configObj["Our_SquadNumber"] = ourSquadNumber;
+                configObj["Enemy_Team_Number"] = enemyTeamNumber;
+                configObj["Enemy_SquadNumber"] = enemySquadNumber;
+
+                foreach (var kvp in botWeightSettings)
+                {
+                    configObj[kvp.Key] = kvp.Value;
+                }
+
+                string json = JsonConvert.SerializeObject(configObj, Formatting.Indented);
+                File.WriteAllText(configPath, json);
             }
             catch (System.Exception ex)
             {
@@ -506,7 +561,6 @@ namespace JiangHu
 
         void DrawGameModeTab()
         {
-            // Load guide content for current language if not loaded
             if (string.IsNullOrEmpty(storyModeContent))
             {
                 LoadStoryModeGuide(currentLanguage);
@@ -1244,12 +1298,19 @@ namespace JiangHu
                 LoadDeathMatchGuide(currentLanguage);
             }
 
+            GUILayout.BeginHorizontal(); 
+
+            // LEFT COLUMN (70% width)
+            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.7f));
+
+            // Upper box
             GUILayout.BeginVertical("box");
-            GUILayout.Label("Death Match  樂園", GUIStyle.none);
+            GUILayout.Label("Bot War  樂園", GUIStyle.none);
             GUILayout.Space(5);
             GUILayout.Label("Click「樂園」button in main screen to play  点击主画面「樂園」按钮玩");
             GUILayout.Space(5);
 
+            // Lives/Teleports per raid
             GUILayout.BeginHorizontal();
             GUILayout.Label("Lives/Teleports per raid  单局生命/传送次数: ", GUILayout.Width(350));
             string livesInput = GUILayout.TextField(deathMatchLives.ToString(), GUILayout.Width(100));
@@ -1265,14 +1326,15 @@ namespace JiangHu
 
             GUILayout.Space(5);
 
+            // Our Squad Number
             GUILayout.BeginHorizontal();
-            GUILayout.Label("Bosses at raid start  开局头目数量: ", GUILayout.Width(350));
-            string botsInput = GUILayout.TextField(deathMatchStartingBots.ToString(), GUILayout.Width(100));
-            if (int.TryParse(botsInput, out int newBots) && newBots >= 0)
+            GUILayout.Label("Our Teammate Bots  我方队友数量: ", GUILayout.Width(350));
+            string ourSquadInput = GUILayout.TextField(ourSquadNumber.ToString(), GUILayout.Width(100));
+            if (int.TryParse(ourSquadInput, out int newOurSquad) && newOurSquad >= 0)
             {
-                if (newBots != deathMatchStartingBots)
+                if (newOurSquad != ourSquadNumber)
                 {
-                    deathMatchStartingBots = newBots;
+                    ourSquadNumber = newOurSquad;
                     SaveSettingsToJson();
                 }
             }
@@ -1280,6 +1342,39 @@ namespace JiangHu
 
             GUILayout.Space(5);
 
+            // Enemy Team Number
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Opponent Teams  敌方队伍数量 (0-6): ", GUILayout.Width(350));
+            string enemyTeamInput = GUILayout.TextField(enemyTeamNumber.ToString(), GUILayout.Width(100));
+            if (int.TryParse(enemyTeamInput, out int newEnemyTeam) && newEnemyTeam >= 0 && newEnemyTeam <= 6)
+            {
+                if (newEnemyTeam != enemyTeamNumber)
+                {
+                    enemyTeamNumber = newEnemyTeam;
+                    SaveSettingsToJson();
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(5);
+
+            // Enemy Squad Number
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("Bots per Opponent Team  每队敌方人机数量: ", GUILayout.Width(350));
+            string enemySquadInput = GUILayout.TextField(enemySquadNumber.ToString(), GUILayout.Width(100));
+            if (int.TryParse(enemySquadInput, out int newEnemySquad) && newEnemySquad >= 0)
+            {
+                if (newEnemySquad != enemySquadNumber)
+                {
+                    enemySquadNumber = newEnemySquad;
+                    SaveSettingsToJson();
+                }
+            }
+            GUILayout.EndHorizontal();
+
+            GUILayout.Space(5);
+
+            // Match Time settings
             bool newUseDefaultTime = GUILayout.Toggle(useDefaultMatchTime, " Use Default Match Time  使用默认战局时长");
             if (newUseDefaultTime != useDefaultMatchTime)
             {
@@ -1293,7 +1388,7 @@ namespace JiangHu
                 GUILayout.Label("Set Match Time (will apply to all raid types)  自定义战局时间（会应用于所有战局类型）");
                 GUILayout.Space(5);
                 GUILayout.BeginHorizontal();
-                GUILayout.Label("Minutes  分钟: ", GUILayout.Width(250)); 
+                GUILayout.Label("Minutes  分钟: ", GUILayout.Width(250));
                 string timeInput = GUILayout.TextField(deathMatchMatchTime.ToString(), GUILayout.Width(100));
                 if (int.TryParse(timeInput, out int newTime) && newTime > 0)
                 {
@@ -1311,58 +1406,91 @@ namespace JiangHu
                 GUILayout.Label("Customized time limit is DISABLED  自定义战局时长已禁用", GUI.skin.label);
             }
 
-            GUILayout.EndVertical();
+            GUILayout.EndVertical(); // End upper settings box
 
             GUILayout.Space(5);
 
-            // horizontal layout for left-right columns
-            GUILayout.BeginHorizontal();
+            // LOWER BOX
+            GUILayout.BeginVertical("box", GUILayout.ExpandHeight(true));
 
-            // LEFT COLUMN - Language buttons (15% width)
-            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.15f));
+            GUILayout.BeginHorizontal(GUILayout.ExpandHeight(true)); // Start guide horizontal layout
 
-            GUILayout.BeginVertical("box", GUILayout.Height(330));
-            GUILayout.Label("Death Match Guide", GUIStyle.none);
+            // Guide left column
+            GUILayout.BeginVertical("box", GUILayout.Width(windowRect.width * 0.7f * 0.15f));
+
+            GUILayout.Label("Bot War Guide", GUIStyle.none);
             GUILayout.Space(5);
-            GUILayout.Label("死斗模式指南", GUIStyle.none);
+            GUILayout.Label("混战模式指南", GUIStyle.none);
             GUILayout.Space(5);
 
-            GUILayout.BeginVertical();
-            GUILayout.FlexibleSpace();
+            if (GUILayout.Button("中文", GUILayout.Height(30))) { currentLanguage = "ch"; LoadDeathMatchGuide("ch"); }
+            GUILayout.Space(5);
+            if (GUILayout.Button("English", GUILayout.Height(30))) { currentLanguage = "en"; LoadDeathMatchGuide("en"); }
+            GUILayout.Space(5);
+            if (GUILayout.Button("Español", GUILayout.Height(30))) { currentLanguage = "es"; LoadDeathMatchGuide("es"); }
+            GUILayout.Space(5);
+            if (GUILayout.Button("Français", GUILayout.Height(30))) { currentLanguage = "fr"; LoadDeathMatchGuide("fr"); }
+            GUILayout.Space(5);
+            if (GUILayout.Button("日本語", GUILayout.Height(30))) { currentLanguage = "jp"; LoadDeathMatchGuide("jp"); }
+            GUILayout.Space(5);
+            if (GUILayout.Button("Português", GUILayout.Height(30))) { currentLanguage = "po"; LoadDeathMatchGuide("po"); }
+            GUILayout.Space(5);
+            if (GUILayout.Button("Русский", GUILayout.Height(30))) { currentLanguage = "ru"; LoadDeathMatchGuide("ru"); }
 
-            if (GUILayout.Button("中文", GUILayout.ExpandHeight(true))) { currentLanguage = "ch"; LoadDeathMatchGuide("ch"); }
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("English", GUILayout.ExpandHeight(true))) { currentLanguage = "en"; LoadDeathMatchGuide("en"); }
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Español", GUILayout.ExpandHeight(true))) { currentLanguage = "es"; LoadDeathMatchGuide("es"); }
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Français", GUILayout.ExpandHeight(true))) { currentLanguage = "fr"; LoadDeathMatchGuide("fr"); }
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("日本語", GUILayout.ExpandHeight(true))) { currentLanguage = "jp"; LoadDeathMatchGuide("jp"); }
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Português", GUILayout.ExpandHeight(true))) { currentLanguage = "po"; LoadDeathMatchGuide("po"); }
-            GUILayout.FlexibleSpace();
-            if (GUILayout.Button("Русский", GUILayout.ExpandHeight(true))) { currentLanguage = "ru"; LoadDeathMatchGuide("ru"); }
+            GUILayout.EndVertical(); // End guide left column
 
-            GUILayout.FlexibleSpace();
-            GUILayout.EndVertical();
+            // Guide right column 
+            GUILayout.BeginVertical("box", GUILayout.Width(windowRect.width * 0.7f * 0.85f - 10));
 
-            GUILayout.EndVertical();
-
-            GUILayout.EndVertical();
-
-            // RIGHT COLUMN - Guide content (85% width)
-            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.85f - 20));
-
-            GUILayout.BeginVertical("box", GUILayout.Height(330));
-            deathMatchGuideScrollPosition = GUILayout.BeginScrollView(deathMatchGuideScrollPosition, GUILayout.ExpandHeight(true));
+            deathMatchGuideScrollPosition = GUILayout.BeginScrollView(deathMatchGuideScrollPosition, false, true);
             GUILayout.Label(deathMatchGuideContent, GUI.skin.label);
             GUILayout.EndScrollView();
-            GUILayout.EndVertical();
 
-            GUILayout.EndVertical();
+            GUILayout.EndVertical(); // End guide right column
 
-            GUILayout.EndHorizontal();
+            GUILayout.EndHorizontal(); // End guide horizontal layout
+
+            GUILayout.EndVertical(); // End lower guide box
+
+            GUILayout.EndVertical(); // End LEFT COLUMN (70% width)
+
+            // RIGHT COLUMN (30% width) - FIXED SCROLL
+            GUILayout.BeginVertical(GUILayout.Width(windowRect.width * 0.3f - 20));
+
+            GUILayout.BeginVertical("box", GUILayout.ExpandHeight(true));
+            GUILayout.Label("Bot Pool Weights  人机池权重", GUIStyle.none);
+            GUILayout.Space(5);
+            GUILayout.Label("Weight determines spawn chance  权重决定刷新概率", GUIStyle.none);
+            GUILayout.Space(5);
+
+            botWeightsScrollPosition = GUILayout.BeginScrollView(botWeightsScrollPosition,
+                false, true, GUILayout.ExpandHeight(true));
+
+            // Bot weight input fields
+            foreach (var kvp in botWeightSettings)
+            {
+                GUILayout.BeginHorizontal(GUILayout.Height(25));
+                GUILayout.Label(kvp.Key, GUILayout.Width(180));
+                string input = GUILayout.TextField(kvp.Value.ToString(), GUILayout.Width(50));
+                if (int.TryParse(input, out int newValue) && newValue >= 0)
+                {
+                    if (newValue != kvp.Value)
+                    {
+                        botWeightSettings[kvp.Key] = newValue;
+                        SaveSettingsToJson();
+                    }
+                }
+                GUILayout.EndHorizontal();
+                GUILayout.Space(2);
+            }
+
+            GUILayout.EndScrollView(); // End scroll view
+
+            GUILayout.EndVertical(); // End bot weights box
+
+            GUILayout.EndVertical(); // End RIGHT COLUMN (30% width)
+
+            GUILayout.EndHorizontal(); // End main horizontal layout
         }
 
         // Guide windows
@@ -1444,12 +1572,12 @@ namespace JiangHu
                 }
                 else
                 {
-                    deathMatchGuideContent = $"# Death Match Guide - {languageCode}\n\nFile not found at: {guidePath}";
+                    deathMatchGuideContent = $"# War Game Guide - {languageCode}\n\nFile not found at: {guidePath}";
                 }
             }
             catch (System.Exception ex)
             {
-                deathMatchGuideContent = $"# Death Match Guide\n\nError: {ex.Message}";
+                deathMatchGuideContent = $"# War Game Guide\n\nError: {ex.Message}";
             }
         }
     }

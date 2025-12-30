@@ -20,25 +20,26 @@ namespace JiangHu
         public static ConfigEntry<HostilityType> BotHostility;
         public static Dictionary<WildSpawnType, ConfigEntry<bool>> BotTypeConfigs = new Dictionary<WildSpawnType, ConfigEntry<bool>>();
 
-        public static ConfigEntry<bool> ShowJiangHuTeammate;
-        public static ConfigEntry<bool> ShowJiangHuOpponent;
-        public static ConfigEntry<bool> ShowJiangHuBots;
-        public static ConfigEntry<bool> ShowAllBots;
+        public static ConfigEntry<bool> ShowFriendlyBots;
+        public static ConfigEntry<bool> ShowEnemyBots;
+        public static ConfigEntry<bool> ShowNeutralBots;
+        public static ConfigEntry<bool> ShowTeam;
         public static ConfigEntry<bool> ShowBotIndicator;
         public static ConfigEntry<bool> ShowDistance;
         public static ConfigEntry<bool> ShowBotType;
         public static ConfigEntry<bool> ShowBotName;
 
         public static ConfigEntry<bool> ShowBotBodyHighlight;
-        public static ConfigEntry<bool> HighlightAllBots;
-        public static ConfigEntry<bool> HighlightJiangHuOpponents;
-        public static ConfigEntry<bool> ShowJiangHuTeammateHighlight;
-        public static ConfigEntry<bool> ShowJiangHuBotsHighlight;
+        public static ConfigEntry<bool> HighlightFriendlyBots;
+        public static ConfigEntry<bool> HighlightEnemyBots;
+        public static ConfigEntry<bool> HighlightNeutralBots;
         public static ConfigEntry<Color> FriendlyBotColor;
         public static ConfigEntry<Color> EnemyBotColor;
         public static ConfigEntry<Color> NeutralBotColor;
+        public static ConfigEntry<bool> HighlightTeam;
 
-
+        public static ConfigEntry<KeyboardShortcut> TeleportBotHotkey;
+        public static ConfigEntry<KeyboardShortcut> FreeCameraHotkey;
 
         public static void Init(ConfigFile config)
         {
@@ -49,98 +50,114 @@ namespace JiangHu
             const string section3 = "Followers 狗腿";
             const string section4 = "Infected 丧尸";
             const string section5 = "Special 特殊";
+            const string sectionDM = "- Wonderland 乐园 -";
+
+
 
             WorldShaperHotkey = config.Bind(
                 "",
                 "World Shaper 世界塑造器",
                 new KeyboardShortcut(KeyCode.F4),
                 new ConfigDescription("Hotkey to show/hide the World Shaper interface (music player + background changer)", null,
-                    new ConfigurationManagerAttributes { Order = 554 }));
+                    new ConfigurationManagerAttributes { Order = 564 }));
 
             ShowSettingsHotkey = config.Bind(
                 "",
                 "Game Settings Manager 游戏管理中心",
                 new KeyboardShortcut(KeyCode.F5),
                 new ConfigDescription("Hotkey to show/hide Game settings manager", null,
-                    new ConfigurationManagerAttributes { Order = 553 }));
+                    new ConfigurationManagerAttributes { Order = 563 }));
 
             BattleScreenHotkey = config.Bind(
                 "",
                 "Battle Screen 锋镝录",
                 new KeyboardShortcut(KeyCode.F8),
                 new ConfigDescription("Hotkey to show/hide the Battle Screen interface", null,
-                    new ConfigurationManagerAttributes { Order = 552 }));
+                    new ConfigurationManagerAttributes { Order = 562 }));
 
             SwapBotHotkey = config.Bind(
                 "",
                 "Stellar Transposition 斗转星移",
                 new KeyboardShortcut(KeyCode.F),
                 new ConfigDescription("Hotkey to instantly swap positions with the bot you're looking at", null,
-                    new ConfigurationManagerAttributes { Order = 551 }));
+                    new ConfigurationManagerAttributes { Order = 561 }));
 
             ShowDescription = config.Bind(
                 "",
                 "Mod Info 指南手册",
                 true,
                 new ConfigDescription("Show detailed mod information", null,
-                    new ConfigurationManagerAttributes { Order = 550 }));
+                    new ConfigurationManagerAttributes { Order = 560 }));
 
+            TeleportBotHotkey = config.Bind(
+                sectionDM,
+                "Move Bot piece  移动人机棋子",
+                new KeyboardShortcut(KeyCode.T),
+                new ConfigDescription("Select and place bot  拿起，落子", null,
+                    new ConfigurationManagerAttributes { Order = 551 }));
+
+            FreeCameraHotkey = config.Bind(
+                sectionDM,
+                "Free Camera 自由视角",
+                new KeyboardShortcut(KeyCode.F11),
+                new ConfigDescription("Toggle free camera mode", null,
+                    new ConfigurationManagerAttributes { Order = 550 }));
 
             ShowBotBodyHighlight = config.Bind(
                 sectionShowBot,
-                "Enable Bot Body Highlight 开启画皮",
+                "Enable Highlight 开启画皮",
                 true,
                 new ConfigDescription("Enable colored body highlight on bots", null,
+                    new ConfigurationManagerAttributes { Order = 527 }));
+
+            HighlightFriendlyBots = config.Bind(
+                sectionShowBot,
+                "Highlight Friendly Bots 画皮队友",
+                true,
+                new ConfigDescription("friendly bots 队友", null,
+                    new ConfigurationManagerAttributes { Order = 526 }));
+
+            HighlightEnemyBots = config.Bind(
+                sectionShowBot,
+                "Highlight Enemy Bots 画皮对手",
+                true,
+                new ConfigDescription("enemy bots 对手", null,
                     new ConfigurationManagerAttributes { Order = 525 }));
 
-            ShowJiangHuTeammateHighlight = config.Bind(
+            HighlightNeutralBots = config.Bind(
                 sectionShowBot,
-                "Highlight JiangHu Teammates 江湖队友画皮",
-                true,
-                new ConfigDescription("Highlight friendly JiangHu bots with green color", null,
+                "Highlight Neutral Bots 画皮中立",
+                false,
+                new ConfigDescription("neutral/unaffiliated 中立", null,
                     new ConfigurationManagerAttributes { Order = 524 }));
 
-            HighlightJiangHuOpponents = config.Bind(
+            HighlightTeam = config.Bind(
                 sectionShowBot,
-                "Highlight JiangHu Opponents 江湖对手画皮",
+                "Highlight Bot War Team 画皮混战队伍",
                 true,
-                new ConfigDescription("Highlight enemy JiangHu bots with red color", null,
+                new ConfigDescription("Show DeathMatch enemy teams with their team colors 使用战队颜色显示混战队伍", null,
                     new ConfigurationManagerAttributes { Order = 523 }));
-
-            ShowJiangHuBotsHighlight = config.Bind(
-                sectionShowBot,
-                "Highlight All JiangHu Bots 江湖众生画皮",
-                false,
-                new ConfigDescription("Highlight all JiangHu bots regardless of hostility", null,
-                    new ConfigurationManagerAttributes { Order = 522 }));
-
-            HighlightAllBots = config.Bind(
-                sectionShowBot,
-                "Highlight All Bots 所有人机画皮",
-                false,
-                new ConfigDescription("Highlight all bots, not just JiangHu spawned bots", null,
-                    new ConfigurationManagerAttributes { Order = 521 }));
 
             FriendlyBotColor = config.Bind(
                 sectionShowBot,
-                "Friendly Highlight 队友色",
+                "Friendly Highlight 队友画色",
                 new Color(0.27f, 0.72f, 0.27f, 0.7f), // Green
                 new ConfigDescription("Highlight Color for friendly", null,
-                    new ConfigurationManagerAttributes { Order = 520 }));
+                    new ConfigurationManagerAttributes { Order = 522 }));
 
             EnemyBotColor = config.Bind(
                 sectionShowBot,
-                "Enemy Highlight 对手色",
+                "Enemy Highlight 对手画色",
                 new Color(0.96f, 0.27f, 0.02f, 0.7f), // Red
                 new ConfigDescription("Highlight Color for enemy", null,
-                    new ConfigurationManagerAttributes { Order = 519 }));
+                    new ConfigurationManagerAttributes { Order = 521 }));
 
             NeutralBotColor = config.Bind(
                 sectionShowBot,
-                "Neutral Highlight 中立色",
+                "Neutral Highlight 中立画色",
                 new Color(0.5f, 0.5f, 0.5f, 0.5f), // Gray
                 new ConfigDescription("Highlight Color for neutral", null,
-                    new ConfigurationManagerAttributes { Order = 518 }));
+                    new ConfigurationManagerAttributes { Order = 520 }));
 
             ShowBotIndicator = config.Bind(
                 sectionShowBot,
@@ -149,33 +166,33 @@ namespace JiangHu
                 new ConfigDescription("Enable indicator", null,
                     new ConfigurationManagerAttributes { Order = 517 }));
 
-            ShowJiangHuTeammate = config.Bind(
+            ShowFriendlyBots = config.Bind(
                 sectionShowBot,
-                "Show JiangHu Teammate 江湖队友草标",
+                "Show Teammate 队友草标",
                 true,
-                new ConfigDescription("Show friendly JiangHu marked bots", null,
+                new ConfigDescription("Show friendly bots", null,
                     new ConfigurationManagerAttributes { Order = 516 }));
 
-            ShowJiangHuOpponent = config.Bind(
+            ShowEnemyBots = config.Bind(
                 sectionShowBot,
-                "Show JiangHu Opponent 江湖对手草标",
+                "Show Opponent 对手草标",
                 true,
-                new ConfigDescription("Show enemy JiangHu marked bots (includes DeathMatch bosses)", null,
+                new ConfigDescription("Show enemy bots", null,
                     new ConfigurationManagerAttributes { Order = 515 }));
 
-            ShowJiangHuBots = config.Bind(
+            ShowNeutralBots = config.Bind(
                 sectionShowBot,
-                "Show JiangHu Bots 江湖众生草标",
+                "Show Neutral Bots 中立草标",
                 false,
-                new ConfigDescription("Show all JiangHu marked bots", null,
+                new ConfigDescription("Show Neutral bots", null,
                     new ConfigurationManagerAttributes { Order = 514 }));
 
-            ShowAllBots = config.Bind(
+            ShowTeam = config.Bind(
                 sectionShowBot,
-                "Show All Bots 所有人机草标",
-                false,
-                new ConfigDescription("Show all bots", null,
-                    new ConfigurationManagerAttributes { Order = 513 }));
+                "Show Bot War Team 混战队伍草标",
+                true,
+                new ConfigDescription("Show Bot War enemy teams 使用战队颜色显示混战对手队伍", null,
+                    new ConfigurationManagerAttributes { Order = 513 })); 
 
             ShowBotName = config.Bind(
                 sectionShowBot,
@@ -266,8 +283,8 @@ namespace JiangHu
             AddBotTypeConfig(config, WildSpawnType.followerSanitar, "Sanitar Follower", section3, order++);
             AddBotTypeConfig(config, WildSpawnType.followerZryachiy, "Zryachiy Follower", section3, order++);
             AddBotTypeConfig(config, WildSpawnType.followerBoar, "Kaban Follower", section3, order++);
-            AddBotTypeConfig(config, WildSpawnType.followerBoarClose1, "Kaban Close Guard", section3, order++);
-            AddBotTypeConfig(config, WildSpawnType.followerBoarClose2, "Kaban Close Guard", section3, order++);
+            AddBotTypeConfig(config, WildSpawnType.followerBoarClose1, "Kaban Close Guard 1", section3, order++);
+            AddBotTypeConfig(config, WildSpawnType.followerBoarClose2, "Kaban Close Guard 2", section3, order++);
             AddBotTypeConfig(config, WildSpawnType.bossBoarSniper, "Kaban Sniper Guard", section3, order++);
             AddBotTypeConfig(config, WildSpawnType.followerKolontayAssault, "Kolontay Assault Follower", section3, order++);
             AddBotTypeConfig(config, WildSpawnType.followerKolontaySecurity, "Kolontay Security Follower", section3, order++);
@@ -313,21 +330,7 @@ namespace JiangHu
 
     internal sealed class ConfigurationManagerAttributes
     {
-        public bool? ShowRangeAsPercent;
-        public System.Action<BepInEx.Configuration.ConfigEntryBase> CustomDrawer;
-        public CustomHotkeyDrawerFunc CustomHotkeyDrawer;
-        public delegate void CustomHotkeyDrawerFunc(BepInEx.Configuration.ConfigEntryBase setting, ref bool isCurrentlyAcceptingInput);
-        public bool? Browsable;
-        public string Category;
-        public object DefaultValue;
-        public bool? HideDefaultButton;
-        public bool? HideSettingName;
-        public string Description;
-        public string DispName;
+        public System.Action<ConfigEntryBase> CustomDrawer;
         public int? Order;
-        public bool? ReadOnly;
-        public bool? IsAdvanced;
-        public System.Func<object, string> ObjToStr;
-        public System.Func<string, object> StrToObj;
     }
 }

@@ -90,7 +90,6 @@ namespace JiangHu
         {
             _botQueue.Clear();
 
-            // ALWAYS get current enabled bot types from config
             foreach (var kvp in _botTypeConfigs)
             {
                 if (kvp.Value.Value)
@@ -101,7 +100,6 @@ namespace JiangHu
 
             if (_botQueue.Count == 0)
             {
-                Console.WriteLine("⚠️ [UniversalSpawner] No bot types enabled in config!");
                 return;
             }
 
@@ -138,7 +136,6 @@ namespace JiangHu
                 var botGame = Singleton<IBotGame>.Instance;
                 if (botGame?.BotsController == null) return;
 
-                // Initialize queue if needed
                 if (_botQueue == null || _botQueue.Count == 0 || _botQueueIndex >= _botQueue.Count)
                 {
                     InitializeBotQueue();
@@ -209,7 +206,6 @@ namespace JiangHu
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [UniversalSpawner] Exception: {ex.Message}");
                 NotificationManagerClass.DisplayMessageNotification(
                     "Spawn failed, try again later / 召唤失败，请稍后重试",
                     ENotificationDurationType.Default,
@@ -270,7 +266,6 @@ namespace JiangHu
                     }
                     else
                     {
-                        // Vanilla bot
                         var mainPlayer = Singleton<GameWorld>.Instance?.MainPlayer;
                         bool isHostile = mainPlayer != null &&
                                          bot.BotsGroup?.Enemies?.ContainsKey(mainPlayer) == true;
@@ -307,7 +302,6 @@ namespace JiangHu
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"❌ [RemoveBotsBySettings] Exception: {ex.Message}");
                 NotificationManagerClass.DisplayMessageNotification(
                     "Remove failed / 移除失败",
                     ENotificationDurationType.Default,
@@ -316,8 +310,6 @@ namespace JiangHu
                 );
             }
         }
-
-
 
         private string GetStartNotification(HostilityType hostility)
         {
@@ -367,7 +359,6 @@ namespace JiangHu
                     return Color.white;
             }
         }
-
         private Color GetSuccessColor(HostilityType hostility)
         {
             Color successColor;
@@ -526,6 +517,7 @@ namespace JiangHu
                 var spawnData = bot.SpawnProfileData as BotProfileDataClass;
                 if (spawnData == null) return;
 
+                // Handle UniversalSpawner bots
                 if (spawnData.SpawnParams?.Id_spawn?.StartsWith("JiangHu_Bot|") == true)
                 {
                     // Extract hostility from ID
@@ -570,33 +562,137 @@ namespace JiangHu
         {
             try
             {
-                var marker = __instance.gameObject.GetComponent<JiangHuBotMarker>();
-                if (marker == null) return;
-
                 var mainPlayer = Singleton<GameWorld>.Instance?.MainPlayer;
                 if (mainPlayer == null) return;
 
-                switch (marker.HostilityType)
+                var botGame = Singleton<IBotGame>.Instance;
+                if (botGame == null) return;
+
+                // Get bot's spawn marker
+                var spawnData = __instance.SpawnProfileData as BotProfileDataClass;
+                string spawnId = spawnData?.SpawnParams?.Id_spawn;
+
+                if (string.IsNullOrEmpty(spawnId)) return;
+
+                // Check if DeathMatch bot
+                bool isDeathMatchTeammate = spawnId.StartsWith("jianghu_deathmatch_teammate");
+                bool isDeathMatchEnemy = spawnId.StartsWith("jianghu_deathmatch_enemy_team");
+
+                // Check if UniversalSpawner bot
+                var marker = __instance.gameObject.GetComponent<JiangHuBotMarker>();
+                bool isUniversalBot = marker != null;
+
+                if (isDeathMatchTeammate)
                 {
-                    case HostilityType.Friendly:
+                    // DEATHMATCH TEAMMATE LOGIC
+                    // 1. Friendly to player
+                    __instance.BotsGroup?.RemoveEnemy(mainPlayer);
+                    if (mainPlayer.BotsGroup != null)
+                        mainPlayer.BotsGroup.RemoveEnemy(__instance);
+                    if (__instance.BotsGroup != null && !__instance.BotsGroup.Allies.Contains(mainPlayer))
+                        __instance.BotsGroup.AddAlly(mainPlayer);
 
-                        // Add player as ally
-                        if (__instance.BotsGroup != null)
-                            __instance.BotsGroup.AddAlly(mainPlayer);
+                    // 2. Friendly to other teammate bots
+                    // 3. Friendly to JiangHu_Bot|friendly bots
+                    // 4. Hostile to all other bots
+                    foreach (var otherBot in botGame.BotsController.Bots.BotOwners)
+                    {
+                        if (otherBot == null || otherBot.Profile.Id == __instance.Profile.Id) continue;
 
-                        // Make friendly to other JiangHu friendly bots
-                        var botGame = Singleton<IBotGame>.Instance;
-                        if (botGame != null && botGame.BotsController?.Bots?.BotOwners != null)
+                        var otherSpawnData = otherBot.SpawnProfileData as BotProfileDataClass;
+                        string otherSpawnId = otherSpawnData?.SpawnParams?.Id_spawn;
+                        var otherMarker = otherBot.gameObject.GetComponent<JiangHuBotMarker>();
+
+                        bool isOtherTeammate = otherSpawnId?.StartsWith("jianghu_deathmatch_teammate") == true;
+                        bool isOtherFriendly = otherMarker != null && otherMarker.HostilityType == HostilityType.Friendly;
+                        bool isOtherUniversalFriendly = otherSpawnId?.StartsWith("JiangHu_Bot|") == true &&
+                                                       otherSpawnId.Contains("|Friendly");
+
+                        if (isOtherTeammate || isOtherFriendly || isOtherUniversalFriendly)
                         {
+                            // Friendly to teammate, friendly bots, and JiangHu_Bot|friendly
+                            __instance.BotsGroup?.RemoveEnemy(otherBot);
+                            otherBot.BotsGroup?.RemoveEnemy(__instance);
+                            if (__instance.BotsGroup != null && !__instance.BotsGroup.Allies.Contains(otherBot.GetPlayer))
+                                __instance.BotsGroup.AddAlly(otherBot.GetPlayer);
+                        }
+                        else
+                        {
+                            // Hostile to everyone else
+                            if (__instance.BotsGroup != null && !__instance.BotsGroup.Enemies.ContainsKey(otherBot))
+                                __instance.BotsGroup.AddEnemy(otherBot, EBotEnemyCause.initial);
+                        }
+                    }
+                    return;
+                }
+
+                if (isDeathMatchEnemy)
+                {
+                    // DEATHMATCH ENEMY TEAM LOGIC
+                    string myTeamMarker = spawnId.Split('|')[0]; // Get "jianghu_deathmatch_enemy_teamX"
+
+                    // 1. Hostile to player
+                    if (__instance.BotsGroup != null && !__instance.BotsGroup.Enemies.ContainsKey(mainPlayer))
+                        __instance.BotsGroup.AddEnemy(mainPlayer, EBotEnemyCause.initial);
+
+                    // 2. Friendly to same team, hostile to other teams
+                    foreach (var otherBot in botGame.BotsController.Bots.BotOwners)
+                    {
+                        if (otherBot == null || otherBot.Profile.Id == __instance.Profile.Id) continue;
+
+                        var otherSpawnData = otherBot.SpawnProfileData as BotProfileDataClass;
+                        string otherSpawnId = otherSpawnData?.SpawnParams?.Id_spawn;
+
+                        if (string.IsNullOrEmpty(otherSpawnId)) continue;
+
+                        if (otherSpawnId.StartsWith(myTeamMarker))
+                        {
+                            // Same team - friendly
+                            __instance.BotsGroup?.RemoveEnemy(otherBot);
+                            otherBot.BotsGroup?.RemoveEnemy(__instance);
+                            if (__instance.BotsGroup != null && !__instance.BotsGroup.Allies.Contains(otherBot.GetPlayer))
+                                __instance.BotsGroup.AddAlly(otherBot.GetPlayer);
+                        }
+                        else
+                        {
+                            // Different team or player bot - hostile
+                            if (__instance.BotsGroup != null && !__instance.BotsGroup.Enemies.ContainsKey(otherBot))
+                                __instance.BotsGroup.AddEnemy(otherBot, EBotEnemyCause.initial);
+                        }
+                    }
+                    return;
+                }
+
+                if (isUniversalBot)
+                {
+                    // UNIVERSAL SPAWNER BOT LOGIC
+                    switch (marker.HostilityType)
+                    {
+                        case HostilityType.Friendly:
+                            __instance.BotsGroup?.RemoveEnemy(mainPlayer);
+                            if (mainPlayer.BotsGroup != null)
+                                mainPlayer.BotsGroup.RemoveEnemy(__instance);
+                            if (__instance.BotsGroup != null && !__instance.BotsGroup.Allies.Contains(mainPlayer))
+                                __instance.BotsGroup.AddAlly(mainPlayer);
+
                             foreach (var otherBot in botGame.BotsController.Bots.BotOwners)
                             {
-                                if (otherBot == null || otherBot.Profile.Id == __instance.Profile.Id)
-                                    continue;
+                                if (otherBot == null || otherBot.Profile.Id == __instance.Profile.Id) continue;
 
                                 var otherMarker = otherBot.gameObject.GetComponent<JiangHuBotMarker>();
-                                if (otherMarker != null && otherMarker.HostilityType == HostilityType.Friendly)
+                                var otherSpawnData = otherBot.SpawnProfileData as BotProfileDataClass;
+                                string otherSpawnId = otherSpawnData?.SpawnParams?.Id_spawn;
+
+                                bool isOtherFriendly = otherMarker != null && otherMarker.HostilityType == HostilityType.Friendly;
+                                bool isOtherTeammate = otherSpawnId?.StartsWith("jianghu_deathmatch_teammate") == true;
+                                bool isOtherUniversalFriendly = otherSpawnId?.StartsWith("JiangHu_Bot|") == true &&
+                                                               otherSpawnId.Contains("|Friendly");
+
+                                if (isOtherFriendly || isOtherTeammate || isOtherUniversalFriendly)
                                 {
-                                    if (__instance.BotsGroup != null && !__instance.BotsGroup.Enemies.ContainsKey(otherBot))
+                                    __instance.BotsGroup?.RemoveEnemy(otherBot);
+                                    otherBot.BotsGroup?.RemoveEnemy(__instance);
+                                    if (__instance.BotsGroup != null && !__instance.BotsGroup.Allies.Contains(otherBot.GetPlayer))
                                         __instance.BotsGroup.AddAlly(otherBot.GetPlayer);
                                 }
                                 else
@@ -605,56 +701,54 @@ namespace JiangHu
                                         __instance.BotsGroup.AddEnemy(otherBot, EBotEnemyCause.initial);
                                 }
                             }
-                        }
-                        break;
+                            break;
 
-                    case HostilityType.Enemy:
-                        break;
+                        case HostilityType.Enemy:
+                            if (__instance.BotsGroup != null && !__instance.BotsGroup.Enemies.ContainsKey(mainPlayer))
+                                __instance.BotsGroup.AddEnemy(mainPlayer, EBotEnemyCause.initial);
 
-                    case HostilityType.Neutral:
-                        break;
+                            foreach (var otherBot in botGame.BotsController.Bots.BotOwners)
+                            {
+                                if (otherBot == null || otherBot.Profile.Id == __instance.Profile.Id) continue;
+
+                                var otherMarker = otherBot.gameObject.GetComponent<JiangHuBotMarker>();
+                                if (otherMarker != null && otherMarker.HostilityType == HostilityType.Enemy)
+                                {
+                                    __instance.BotsGroup?.RemoveEnemy(otherBot);
+                                    otherBot.BotsGroup?.RemoveEnemy(__instance);
+                                    if (__instance.BotsGroup != null && !__instance.BotsGroup.Allies.Contains(otherBot.GetPlayer))
+                                        __instance.BotsGroup.AddAlly(otherBot.GetPlayer);
+                                }
+                                else
+                                {
+                                    if (__instance.BotsGroup != null && !__instance.BotsGroup.Enemies.ContainsKey(otherBot))
+                                        __instance.BotsGroup.AddEnemy(otherBot, EBotEnemyCause.initial);
+                                }
+                            }
+                            break;
+
+                        case HostilityType.Neutral:
+                            __instance.BotsGroup?.RemoveEnemy(mainPlayer, EBotEnemyCause.initial);
+
+                            if (__instance.BotsGroup != null && !__instance.BotsGroup.Neutrals.ContainsKey(mainPlayer))
+                            {
+                                __instance.BotsGroup.AddNeutral(mainPlayer);
+                            }
+                            if (mainPlayer.BotsGroup != null)
+                            {
+                                mainPlayer.BotsGroup.RemoveEnemy(__instance, EBotEnemyCause.initial);
+
+                                if (!mainPlayer.BotsGroup.Neutrals.ContainsKey(__instance))
+                                {
+                                    mainPlayer.BotsGroup.AddNeutral(__instance);
+                                }
+                            }
+                            break;
+                    }
+                    return;
                 }
             }
             catch { }
-        }
-    }
-
-    [HarmonyPatch(typeof(BotsGroup), "CheckAndAddEnemy")]
-    class BotsGroupCheckAndAddEnemyPatch
-    {
-        static bool Prefix(IPlayer player, bool ignoreAI, BotsGroup __instance, ref bool __result)
-        {
-            try
-            {
-                bool isJiangHuGroup = false;
-                HostilityType? groupHostility = null;
-
-                foreach (var member in __instance.Members)
-                {
-                    var marker = member.gameObject.GetComponent<JiangHuBotMarker>();
-                    if (marker != null)
-                    {
-                        isJiangHuGroup = true;
-                        groupHostility = marker.HostilityType;
-                        break;
-                    }
-                }
-
-                if (!isJiangHuGroup) return true;
-
-                // For FRIENDLY JiangHu bots, don't add player as enemy
-                if (groupHostility == HostilityType.Friendly)
-                {
-                    var mainPlayer = Singleton<GameWorld>.Instance?.MainPlayer;
-                    if (mainPlayer != null && player.ProfileId == mainPlayer.ProfileId)
-                    {
-                        __result = false;
-                        return false;
-                    }
-                }
-            }
-            catch { }
-            return true;
         }
     }
 
@@ -665,24 +759,26 @@ namespace JiangHu
         {
             try
             {
-                bool isJiangHuGroup = false;
-                HostilityType? groupHostility = null;
+                bool isJiangHuFriendlyGroup = false;
 
                 foreach (var member in __instance.Members)
                 {
                     var marker = member.gameObject.GetComponent<JiangHuBotMarker>();
-                    if (marker != null)
+                    if (marker != null && marker.HostilityType == HostilityType.Friendly)
                     {
-                        isJiangHuGroup = true;
-                        groupHostility = marker.HostilityType;
+                        isJiangHuFriendlyGroup = true;
+                        break;
+                    }
+
+                    var spawnData = member.SpawnProfileData as BotProfileDataClass;
+                    if (spawnData?.SpawnParams?.Id_spawn?.StartsWith("jianghu_deathmatch_teammate") == true)
+                    {
+                        isJiangHuFriendlyGroup = true;
                         break;
                     }
                 }
 
-                if (!isJiangHuGroup) return true;
-
-                // For FRIENDLY JiangHu bots, don't add player as enemy
-                if (groupHostility == HostilityType.Friendly)
+                if (isJiangHuFriendlyGroup)
                 {
                     var mainPlayer = Singleton<GameWorld>.Instance?.MainPlayer;
                     if (mainPlayer != null && person.ProfileId == mainPlayer.ProfileId)
@@ -692,6 +788,7 @@ namespace JiangHu
                 }
             }
             catch { }
+
             return true;
         }
     }
@@ -709,6 +806,7 @@ namespace JiangHu
         private Texture2D _hostileCircleTex;
         private Texture2D _friendlyCircleTex;
         private Texture2D _neutralCircleTex;
+
 
         private class BotInfo
         {
@@ -786,26 +884,50 @@ namespace JiangHu
                     float guiX = screenPos.x;
                     float guiY = Screen.height - screenPos.y;
 
-                    Texture2D circleTex;
-                    if (bot.IsJiangHuBot && bot.JiangHuHostility.HasValue)
+                    // Check if DeathMatch enemy team bot
+                    Texture2D circleTex = null;
+                    Rect circleRect = new Rect(guiX - 6, guiY - 6, 12, 12);
+
+                    // Check if DeathMatch enemy team bot
+                    var botOwner = GetBotOwnerByProfileId(kvp.Key);
+                    if (botOwner != null)
                     {
-                        switch (bot.JiangHuHostility.Value)
+                        var spawnData = botOwner.SpawnProfileData as BotProfileDataClass;
+                        string spawnId = spawnData?.SpawnParams?.Id_spawn;
+
+                        if (!string.IsNullOrEmpty(spawnId) && spawnId.StartsWith("jianghu_deathmatch_enemy_team"))
                         {
-                            case HostilityType.Friendly:
-                                circleTex = _friendlyCircleTex;
-                                break;
-                            case HostilityType.Enemy:
-                                circleTex = _hostileCircleTex;
-                                break;
-                            case HostilityType.Neutral:
-                                circleTex = _neutralCircleTex;
-                                break;
-                            default:
-                                circleTex = _neutralCircleTex;
-                                break;
+                            // Extract team marker
+                            string teamMarker = spawnId;
+                            if (teamMarker.Contains("|"))
+                            {
+                                teamMarker = teamMarker.Split('|')[0];
+                            }
+
+                            if (teamMarker.StartsWith("jianghu_deathmatch_enemy_team"))
+                            {
+                                if (F12Manager.ShowTeam.Value)
+                                {
+                                    // Use team color
+                                    Color teamColor = DeathMatchShared.GetTeamColor(teamMarker);
+                                    string hexColor = ColorUtility.ToHtmlStringRGB(teamColor);
+                                    if (!hexColor.StartsWith("#"))
+                                    {
+                                        hexColor = "#" + hexColor;
+                                    }
+                                    circleTex = CreateCircleTexture(12, hexColor);
+                                }
+                                else
+                                {
+                                    circleTex = _hostileCircleTex;
+                                }
+
+                                GUI.DrawTexture(circleRect, circleTex);
+                            }
                         }
                     }
-                    else
+
+                    if (circleTex == null)
                     {
                         if (bot.IsHostile)
                             circleTex = _hostileCircleTex;
@@ -816,10 +938,9 @@ namespace JiangHu
                     }
 
                     // Draw circle
-                    Rect circleRect = new Rect(guiX - 6, guiY - 6, 12, 12);
                     GUI.DrawTexture(circleRect, circleTex);
 
-                    // Build display text based on settings
+                    // Build display text
                     string displayText = "";
                     if (ShowBotName.Value)
                         displayText = bot.Name;
@@ -864,6 +985,24 @@ namespace JiangHu
             }
         }
 
+        private BotOwner GetBotOwnerByProfileId(string profileId)
+        {
+            var gameWorld = Singleton<GameWorld>.Instance;
+            if (gameWorld?.AllAlivePlayersList != null)
+            {
+                foreach (Player player in gameWorld.AllAlivePlayersList)
+                {
+                    if (player.ProfileId == profileId)
+                    {
+                        return player.AIData?.BotOwner;
+                    }
+                }
+            }
+            return null;
+        }
+
+
+
         private Texture2D CreateCircleTexture(int size, string hexColor)
         {
             Color color;
@@ -899,6 +1038,9 @@ namespace JiangHu
             return tex;
         }
 
+
+
+
         private void UpdateBots()
         {
             if (_gameWorld.AllAlivePlayersList == null) return;
@@ -920,11 +1062,25 @@ namespace JiangHu
 
             var role = botOwner.Profile?.Info?.Settings?.Role;
 
+            // Check if DeathMatch enemy team bot - SKIP regular hostility checks
+            var spawnData = botOwner.SpawnProfileData as BotProfileDataClass;
+            bool isDeathMatchEnemy = spawnData?.SpawnParams?.Id_spawn?.StartsWith("jianghu_deathmatch_enemy_") == true;
+
+            if (isDeathMatchEnemy)
+            {
+                // Handle DeathMatch enemy teams with custom colors
+                if (!F12Manager.ShowTeam.Value && !F12Manager.ShowEnemyBots.Value) return;
+
+                ProcessDeathMatchEnemyBot(botOwner, id, distance, currentTime);
+                return;
+            }
+
             // Check hostility
             bool isHostile = false;
             bool isFriendly = false;
+            bool isNeutral = false;
 
-            // Check if JiangHu bot
+            // Check if JiangHu bot (for reference only, not used for detection)
             var jiangHuMarker = botOwner.gameObject.GetComponent<JiangHuBotMarker>();
             bool isJiangHuBot = jiangHuMarker != null;
             HostilityType? jiangHuHostility = null;
@@ -934,7 +1090,7 @@ namespace JiangHu
                 jiangHuHostility = jiangHuMarker.HostilityType;
             }
 
-            // Check vanilla hostility
+            // Check vanilla hostility dictionaries
             if (botOwner.BotsGroup != null && _player != null)
             {
                 if (botOwner.BotsGroup.Enemies != null)
@@ -946,29 +1102,29 @@ namespace JiangHu
                 {
                     isFriendly = botOwner.BotsGroup.Allies.Contains(_player);
                 }
+
+                if (botOwner.BotsGroup.Neutrals != null)
+                {
+                    isNeutral = botOwner.BotsGroup.Neutrals.ContainsKey(_player);
+                }
             }
 
             // Check visibility based on settings
             bool shouldShow = false;
 
-            if (isJiangHuBot)
+            if (botOwner.BotsGroup != null && _player != null)
             {
-                var hostility = jiangHuMarker.HostilityType;
-
-                if (ShowJiangHuTeammate.Value && hostility == HostilityType.Friendly)
+                if (F12Manager.ShowFriendlyBots.Value && isFriendly)
                     shouldShow = true;
-                else if (ShowJiangHuOpponent.Value && hostility == HostilityType.Enemy)
+                else if (F12Manager.ShowEnemyBots.Value && isHostile)
                     shouldShow = true;
-                else if (ShowJiangHuBots.Value)
+                else if (F12Manager.ShowNeutralBots.Value && isNeutral)
                     shouldShow = true;
             }
 
-            if (ShowAllBots.Value)
-                shouldShow = true;
 
             if (!shouldShow) return;
 
-            // Add to display
             if (!_bots.TryGetValue(id, out var bot))
             {
                 string botName = player.Profile?.Nickname ?? UniversalBotSpawner.GetBotDisplayName(role.Value);
@@ -992,6 +1148,55 @@ namespace JiangHu
             bot.IsJiangHuBot = isJiangHuBot;
             bot.JiangHuHostility = jiangHuHostility;
             bot.LastSeen = currentTime;
+        }
+
+        private void ProcessDeathMatchEnemyBot(BotOwner bot, string id, float distance, float currentTime)
+        {
+            string spawnId = (bot.SpawnProfileData as BotProfileDataClass)?.SpawnParams?.Id_spawn;
+            if (string.IsNullOrEmpty(spawnId)) return;
+
+            string teamMarker = spawnId;
+            if (teamMarker.Contains("|"))
+            {
+                teamMarker = teamMarker.Split('|')[0];
+            }
+
+            if (!teamMarker.StartsWith("jianghu_deathmatch_enemy_team")) return;
+
+            if (!_bots.TryGetValue(id, out var botInfo))
+            {
+                string botName = bot.GetPlayer.Profile?.Nickname ?? UniversalBotSpawner.GetBotDisplayName(bot.Profile.Info.Settings.Role);
+                botInfo = new BotInfo
+                {
+                    Name = botName,
+                    Role = bot.Profile.Info.Settings.Role,
+                    IsHostile = true,
+                    IsFriendly = false,
+                    IsJiangHuBot = true,
+                    JiangHuHostility = null
+                };
+                _bots[id] = botInfo;
+            }
+
+            botInfo.Position = bot.Position;
+            botInfo.Distance = distance;
+            botInfo.LastSeen = currentTime;
+        }
+
+        private BotOwner GetBotOwnerFromPlayerId(string playerId)
+        {
+            var gameWorld = Singleton<GameWorld>.Instance;
+            if (gameWorld?.AllAlivePlayersList != null)
+            {
+                foreach (Player player in gameWorld.AllAlivePlayersList)
+                {
+                    if (player.ProfileId == playerId)
+                    {
+                        return player.AIData?.BotOwner;
+                    }
+                }
+            }
+            return null;
         }
 
         private void CleanupOldBots()
@@ -1046,10 +1251,10 @@ namespace JiangHu
         private bool _isInitialized = false;
         private GameWorld _gameWorld;
         private bool _lastHighlightEnabled = true;
-        private bool _lastHighlightAllBots = false;
-        private bool _lastHighlightTeammates = true;
-        private bool _lastHighlightOpponents = true;
-        private bool _lastHighlightAllJiangHu = false;
+        private bool _lastHighlightFriendly = true;
+        private bool _lastHighlightEnemy = true;
+        private bool _lastHighlightNeutral = false;
+        private bool _lastHighlightTeam = true;
 
 
         private class BotHighlightInfo
@@ -1083,14 +1288,14 @@ namespace JiangHu
 
                 _highlightMaterial = new Material(Shader.Find("Sprites/Default"));
                 _highlightMaterial.color = F12Manager.FriendlyBotColor.Value;
-                _highlightMaterial.SetFloat("_Mode", 2); 
+                _highlightMaterial.SetFloat("_Mode", 2);
                 _highlightMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
                 _highlightMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                 _highlightMaterial.SetInt("_ZWrite", 0);
                 _highlightMaterial.DisableKeyword("_ALPHATEST_ON");
                 _highlightMaterial.EnableKeyword("_ALPHABLEND_ON");
                 _highlightMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                _highlightMaterial.renderQueue = 3000; 
+                _highlightMaterial.renderQueue = 3000;
 
                 _isInitialized = true;
             }
@@ -1121,16 +1326,16 @@ namespace JiangHu
             {
                 foreach (Player player in _gameWorld.AllAlivePlayersList)
                 {
-                    if (player == null || player.IsYourPlayer)
-                        continue;
+                    if (player.IsYourPlayer) continue;
 
                     var botOwner = player.AIData?.BotOwner;
-                    if (botOwner == null || botOwner.IsDead)
-                        continue;
-
-                    ProcessBot(botOwner);
+                    if (botOwner != null && !botOwner.IsDead)
+                    {
+                        ProcessBot(botOwner);
+                    }
                 }
             }
+
             CleanupDeadBots();
         }
 
@@ -1139,17 +1344,17 @@ namespace JiangHu
             bool settingsChanged = false;
 
             if (_lastHighlightEnabled != F12Manager.ShowBotBodyHighlight.Value ||
-                _lastHighlightAllBots != F12Manager.HighlightAllBots.Value ||
-                _lastHighlightTeammates != F12Manager.ShowJiangHuTeammateHighlight.Value ||
-                _lastHighlightOpponents != F12Manager.HighlightJiangHuOpponents.Value ||
-                _lastHighlightAllJiangHu != F12Manager.ShowJiangHuBotsHighlight.Value)
+                _lastHighlightFriendly != F12Manager.HighlightFriendlyBots.Value ||
+                _lastHighlightEnemy != F12Manager.HighlightEnemyBots.Value ||
+                _lastHighlightNeutral != F12Manager.HighlightNeutralBots.Value ||
+                _lastHighlightTeam != F12Manager.HighlightTeam.Value) 
             {
                 settingsChanged = true;
                 _lastHighlightEnabled = F12Manager.ShowBotBodyHighlight.Value;
-                _lastHighlightAllBots = F12Manager.HighlightAllBots.Value;
-                _lastHighlightTeammates = F12Manager.ShowJiangHuTeammateHighlight.Value;
-                _lastHighlightOpponents = F12Manager.HighlightJiangHuOpponents.Value;
-                _lastHighlightAllJiangHu = F12Manager.ShowJiangHuBotsHighlight.Value;
+                _lastHighlightFriendly = F12Manager.HighlightFriendlyBots.Value;
+                _lastHighlightEnemy = F12Manager.HighlightEnemyBots.Value;
+                _lastHighlightNeutral = F12Manager.HighlightNeutralBots.Value;
+                _lastHighlightTeam = F12Manager.HighlightTeam.Value;
             }
 
             if (settingsChanged)
@@ -1175,22 +1380,33 @@ namespace JiangHu
 
                     var marker = botInfo.Bot.gameObject.GetComponent<JiangHuBotMarker>();
                     bool isJiangHuBot = marker != null;
+                    HostilityType? hostility = marker?.HostilityType;
+
                     bool shouldHighlight = false;
+                    var mainPlayer = Singleton<GameWorld>.Instance?.MainPlayer;
 
-                    if (isJiangHuBot)
+                    // Check DeathMatch enemy team bots
+                    var spawnData = botInfo.Bot.SpawnProfileData as BotProfileDataClass;
+                    bool isDeathMatchEnemy = spawnData?.SpawnParams?.Id_spawn?.StartsWith("jianghu_deathmatch_enemy_") == true;
+
+                    if (isDeathMatchEnemy)
                     {
-                        var hostility = marker.HostilityType;
-
-                        if (F12Manager.ShowJiangHuTeammateHighlight.Value && hostility == HostilityType.Friendly)
+                        // DeathMatch enemies check 3 settings
+                        shouldHighlight = F12Manager.HighlightTeam.Value ||
+                                         F12Manager.HighlightEnemyBots.Value;
+                    }
+                    else if (botInfo.Bot.BotsGroup != null && mainPlayer != null)
+                    {
+                        if (botInfo.Bot.BotsGroup.Neutrals.ContainsKey(mainPlayer) &&
+                            F12Manager.HighlightNeutralBots.Value)
                             shouldHighlight = true;
-                        else if (F12Manager.HighlightJiangHuOpponents.Value && hostility == HostilityType.Enemy)
+                        else if (F12Manager.HighlightFriendlyBots.Value &&
+                                 botInfo.Bot.BotsGroup.Allies.Contains(mainPlayer))
                             shouldHighlight = true;
-                        else if (F12Manager.ShowJiangHuBotsHighlight.Value)
+                        else if (F12Manager.HighlightEnemyBots.Value &&
+                                 botInfo.Bot.BotsGroup.Enemies.ContainsKey(mainPlayer))
                             shouldHighlight = true;
                     }
-
-                    if (F12Manager.HighlightAllBots.Value)
-                        shouldHighlight = true;
 
                     if (!shouldHighlight)
                     {
@@ -1227,32 +1443,75 @@ namespace JiangHu
 
         private void ProcessBot(BotOwner bot)
         {
+            // Check if DeathMatch enemy team bot - skip regular processing
+            var spawnData = bot.SpawnProfileData as BotProfileDataClass;
+            bool isDeathMatchEnemy = spawnData?.SpawnParams?.Id_spawn?.StartsWith("jianghu_deathmatch_enemy_") == true;
+
+            if (isDeathMatchEnemy)
+            {
+                if (F12Manager.HighlightTeam.Value ||
+                    F12Manager.HighlightEnemyBots.Value)
+                {
+                    ProcessDeathMatchEnemyHighlight(bot);
+                }
+                return;
+            }
+
             string botId = bot.name;
+
+            var mainPlayer = Singleton<GameWorld>.Instance?.MainPlayer;
 
             if (_highlightedBots.ContainsKey(botId))
             {
-                _highlightedBots[botId].IsAlive = !bot.IsDead;
-                return;
+                var existingInfo = _highlightedBots[botId];
+                existingInfo.IsAlive = !bot.IsDead;
+
+                // Recalculate hostility to check if changed
+                HostilityType currentHostility = existingInfo.Hostility;
+                HostilityType newHostility = HostilityType.Neutral;
+
+                if (bot.BotsGroup != null && mainPlayer != null)
+                {
+                    if (bot.BotsGroup.Enemies.ContainsKey(mainPlayer))
+                        newHostility = HostilityType.Enemy;
+                    else if (bot.BotsGroup.Allies.Contains(mainPlayer))
+                        newHostility = HostilityType.Friendly;
+                    else if (bot.BotsGroup.Neutrals.ContainsKey(mainPlayer))
+                        newHostility = HostilityType.Neutral;
+                }
+
+                // If hostility changed, update highlight
+                if (currentHostility != newHostility)
+                {
+                    RestoreBotMaterials(existingInfo);
+                    _highlightedBots.Remove(botId);
+                    // Continue to re-process with new hostility
+                }
+                else
+                {
+                    return; 
+                }
             }
 
             var marker = bot.gameObject.GetComponent<JiangHuBotMarker>();
             bool isJiangHuBot = marker != null;
             bool shouldShow = false;
 
-            if (isJiangHuBot)
+            // Vanilla hostility check
+            if (bot.BotsGroup != null && mainPlayer != null)
             {
-                var hostility = marker.HostilityType;
+                if (bot.BotsGroup.Neutrals.ContainsKey(mainPlayer) &&
+                    F12Manager.HighlightNeutralBots.Value)
+                    shouldShow = true;
 
-                if (F12Manager.ShowJiangHuTeammateHighlight.Value && hostility == HostilityType.Friendly)
+                else if (F12Manager.HighlightFriendlyBots.Value &&
+                         bot.BotsGroup.Allies.Contains(mainPlayer))
                     shouldShow = true;
-                else if (F12Manager.HighlightJiangHuOpponents.Value && hostility == HostilityType.Enemy)
-                    shouldShow = true;
-                else if (F12Manager.ShowJiangHuBotsHighlight.Value)
+
+                else if (F12Manager.HighlightEnemyBots.Value &&
+                         bot.BotsGroup.Enemies.ContainsKey(mainPlayer))
                     shouldShow = true;
             }
-
-            if (F12Manager.HighlightAllBots.Value)
-                shouldShow = true;
 
             if (!shouldShow) return;
 
@@ -1266,7 +1525,19 @@ namespace JiangHu
                 originalMaterials.Add(renderer.sharedMaterials);
             }
 
-            Color highlightColor = GetHighlightColor(isJiangHuBot ? marker.HostilityType : HostilityType.Neutral);
+            HostilityType vanillaHostility = HostilityType.Neutral;
+            if (bot.BotsGroup != null && mainPlayer != null)
+            {
+                if (bot.BotsGroup.Enemies.ContainsKey(mainPlayer))
+                    vanillaHostility = HostilityType.Enemy;
+                else if (bot.BotsGroup.Allies.Contains(mainPlayer))
+                    vanillaHostility = HostilityType.Friendly;
+                else if (bot.BotsGroup.Neutrals.ContainsKey(mainPlayer))
+                    vanillaHostility = HostilityType.Neutral;
+            }
+
+            Color highlightColor = GetHighlightColor(vanillaHostility);
+
             Material highlightMat = new Material(_highlightMaterial);
             highlightMat.color = highlightColor;
 
@@ -1282,7 +1553,7 @@ namespace JiangHu
             {
                 Bot = bot,
                 Renderers = renderers,
-                Hostility = isJiangHuBot ? marker.HostilityType : HostilityType.Neutral,
+                Hostility = vanillaHostility,
                 IsJiangHuBot = isJiangHuBot,
                 IsAlive = !bot.IsDead,
                 OriginalMaterials = originalMaterials.SelectMany(arr => arr).ToArray()
@@ -1290,6 +1561,101 @@ namespace JiangHu
 
             _highlightedBots[botId] = botInfo;
         }
+
+        private void ProcessDeathMatchEnemyHighlight(BotOwner bot)
+        {
+            string botId = bot.name;
+            string spawnId = (bot.SpawnProfileData as BotProfileDataClass)?.SpawnParams?.Id_spawn;
+            if (string.IsNullOrEmpty(spawnId)) return;
+
+            // Extract team marker
+            string teamMarker = spawnId;
+            int pipeIndex = teamMarker.IndexOf('|');
+            if (pipeIndex > 0)
+            {
+                teamMarker = teamMarker.Substring(0, pipeIndex);
+            }
+
+            // Ensure it's a deathmatch enemy team
+            if (!teamMarker.StartsWith("jianghu_deathmatch_enemy_team")) return;
+
+            if (!_highlightedBots.ContainsKey(botId))
+            {
+                var renderers = bot.GetComponentsInChildren<Renderer>();
+                if (renderers.Length == 0) return;
+
+                var originalMaterials = new List<Material[]>();
+                foreach (var renderer in renderers)
+                {
+                    originalMaterials.Add(renderer.sharedMaterials);
+                }
+
+                // DECIDE WHICH COLOR TO USE:
+                Color highlightColor;
+
+                if (F12Manager.HighlightTeam.Value)
+                {
+                    // Use team color when HighlightTeam is enabled
+                    highlightColor = DeathMatchShared.GetTeamColor(teamMarker);
+                }
+                else
+                {
+                    // Fall back to enemy color when only HighlightEnemyBots is enabled
+                    highlightColor = F12Manager.EnemyBotColor.Value;
+                }
+
+                Material highlightMat = new Material(_highlightMaterial);
+                highlightMat.color = highlightColor;
+
+                for (int i = 0; i < renderers.Length; i++)
+                {
+                    var renderer = renderers[i];
+                    var materials = new List<Material>(renderer.sharedMaterials);
+                    materials.Add(highlightMat);
+                    renderer.sharedMaterials = materials.ToArray();
+                }
+
+                var botInfo = new BotHighlightInfo
+                {
+                    Bot = bot,
+                    Renderers = renderers,
+                    Hostility = HostilityType.Enemy,
+                    IsJiangHuBot = true,
+                    IsAlive = !bot.IsDead,
+                    OriginalMaterials = originalMaterials.SelectMany(arr => arr).ToArray()
+                };
+
+                _highlightedBots[botId] = botInfo;
+            }
+            else
+            {
+                var botInfo = _highlightedBots[botId];
+                botInfo.IsAlive = !bot.IsDead;
+
+                // Update color when HighlightTeam setting changes
+                if (botInfo.Renderers != null && botInfo.Renderers.Length > 0)
+                {
+                    // Find the highlight material in the last renderer
+                    var lastRenderer = botInfo.Renderers.Last();
+                    if (lastRenderer.sharedMaterials.Length > 0)
+                    {
+                        var lastMaterial = lastRenderer.sharedMaterials.Last();
+                        if (lastMaterial != null)
+                        {
+                            Color targetColor = F12Manager.HighlightTeam.Value
+                                ? DeathMatchShared.GetTeamColor(teamMarker)
+                                : F12Manager.EnemyBotColor.Value;
+
+                            if (lastMaterial.color != targetColor)
+                            {
+                                lastMaterial.color = targetColor;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
 
         private Color GetHighlightColor(HostilityType hostility)
         {

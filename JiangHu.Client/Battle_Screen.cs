@@ -11,12 +11,14 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEngine;
+using static JiangHu.BattleScreenPlugin;
+using static JiangHu.DeathMatchBotSpawn;
+using static UnityEngine.EventSystems.EventTrigger;
 
 namespace JiangHu
 {
     public class BattleScreenPlugin : MonoBehaviour
     {
-        private static ManualLogSource Logger;
         private static BattleScreenPlugin Instance;
 
         private static List<DamageLogEntry> guiLog = new List<DamageLogEntry>();
@@ -52,6 +54,8 @@ namespace JiangHu
         private static Dictionary<string, float> lastHitTimes = new Dictionary<string, float>();
         private static Dictionary<string, DamageInfoCache> damageInfoCache = new Dictionary<string, DamageInfoCache>();
         private static List<string> killedBots = new List<string>();
+        internal static Dictionary<string, TeamStats> teamStats = new Dictionary<string, TeamStats>();
+        public class TeamStats { public int Kills = 0; public int Deaths = 0; }
 
         private static Vector2 mainPanelDragOffset = Vector2.zero;
         private static Vector2 killPanelDragOffset = Vector2.zero;
@@ -62,6 +66,14 @@ namespace JiangHu
         private static float mainPanelY = 100f;
         private static float killPanelX = 0f;
         private static float killPanelY = 0f;
+
+        private static bool draggingDeathMatchPanel = false;
+        private static Vector2 deathMatchPanelDragOffset = Vector2.zero;
+        private static float deathMatchPanelX = 0f;
+        private static float deathMatchPanelY = 20f;
+
+        private static List<string> playerKilledBots = new List<string>();
+        private static List<string> allKilledBots = new List<string>();
 
         private enum CursorState
         {
@@ -91,15 +103,12 @@ namespace JiangHu
 
             try
             {
-                var harmony = new Harmony("com.jianghu.battlescreen");
-                harmony.PatchAll();
-
                 fileWriteTimer = new System.Threading.Timer(WriteBufferToFile, null,
                     System.Threading.Timeout.Infinite, System.Threading.Timeout.Infinite);
             }
             catch (Exception ex)
             {
-                Logger.LogError($"Failed to load Battle Screen: {ex}");
+                Console.WriteLine($"\x1b[31m❌ [BattleScreen] Failed to load: {ex.Message}\x1b[0m");
             }
         }
 
@@ -375,7 +384,7 @@ namespace JiangHu
                 GUI.Label(new Rect(killPanelRect.x + 10f, killPanelRect.y + 10f, killPanelWidth - 20f, 25f),
                           "KILLED 击杀", titleStyle);
 
-                var groupedKills = killedBots.GroupBy(x => x)
+                var groupedKills = playerKilledBots.GroupBy(x => x)
                                             .Select(g => new { Type = g.Key, Count = g.Count() })
                                             .OrderByDescending(x => x.Count)
                                             .ThenBy(x => x.Type);
@@ -388,6 +397,11 @@ namespace JiangHu
                               killText, detailStyle);
                     killY += 25f;
                 }
+            }
+
+            if (DeathMatchCore.DeathMatchModeActive && DeathMatchBotSpawn.TeamMembers != null)
+            {
+                DrawDeathMatchTeamsPanel();
             }
         }
 
@@ -493,6 +507,126 @@ namespace JiangHu
             }
         }
 
+
+        private void DrawDeathMatchTeamsPanel()
+        {
+            if (!DeathMatchCore.DeathMatchModeActive || DeathMatchBotSpawn.TeamMembers == null) return;
+
+            float panelWidth = 350f;
+            float panelHeight = 100f + (DeathMatchBotSpawn.TeamMembers.Count * 25f);
+            if (deathMatchPanelX == 0f && deathMatchPanelY == 20f)
+            {
+                deathMatchPanelX = Screen.width / 2 - panelWidth / 2;
+                deathMatchPanelY = 20f;
+            }
+
+            float panelX = deathMatchPanelX;
+            float panelY = deathMatchPanelY;
+
+            Rect panelRect = new Rect(panelX, panelY, panelWidth, panelHeight);
+
+            if (cursorState == CursorState.Unlocked)
+            {
+                Rect dragHandle = new Rect(panelRect.x, panelRect.y, panelRect.width, 30f);
+                Vector2 mousePos = Event.current.mousePosition;
+
+                if (Event.current.type == EventType.MouseDown && dragHandle.Contains(mousePos))
+                {
+                    draggingDeathMatchPanel = true;
+                    deathMatchPanelDragOffset = new Vector2(mousePos.x - panelRect.x, mousePos.y - panelRect.y);
+                }
+
+                if (draggingDeathMatchPanel)
+                {
+                    if (Event.current.type == EventType.MouseDrag)
+                    {
+                        deathMatchPanelX = mousePos.x - deathMatchPanelDragOffset.x;
+                        deathMatchPanelY = mousePos.y - deathMatchPanelDragOffset.y;
+                        panelX = deathMatchPanelX;
+                        panelY = deathMatchPanelY;
+                        panelRect = new Rect(panelX, panelY, panelWidth, panelHeight);
+                    }
+
+                    if (Event.current.type == EventType.MouseUp)
+                    {
+                        draggingDeathMatchPanel = false;
+                    }
+                }
+            }
+
+            GUI.Box(panelRect, "", guiStyle);
+
+            // Title
+            GUI.Label(new Rect(panelRect.x + 10f, panelRect.y + 10f, panelWidth - 20f, 25f),
+                     "Death Match Stats 混战数据", titleStyle);
+
+            // Get alive counts
+            var gameWorld = Singleton<GameWorld>.Instance;
+            Dictionary<string, int> aliveCounts = new Dictionary<string, int>();
+            foreach (var team in DeathMatchBotSpawn.TeamMembers.Keys)
+            {
+                aliveCounts[team] = 0;
+            }
+
+            if (gameWorld?.AllAlivePlayersList != null)
+            {
+                foreach (Player player in gameWorld.AllAlivePlayersList)
+                {
+                    if (player.IsYourPlayer) continue;
+
+                    var botOwner = player.AIData?.BotOwner;
+                    if (botOwner == null) continue;
+
+                    var spawnData = botOwner.SpawnProfileData as BotProfileDataClass;
+                    string spawnId = spawnData?.SpawnParams?.Id_spawn;
+                    if (string.IsNullOrEmpty(spawnId)) continue;
+
+                    string teamMarker = spawnId;
+                    if (teamMarker.Contains("|"))
+                    {
+                        teamMarker = teamMarker.Split('|')[0];
+                    }
+
+                    if (teamMarker.StartsWith("jianghu_deathmatch_") && aliveCounts.ContainsKey(teamMarker))
+                    {
+                        aliveCounts[teamMarker]++;
+                    }
+                }
+            }
+
+            // Draw teams
+            float yPos = panelRect.y + 40f;
+            foreach (var team in DeathMatchBotSpawn.TeamMembers.Keys)
+            {
+                string teamName = team == "jianghu_deathmatch_teammate" ? "Player Team" :
+                                 team.Replace("jianghu_deathmatch_enemy_team", "Enemy Team ");
+
+                Color teamColor = DeathMatchShared.GetTeamColor(team);
+                GUIStyle teamStyle = new GUIStyle(detailStyle);
+                teamStyle.normal.textColor = teamColor;
+
+                int alive = aliveCounts.ContainsKey(team) ? aliveCounts[team] : 0;
+                int kills = teamStats.ContainsKey(team) ? teamStats[team].Kills : 0;
+                int deaths = DeathMatchBotSpawn.GetTeamDeaths(team);
+
+                string teamText = $"{teamName}: Active 在场 {alive} | KD 歼亡 {kills}/{deaths}";
+                GUI.Label(new Rect(panelRect.x + 10f, yPos, panelWidth - 20f, 25f), teamText, teamStyle);
+                yPos += 25f;
+            }
+
+            // Teleport stats
+            if (DeathMatchCore.Instance != null)
+            {
+                int used = DeathMatchCore.Instance.TeleportCount;
+                int totalLives = DeathMatchShared.GetDeathMatchLivesFromConfig();
+                int left = Math.Max(0, totalLives - used);
+
+                string teleportText = $"Teleport 复活: Used 已用 {used} | Left 剩余 {left}";
+                GUI.Label(new Rect(panelRect.x + 10f, yPos + 10f, panelWidth - 20f, 25f),
+                         teleportText, detailStyle);
+            }
+        }
+
         private void InitializeGUIStyles()
         {
             Texture2D bgTexture = CreateTexture(2, 2, new Color(0f, 0f, 0f, 0.8f));
@@ -568,6 +702,10 @@ namespace JiangHu
             guiLog.Clear();
             fileBuffer.Clear();
             killedBots.Clear();
+            playerKilledBots.Clear();
+            allKilledBots.Clear();
+            teamStats.Clear();
+            teamDeaths.Clear();
 
             string logDir = Path.Combine(Directory.GetCurrentDirectory(), "BepInEx", "plugins", "JiangHu.Client", "fight_log");
             Directory.CreateDirectory(logDir);
@@ -812,15 +950,38 @@ namespace JiangHu
                     if (entry.wasKill)
                     {
                         raidStats.kills++;
+
+                        if (damageInfo.Player?.iPlayer?.ProfileId == mainPlayer.ProfileId)
+                        {
+                            playerKilledBots.Add(entry.botType);
+                        }
+
                         killedBots.Add(entry.botType);
                     }
                     if (bodyPartType == EBodyPart.Head && bodyDamage > 0)
                         raidStats.headshots++;
 
+
+
                     guiLog.Insert(0, entry);
                     AddHitToBuffer(entry);
                 }
                 catch { }
+            }
+            private static string GetDeathMatchTeamFromPlayer(Player player)
+            {
+                var botOwner = player.AIData?.BotOwner;
+                if (botOwner == null) return null;
+
+                var spawnData = botOwner.SpawnProfileData as BotProfileDataClass;
+                string spawnId = spawnData?.SpawnParams?.Id_spawn;
+
+                if (!string.IsNullOrEmpty(spawnId) && spawnId.StartsWith("jianghu_deathmatch_"))
+                {
+                    return spawnId.Split('|')[0];
+                }
+
+                return null;
             }
         }
 
@@ -980,4 +1141,48 @@ namespace JiangHu
             fileWriteTimer?.Dispose();
         }
     }
+
+    #region DeathMatch Unified Kill Tracking
+    [HarmonyPatch(typeof(BotEventHandler), "Kill")]
+    class BotEventHandler_Kill_Patch
+    {
+        [HarmonyPostfix]
+        private static void Postfix(IPlayer killer, IPlayer target)
+        {
+            try
+            {
+                if (!DeathMatchCore.DeathMatchModeActive) return;
+
+                string killerTeam = GetKillerTeam(killer);
+                if (killerTeam == null) return;
+
+                if (!teamStats.ContainsKey(killerTeam))
+                    teamStats[killerTeam] = new TeamStats();
+
+                teamStats[killerTeam].Kills++;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"\x1b[31m❌ [DeathMatchKill] Error: {ex.Message}\x1b[0m");
+            }
+        }
+
+        private static string GetKillerTeam(IPlayer killer)
+        {
+            if (killer.IsYourPlayer)
+                return "jianghu_deathmatch_teammate";
+
+            var botOwner = killer.AIData?.BotOwner;
+            if (botOwner == null) return null;
+
+            var spawnData = botOwner.SpawnProfileData as BotProfileDataClass;
+            string spawnId = spawnData?.SpawnParams?.Id_spawn;
+            if (string.IsNullOrEmpty(spawnId)) return null;
+
+            return DeathMatchBotSpawn.GetTeamMarkerFromSpawnId(spawnId);
+        }
+    }
+    #endregion
+
 }
+

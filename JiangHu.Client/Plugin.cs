@@ -1,11 +1,7 @@
 ﻿using BepInEx;
-using BepInEx.Configuration;
-using EFT;
 using HarmonyLib;
 using JiangHu.ExfilRandomizer;
 using JiangHu.Patches;
-using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace JiangHu
@@ -13,28 +9,18 @@ namespace JiangHu
     [BepInPlugin("jianghu", "Jiang Hu", "1.0.0")]
     public class Plugin : BaseUnityPlugin
     {
+        private GameObject pluginObj;
         private MusicPlayer musicPlayer;
         private ChangeBackground changeBackground;
         private WorldShaper worldShaper;
-        private ConfigEntry<KeyboardShortcut> WorldShaperHotkey;
-
         private RuleSettingsManager ruleSettingsManager;
-        private GameObject pluginObj;
-        private ConfigEntry<KeyboardShortcut> ShowSettingsHotkey;
-        private ConfigEntry<bool> ShowSettingsManager;
-
-        private ConfigEntry<bool> ShowDescription;
         private DescriptionLoader descriptionLoader;
 
-        private DeathMatch DeathMatch;
-        private ConfigEntry<KeyboardShortcut> SwapBotHotkey;
 
         void Awake()
         {
             F12Manager.Init(Config);
 
-
-            // Initialize plugin components
             pluginObj = new GameObject("JiangHuPlugin");
             DontDestroyOnLoad(pluginObj);
             pluginObj.hideFlags = HideFlags.HideAndDontSave;
@@ -63,10 +49,15 @@ namespace JiangHu
             pluginObj.AddComponent<XPConditionManager>();
             pluginObj.AddComponent<RaidStatusConditionManager>();
 
-            DeathMatch = pluginObj.AddComponent<DeathMatch>();
-            DeathMatch.Init();
+
 
             pluginObj.AddComponent<BattleScreenPlugin>();
+
+            pluginObj.AddComponent<DeathMatchUI>();
+            pluginObj.AddComponent<DeathMatchCore>();
+            pluginObj.AddComponent<DeathMatchPlayer>();
+            pluginObj.AddComponent<TeleportCommand>();
+            pluginObj.AddComponent<FreeCameraController>();
 
             var universalSpawner = pluginObj.AddComponent<UniversalBotSpawner>();
             universalSpawner.Init(F12Manager.UniversalSpawnHotkey,
@@ -87,9 +78,7 @@ namespace JiangHu
             var harmony = new Harmony("jianghu.all");
             harmony.PatchAll();
 
-            new DeathMatchButtonPatch().Enable();
 
-            BossSpawnSystem.initialSpawnDone = false;
         }
 
         private void UpdateCursorState()

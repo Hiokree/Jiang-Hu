@@ -17,14 +17,328 @@ using System.Reflection;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
+using UnityEngine.AI;
+using EFT.CameraControl;
+
 
 namespace JiangHu
 {
-    public class DeathMatch : MonoBehaviour
+    #region Shared Utilities
+    public static class DeathMatchShared
     {
-        public static DeathMatch Instance { get; private set; }
+        public static List<string> GetEnabledMapsFromConfig()
+        {
+            List<string> enabledMaps = new List<string>();
+
+            try
+            {
+                string modPath = Path.GetDirectoryName(Application.dataPath);
+                string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
+
+                if (File.Exists(configPath))
+                {
+                    string json = File.ReadAllText(configPath);
+                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+                    if (configDict != null)
+                    {
+                        Dictionary<string, string> mapConfigKeys = new Dictionary<string, string>
+                        {
+                            { "Woods", "Enable_Woods" },
+                            { "factory4_day", "Enable_factoryday" },
+                            { "factory4_night", "Enable_factorynight" },
+                            { "bigmap", "Enable_bigmap" },
+                            { "Shoreline", "Enable_Shoreline" },
+                            { "Interchange", "Enable_Interchange" },
+                            { "RezervBase", "Enable_RezervBase" },
+                            { "laboratory", "Enable_laboratory" },
+                            { "Lighthouse", "Enable_Lighthouse" },
+                            { "TarkovStreets", "Enable_TarkovStreets" },
+                            { "Sandbox", "Enable_Sandbox" },
+                            { "Sandbox_high", "Enable_Sandboxhigh" },
+                            { "labyrinth", "Enable_labyrinth" }
+                        };
+
+                        foreach (var kvp in mapConfigKeys)
+                        {
+                            string mapName = kvp.Key;
+                            string configKey = kvp.Value;
+
+                            if (configDict.ContainsKey(configKey) && configDict[configKey] is bool && (bool)configDict[configKey])
+                            {
+                                enabledMaps.Add(mapName);
+                            }
+                        }
+
+                        if (enabledMaps.Count == 0)
+                        {
+                            enabledMaps.AddRange(mapConfigKeys.Keys);
+                        }
+                    }
+                }
+                else
+                {
+                    enabledMaps.AddRange(new[] {
+                        "Woods", "factory4_day", "factory4_night", "bigmap", "Shoreline",
+                        "Interchange", "RezervBase", "laboratory", "Lighthouse", "TarkovStreets",
+                        "Sandbox", "Sandbox_high", "labyrinth"
+                    });
+                }
+            }
+            catch
+            {
+                enabledMaps.AddRange(new[] {
+                    "Woods", "factory4_day", "factory4_night", "bigmap", "Shoreline",
+                    "Interchange", "RezervBase", "laboratory", "Lighthouse", "TarkovStreets",
+                    "Sandbox", "Sandbox_high", "labyrinth"
+                });
+            }
+
+            return enabledMaps;
+        }
+
+        public static int GetDeathMatchLivesFromConfig()
+        {
+            try
+            {
+                string modPath = Path.GetDirectoryName(Application.dataPath);
+                string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
+
+                if (File.Exists(configPath))
+                {
+                    string json = File.ReadAllText(configPath);
+                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+                    if (configDict != null && configDict.ContainsKey("DeathMatch_Lives"))
+                    {
+                        return Convert.ToInt32(configDict["DeathMatch_Lives"]);
+                    }
+                }
+            }
+            catch { }
+            return 0;
+        }
+
+        public static int GetOurSquadNumber()
+        {
+            try
+            {
+                string modPath = Path.GetDirectoryName(Application.dataPath);
+                string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
+
+                if (File.Exists(configPath))
+                {
+                    string json = File.ReadAllText(configPath);
+                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+                    if (configDict != null && configDict.ContainsKey("Our_SquadNumber"))
+                    {
+                        return Convert.ToInt32(configDict["Our_SquadNumber"]);
+                    }
+                }
+            }
+            catch { }
+            return 0; 
+        }
+
+        public static int GetEnemySquadNumber()
+        {
+            try
+            {
+                string modPath = Path.GetDirectoryName(Application.dataPath);
+                string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
+
+                if (File.Exists(configPath))
+                {
+                    string json = File.ReadAllText(configPath);
+                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+                    if (configDict != null && configDict.ContainsKey("Enemy_SquadNumber"))
+                    {
+                        return Convert.ToInt32(configDict["Enemy_SquadNumber"]);
+                    }
+                }
+            }
+            catch { }
+            return 0; 
+        }
+
+        public static int GetEnemyTeamCount()
+        {
+            try
+            {
+                string modPath = Path.GetDirectoryName(Application.dataPath);
+                string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
+
+                if (File.Exists(configPath))
+                {
+                    string json = File.ReadAllText(configPath);
+                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+                    if (configDict != null && configDict.ContainsKey("Enemy_Team_Number"))
+                    {
+                        int count = Convert.ToInt32(configDict["Enemy_Team_Number"]);
+                        return Math.Max(0, Math.Min(count, 6)); // Limit to 6 teams for colors
+                    }
+                }
+            }
+            catch { }
+            return 0; 
+        }
+
+        public static List<WildSpawnType> GetWeightedBotPool()
+        {
+            var botPool = new List<WildSpawnType>();
+
+            try
+            {
+                string modPath = Path.GetDirectoryName(Application.dataPath);
+                string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
+
+                if (File.Exists(configPath))
+                {
+                    string json = File.ReadAllText(configPath);
+                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+
+                    if (configDict != null)
+                    {
+                        var botConfigMapping = new Dictionary<string, WildSpawnType>
+                        {
+                            { "PMC_BEAR", WildSpawnType.pmcBEAR },
+                            { "PMC_USEC", WildSpawnType.pmcUSEC },
+                            { "Scav", WildSpawnType.assault },
+                            { "Raider", WildSpawnType.pmcBot },
+                            { "Rogue", WildSpawnType.exUsec },
+                            { "Smuggler", WildSpawnType.arenaFighterEvent },
+                            { "Cultist Warrior", WildSpawnType.sectantWarrior },
+                            { "Scav Sniper", WildSpawnType.marksman },
+                            { "Reshala", WildSpawnType.bossBully },
+                            { "Gluhar", WildSpawnType.bossGluhar },
+                            { "Shturman", WildSpawnType.bossKojaniy },
+                            { "Sanitar", WildSpawnType.bossSanitar },
+                            { "Killa", WildSpawnType.bossKilla },
+                            { "Tagilla", WildSpawnType.bossTagilla },
+                            { "Knight", WildSpawnType.bossKnight },
+                            { "Zryachiy", WildSpawnType.bossZryachiy },
+                            { "Kaban", WildSpawnType.bossBoar },
+                            { "Kolontay", WildSpawnType.bossKolontay },
+                            { "Partisan", WildSpawnType.bossPartisan },
+                            { "Big Pipe", WildSpawnType.followerBigPipe },
+                            { "Bird Eye", WildSpawnType.followerBirdEye },
+                            { "Tagilla_Aggro", WildSpawnType.bossTagillaAgro },
+                            { "Killa_Aggro", WildSpawnType.bossKillaAgro },
+                            { "Cultist Priest", WildSpawnType.sectantPriest }
+                        };
+
+                        foreach (var kvp in botConfigMapping)
+                        {
+                            string configKey = kvp.Key;
+                            WildSpawnType spawnType = kvp.Value;
+
+                            if (configDict.ContainsKey(configKey))
+                            {
+                                int weight = Convert.ToInt32(configDict[configKey]);
+                                for (int i = 0; i < weight; i++)
+                                {
+                                    botPool.Add(spawnType);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+
+            // Default pool if empty
+            if (botPool.Count == 0)
+            {
+                botPool.AddRange(new[] {
+                    WildSpawnType.bossKnight,
+                    WildSpawnType.bossGluhar,
+                    WildSpawnType.pmcUSEC,
+                    WildSpawnType.pmcBEAR,
+                    WildSpawnType.bossKilla,
+                    WildSpawnType.bossTagilla
+                });
+            }
+
+            return botPool;
+        }
+
+        public static string GetTeamMarker(int teamIndex)
+        {
+            if (teamIndex == 0)
+                return "jianghu_deathmatch_teammate";
+            else
+                return $"jianghu_deathmatch_enemy_team{teamIndex}";
+        }
+
+        public static Color GetTeamColor(string teamMarker)
+        {
+            if (teamMarker == "jianghu_deathmatch_teammate")
+                return Color.green;
+
+            // Extract team number from marker
+            if (teamMarker.StartsWith("jianghu_deathmatch_enemy_team"))
+            {
+                string numStr = teamMarker.Replace("jianghu_deathmatch_enemy_team", "");
+                if (int.TryParse(numStr, out int teamNum))
+                {
+                    switch (teamNum)
+                    {
+                        case 1: return ColorFromHex("#2775b6");  // Blue
+                        case 2: return ColorFromHex("#fed71a");  // Yellow  
+                        case 3: return ColorFromHex("#eea2a4");  // Pink
+                        case 4: return ColorFromHex("#c02c38");  // 高粱红
+                        case 5: return ColorFromHex("#753117");  // Dark Brown
+                        case 6: return ColorFromHex("#8c4356");  // Purple-Red
+                        default: return Color.red;
+                    }
+                }
+            }
+
+            return Color.red;
+        }
+
+        private static Color ColorFromHex(string hex)
+        {
+            Color color;
+            ColorUtility.TryParseHtmlString(hex, out color);
+            return color;
+        }
+    }
+    #endregion
+
+    #region Core Systems
+    public class DeathMatchCore : MonoBehaviour
+    {
+        public static DeathMatchCore Instance { get; private set; }
         public static bool DeathMatchModeActive = false;
-        public int teleportCount = 0;
+        public int TeleportCount = 0;
+        public Player CurrentPlayer { get; private set; }
+
+        public DeathMatchPlayer PlayerComponent { get; private set; }
+
+
+        void Awake()
+        {
+            Instance = this;
+
+            PlayerComponent = GetComponent<DeathMatchPlayer>();
+            if (PlayerComponent == null)
+                PlayerComponent = gameObject.AddComponent<DeathMatchPlayer>();
+        }
+
+        void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
+        }
+
+        void Update()
+        {
+            CurrentPlayer = Singleton<GameWorld>.Instance?.MainPlayer;
+        }
 
         public void Init()
         {
@@ -33,32 +347,17 @@ namespace JiangHu
         public static void EnableDeathMatchMode()
         {
             DeathMatchModeActive = true;
-            BossSpawnSystem.EnableBossSpawnSystem();
-            BossSpawnSystem.initialSpawnDone = false;
+            DeathMatchBotSpawn.EnableTeamSpawnSystem();
+            DeathMatchBotSpawn.InitialSpawnDone = false;
         }
 
         public static void DisableDeathMatchMode()
         {
             DeathMatchModeActive = false;
-            BossSpawnSystem.systemActive = false;
-        }
+            DeathMatchBotSpawn.SystemActive = false;
 
-        void Update()
-        {
-            player = Singleton<GameWorld>.Instance?.MainPlayer;
-        }
-
-        private Player player;
-
-        void Awake()
-        {
-            Instance = this;
-        }
-
-        void OnDestroy()
-        {
-            if (Instance == this)
-                Instance = null;
+            if (FreeCameraController.Instance != null)
+                FreeCameraController.Instance.ResetFreeCamera();
         }
 
         public static void ValidateStateInMenu()
@@ -70,43 +369,59 @@ namespace JiangHu
 
                 if (isInMenu && DeathMatchModeActive)
                 {
-                    DeathMatch.DisableDeathMatchMode();
+                    DisableDeathMatchMode();
 
                     if (Instance != null)
                     {
-                        Instance.teleportCount = 0;
+                        Instance.TeleportCount = 0;
                     }
                 }
             }
             catch { }
         }
+    }
 
+    [HarmonyPatch(typeof(LocalGame), "Stop")]
+    class DeathMatchRaidEndPatch
+    {
+        static void Postfix(string profileId, ExitStatus exitStatus, string exitName, float delay)
+        {
+            if (exitStatus != ExitStatus.Transit)
+            {
+                DeathMatchCore.DisableDeathMatchMode();
+            }
+        }
+    }
+    #endregion
+
+    #region Player Systems
+    public class DeathMatchPlayer : MonoBehaviour
+    {
 
         public bool TryStartDeathTeleport(Player targetPlayer, EDamageType damageType)
         {
-            int maxLives = DeathMatchButtonPatch.GetDeathMatchLivesFromConfig();
-            if (teleportCount >= maxLives)
+            int maxLives = DeathMatchShared.GetDeathMatchLivesFromConfig();
+            if (DeathMatchCore.Instance.TeleportCount >= maxLives)
             {
                 return false;
             }
 
-            teleportCount++;
+            DeathMatchCore.Instance.TeleportCount++;
 
             targetPlayer.ActiveHealthController.IsAlive = true;
             targetPlayer.ActiveHealthController.SetDamageCoeff(0f);
 
-            player = targetPlayer;
-            Vector3 spawnPosition = GetRandomSpawnPosition();
+            Vector3 spawnPosition = GetRandomSpawnPosition(targetPlayer); 
             if (spawnPosition != Vector3.zero)
             {
-                TeleportPlayer(spawnPosition);
-                RestorePlayerHealth();
-                player.ActiveHealthController.SetDamageCoeff(1f);
+                TeleportPlayer(targetPlayer, spawnPosition); 
+                RestorePlayerHealth(targetPlayer); 
+                targetPlayer.ActiveHealthController.SetDamageCoeff(1f);
 
-                int remaining = DeathMatchButtonPatch.GetDeathMatchLivesFromConfig() - teleportCount;
+                int remaining = DeathMatchShared.GetDeathMatchLivesFromConfig() - DeathMatchCore.Instance.TeleportCount;
                 string message = remaining > 0
-                    ? $"Teleported! {remaining} left"
-                    : "Teleported!";
+                    ? $"Teleported! 传送成功，剩余 {remaining} left"
+                    : "Teleported! 传送成功";
 
                 NotificationManagerClass.DisplayMessageNotification(
                     message,
@@ -118,7 +433,7 @@ namespace JiangHu
             return true;
         }
 
-        private Vector3 GetRandomSpawnPosition()
+        private Vector3 GetRandomSpawnPosition(Player player)
         {
             if (player == null) return Vector3.zero;
 
@@ -129,7 +444,7 @@ namespace JiangHu
             const float excludeRadius = 60f;
             float excludeRadiusSquared = excludeRadius * excludeRadius;
 
-            var validSpawnPoints = new System.Collections.Generic.List<ISpawnPoint>();
+            var validSpawnPoints = new List<ISpawnPoint>();
 
             foreach (var marker in allMarkers)
             {
@@ -164,7 +479,7 @@ namespace JiangHu
             return selectedSpawn.Position;
         }
 
-        private void TeleportPlayer(Vector3 position)
+        private void TeleportPlayer(Player player, Vector3 position)
         {
             if (player == null) return;
 
@@ -173,7 +488,7 @@ namespace JiangHu
             player.Rotation = currentLookDirection;
         }
 
-        private void RestorePlayerHealth()
+        private void RestorePlayerHealth(Player player)
         {
             ActiveHealthController healthController = player.ActiveHealthController;
 
@@ -198,401 +513,602 @@ namespace JiangHu
                     healthController.method_44(bodyPart, EDamageType.Medicine);
                     healthController.method_36(bodyPart);
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"🎮 [Jiang Hu] ERROR {bodyPart}: {ex.Message}");
-                }
+                catch { }
             }
         }
 
         public void ResetTeleportState()
         {
-            teleportCount = 0;
+            DeathMatchCore.Instance.TeleportCount = 0;
         }
     }
 
     [HarmonyPatch(typeof(ActiveHealthController), nameof(ActiveHealthController.Kill))]
-    class DeathTeleportPatch
+    class DeathMatchPlayerTeleportPatch
     {
         static bool Prefix(ActiveHealthController __instance, EDamageType damageType)
         {
-            if (!DeathMatch.DeathMatchModeActive) return true;
+            if (!DeathMatchCore.DeathMatchModeActive) return true;
 
             try
             {
                 FieldInfo playerField = AccessTools.Field(typeof(ActiveHealthController), "Player");
                 if (playerField?.GetValue(__instance) is not Player player || player.IsAI)
+                {
                     return true;
+                }
 
                 if (!player.IsYourPlayer)
+                {
                     return true;
+                }
 
-                DeathMatch teleporter = DeathMatch.Instance;
-                if (teleporter == null)
+                var deathMatchPlayer = DeathMatchCore.Instance?.PlayerComponent;
+                if (deathMatchPlayer == null)
+                {
                     return true;
+                }
 
-                bool teleportStarted = teleporter.TryStartDeathTeleport(player, damageType);
+                bool teleportStarted = deathMatchPlayer.TryStartDeathTeleport(player, damageType);
                 return !teleportStarted;
             }
-            catch { return true; }
-        }
-    }
-
-
-    [HarmonyPatch]
-    public class BotHostilityPatch
-    {
-        [HarmonyPatch(typeof(BotOwner), "method_10")]
-        class BotActivatePatch
-        {
-            static void Postfix(BotOwner __instance)
+            catch (Exception ex)
             {
-                try
-                {
-                    var mainPlayer = Singleton<GameWorld>.Instance?.MainPlayer;
-                    if (mainPlayer == null)
-                    {
-                        return;
-                    }
-
-                    // Check if it's OUR spawned Bots (by marker)
-                    var marker = __instance.gameObject.GetComponent<JiangHuBotMarker>();
-                    bool isOurBot = marker != null;
-
-
-                    if (isOurBot)
-                    {
-                        // 1. Friendly to player
-                        __instance.BotsGroup.RemoveEnemy(mainPlayer);
-                        if (mainPlayer.BotsGroup != null)
-                            mainPlayer.BotsGroup.RemoveEnemy(__instance);
-
-                        // 2. Friendly to other OUR Bots
-                        var botGame = Singleton<IBotGame>.Instance;
-                        if (botGame != null)
-                        {
-                            foreach (var otherBot in botGame.BotsController.Bots.BotOwners)
-                            {
-                                if (otherBot == null || otherBot.Profile.Id == __instance.Profile.Id)
-                                    continue;
-
-                                var otherMarker = otherBot.gameObject.GetComponent<JiangHuBotMarker>();
-                                if (otherMarker != null)
-                                {
-                                    // OUR Bot ↔ OUR Bot: Friendly
-                                    __instance.BotsGroup.RemoveEnemy(otherBot);
-                                    otherBot.BotsGroup.RemoveEnemy(__instance);
-                                }
-                                else
-                                {
-                                    // OUR Bot ↔ Others: Hostile
-                                    if (!__instance.BotsGroup.Enemies.ContainsKey(otherBot))
-                                        __instance.BotsGroup.AddEnemy(otherBot, EBotEnemyCause.initial);
-                                }
-                            }
-                        }
-                        return; // ⚡ OUR Bots handled, skip vanilla logic
-                    }
-
-                    // ⚡ VANILLA BOTS: Different rules per raid type
-                    var botRole = __instance.Profile.Info.Settings.Role;
-                    bool isBoss = UniversalBotSpawner.allBosses != null &&
-                                  UniversalBotSpawner.allBosses.Contains(botRole);
-
-
-                    if (DeathMatch.DeathMatchModeActive)
-                    {
-                        // DEATHMATCH RAID: Boss-vs-Player hostility
-                        if (mainPlayer != null && isBoss)
-                        {
-                            // Boss ↔ Player: Hostile
-                            __instance.BotsGroup.AddEnemy(mainPlayer, EBotEnemyCause.initial);
-                        }
-
-                        // Boss ↔ Boss: Friendly
-                        var botGameDM = Singleton<IBotGame>.Instance;
-                        if (botGameDM != null && isBoss)
-                        {
-                            var otherBosses = botGameDM.BotsController.Bots.BotOwners
-                                .Where(b => b != null &&
-                                       b.BotState != EBotState.Disposed &&
-                                       b.BotState != EBotState.NonActive &&
-                                       b.Profile.Id != __instance.Profile.Id &&
-                                       UniversalBotSpawner.allBosses.Contains(b.Profile.Info.Settings.Role))
-                                .ToList();
-
-                            foreach (var otherBoss in otherBosses)
-                            {
-                                __instance.BotsGroup.RemoveEnemy(otherBoss);
-                                otherBoss.BotsGroup.RemoveEnemy(__instance);
-                            }
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"❌ [BotHostilityPatch] Postfix() - EXCEPTION: {ex.Message}\n{ex.StackTrace}");
-                }
+                return true;
             }
         }
     }
+    #endregion
 
-
-    public class BossSpawnSystem
+    #region Bot Spawn Systems
+    public class DeathMatchBotSpawn : MonoBehaviour
     {
-        public static List<WildSpawnType> bossQueue = new List<WildSpawnType>();
-        public static int currentSpawnIndex = 0;
-        private static int bossesKilled = 0;
-        public static bool systemActive = false;
-        public static bool initialSpawnDone = false;
+        public static List<WildSpawnType> WeightedBotPool = new List<WildSpawnType>();
+        public static Dictionary<string, List<string>> TeamMembers = new Dictionary<string, List<string>>();
+        public static bool SystemActive = false;
+        public static bool InitialSpawnDone = false;
+        public static Dictionary<string, int> teamDeaths = new Dictionary<string, int>();
 
-
-
-        public static void EnableBossSpawnSystem()
+        public static void EnableTeamSpawnSystem()
         {
-            if (!systemActive)
+            if (!SystemActive)
             {
-                systemActive = true;
+                SystemActive = true;
+                WeightedBotPool = DeathMatchShared.GetWeightedBotPool();
+                TeamMembers.Clear();
+                StartSquadMaintenance();
             }
         }
 
-        public static void InitializeBossQueue()
+        private static void InitializeTeams()
         {
-            bossQueue = UniversalBotSpawner.allBosses.ToList();
-            for (int i = 0; i < bossQueue.Count; i++)
+            TeamMembers.Clear();
+
+            TeamMembers["jianghu_deathmatch_teammate"] = new List<string>();
+
+            int enemyTeamCount = DeathMatchShared.GetEnemyTeamCount();
+            for (int i = 1; i <= enemyTeamCount; i++)
             {
-                int j = UnityEngine.Random.Range(i, bossQueue.Count);
-                var temp = bossQueue[i];
-                bossQueue[i] = bossQueue[j];
-                bossQueue[j] = temp;
+                TeamMembers[$"jianghu_deathmatch_enemy_team{i}"] = new List<string>();
             }
-            currentSpawnIndex = 0;
-            bossesKilled = 0;
         }
 
-        public static async Task SpawnNextBoss()
+        private static WildSpawnType GetRandomBotFromPool()
         {
-            int attemptIndex = currentSpawnIndex;
+            if (WeightedBotPool.Count == 0)
+            {
+                WeightedBotPool = DeathMatchShared.GetWeightedBotPool();
+            }
+
+            if (WeightedBotPool.Count == 0)
+            {
+                return UniversalBotSpawner.allBosses[UnityEngine.Random.Range(0, UniversalBotSpawner.allBosses.Length)];
+            }
+
+            return WeightedBotPool[UnityEngine.Random.Range(0, WeightedBotPool.Count)];
+        }
+
+        public static async Task SpawnTeamBots(string teamMarker, int count)
+        {
+            if (WeightedBotPool.Count == 0)
+                WeightedBotPool = DeathMatchShared.GetWeightedBotPool();
+
+            for (int i = 0; i < count; i++)
+            {
+                await SpawnBotForTeam(teamMarker);
+                await Task.Delay(500); 
+            }
+        }
+
+
+        private static List<ISpawnPoint> GetValidSpawnPointsForTeam(string teamMarker, float minDistance = 10f)
+        {
+            var validPoints = new List<ISpawnPoint>();
+            var botGame = Singleton<IBotGame>.Instance;
+            if (botGame == null || botGame.BotsController == null) return validPoints;
+
+            var spawner = botGame.BotsController.BotSpawner;
+            var allZones = spawner.AllBotZones;
+            if (allZones == null) return validPoints;
+
+            var enemyPlayers = GetEnemyPlayersForTeam(teamMarker);
+
+            foreach (var zone in allZones)
+            {
+                if (zone == null || zone.SpawnPointMarkers == null) continue;
+
+                foreach (var marker in zone.SpawnPointMarkers)
+                {
+                    if (marker?.SpawnPoint == null) continue;
+
+                    Vector3 spawnPos = marker.SpawnPoint.Position;
+                    bool isValid = true;
+
+                    foreach (var enemy in enemyPlayers)
+                    {
+                        float distance = Vector3.Distance(spawnPos, enemy.Position);
+                        if (distance < minDistance)
+                        {
+                            isValid = false;
+                            break;
+                        }
+                    }
+
+                    if (isValid)
+                    {
+                        validPoints.Add(marker.SpawnPoint);
+                    }
+                }
+            }
+
+            return validPoints;
+        }
+
+        private static BotZone GetZoneForSpawnPoint(ISpawnPoint spawnPoint)
+        {
+            var botGame = Singleton<IBotGame>.Instance;
+            if (botGame == null || botGame.BotsController == null) return null;
+
+            var allZones = botGame.BotsController.BotSpawner.AllBotZones;
+            if (allZones == null) return null;
+
+            foreach (var zone in allZones)
+            {
+                if (zone?.SpawnPointMarkers == null) continue;
+
+                foreach (var marker in zone.SpawnPointMarkers)
+                {
+                    if (marker?.SpawnPoint != null && marker.SpawnPoint == spawnPoint)
+                    {
+                        return zone;
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        private static List<Player> GetEnemyPlayersForTeam(string teamMarker)
+        {
+            var enemies = new List<Player>();
+            var gameWorld = Singleton<GameWorld>.Instance;
+            if (gameWorld?.AllAlivePlayersList == null) return enemies;
+
+            foreach (Player player in gameWorld.AllAlivePlayersList)
+            {
+                if (player.IsYourPlayer) continue;
+
+                var botOwner = player.AIData?.BotOwner;
+                if (botOwner == null) continue;
+
+                var spawnData = botOwner.SpawnProfileData as BotProfileDataClass;
+                string spawnId = spawnData?.SpawnParams?.Id_spawn;
+                if (string.IsNullOrEmpty(spawnId)) continue;
+
+                string otherTeamMarker = spawnId.Split('|')[0];
+
+                if (otherTeamMarker != teamMarker &&
+                    (teamMarker != "jianghu_deathmatch_teammate" ||
+                     !otherTeamMarker.StartsWith("jianghu_deathmatch_teammate")))
+                {
+                    enemies.Add(player);
+                }
+            }
+
+            return enemies;
+        }
+
+        public static async Task SpawnBotForTeam(string teamMarker)
+        {
             try
             {
-                if (currentSpawnIndex >= bossQueue.Count)
-                {
-                    InitializeBossQueue();
-                    attemptIndex = 0;
-                }
-
                 var botGame = Singleton<IBotGame>.Instance;
                 if (botGame == null || botGame.BotsController == null) return;
 
                 var spawner = botGame.BotsController.BotSpawner;
                 if (spawner == null) return;
 
-                var nextBoss = bossQueue[attemptIndex];
+                var validSpawnPoints = GetValidSpawnPointsForTeam(teamMarker);
+                if (validSpawnPoints.Count == 0)
+                {
+                    return;
+                }
+
+                var spawnPoint = validSpawnPoints[UnityEngine.Random.Range(0, validSpawnPoints.Count)];
+                var spawnZone = GetZoneForSpawnPoint(spawnPoint);
+                if (spawnZone == null) return;
+
+                var botType = GetRandomBotFromPool();
+
+                var spawnParams = new BotSpawnParams()
+                {
+                    ShallBeGroup = new ShallBeGroupParams(false, true, 1),
+                    Id_spawn = $"{teamMarker}|{Guid.NewGuid()}",
+                };
+
+                if (!TeamMembers.ContainsKey(teamMarker))
+                    TeamMembers[teamMarker] = new List<string>();
+                TeamMembers[teamMarker].Add(spawnParams.Id_spawn);
 
                 var profileData = new BotProfileDataClass(
                     EPlayerSide.Savage,
-                    nextBoss,
+                    botType,
                     BotDifficulty.hard,
                     0f,
-                    new BotSpawnParams()
-                    {
-                        ShallBeGroup = new ShallBeGroupParams(true, true, 1),
-                        Id_spawn = $"JiangHu_DeathMatch|{Guid.NewGuid()}"
-                    },
+                    spawnParams,
                     false
                 );
 
-                var spawnZone = spawner.GetRandomBotZone(false); 
-                if (spawnZone != null)
-                {
-                    var bossLocationSpawn = new BossLocationSpawn()
-                    {
-                        BossZone = "",
-                        Time = 1f,
-                        Delay = 0f,
-                        TriggerId = $"JiangHu_DeathMatch|{Guid.NewGuid()}",
-                        TriggerName = "",
-                        BossChance = 100f,
-                        BossName = nextBoss.ToString(),
-                        BossDifficult = BotDifficulty.hard.ToString(),
-                        BossEscortAmount = "0",
-                        BossEscortDifficult = BotDifficulty.normal.ToString(),
-                        BossEscortType = WildSpawnType.followerBully.ToString(),
-                        ForceSpawn = true,
-                        IgnoreMaxBots = true
-                    };
+                var creationData = await BotCreationDataClass.Create(
+                    profileData,
+                    spawner.BotCreator,
+                    1,
+                    spawner
+                );
 
-                    bossLocationSpawn.ParseMainTypesTypes();
-                    spawner.ActivateBotsByWave(bossLocationSpawn);
-                }
-                currentSpawnIndex = attemptIndex + 1;
+                if (creationData == null) return;
+
+                var pointsToSpawn = new List<ISpawnPoint> { spawnPoint };
+                spawner.TryToSpawnInZoneAndDelay(
+                    spawnZone,
+                    creationData,
+                    false,
+                    true,
+                    pointsToSpawn,
+                    true
+                );
+
+                string botName = UniversalBotSpawner.GetBotDisplayName(botType);
+                string teamName = teamMarker == "jianghu_deathmatch_teammate" ? "Teammate" :
+                                 teamMarker.Replace("jianghu_deathmatch_enemy_", "");
+
+                NotificationManagerClass.DisplayMessageNotification(
+                    $"{teamName} {botName} spawned",
+                    ENotificationDurationType.Default,
+                    ENotificationIconType.Quest,
+                    DeathMatchShared.GetTeamColor(teamMarker)
+                );
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"🎮 [Jiang Hu] SpawnNextBoss error: {ex.Message}\n{ex.StackTrace}");
+                Console.WriteLine($"\x1b[31m[DeathMatch] Spawn error: {ex.Message}\x1b[0m");
             }
         }
 
         public static void OnRaidStarted()
         {
-            if (!initialSpawnDone)
+            if (!InitialSpawnDone)
             {
-                InitializeBossQueue();
-                initialSpawnDone = true;
+                InitializeTeams();
+                InitialSpawnDone = true;
             }
         }
 
-        public static void OnBossKilled(WildSpawnType bossType)
+        public static void SpawnInitialTeams()
         {
-            if (!DeathMatch.DeathMatchModeActive) return;
+            if (!DeathMatchCore.DeathMatchModeActive) return;
 
-            bossesKilled++;
-            SpawnNextBoss().ContinueWith(task =>
+            try
             {
-                if (task.IsFaulted)
-                    Console.WriteLine($"🎮 [Jiang Hu] OnBossKilled spawn failed: {task.Exception}");
-            });
+                int ourSquad = DeathMatchShared.GetOurSquadNumber();
+                SpawnTeamBots("jianghu_deathmatch_teammate", ourSquad).ContinueWith(t => { });
+
+                int enemySquad = DeathMatchShared.GetEnemySquadNumber();
+                int enemyTeamCount = DeathMatchShared.GetEnemyTeamCount();
+
+                DeathMatchCore.Instance.StartCoroutine(StaggeredEnemySpawn(enemyTeamCount, enemySquad));
+            }
+            catch { }
         }
 
-        public static WildSpawnType? GetNextBossForWave()
+        private static System.Collections.IEnumerator StaggeredEnemySpawn(int enemyTeamCount, int enemySquad)
         {
-            if (currentSpawnIndex < bossQueue.Count)
-                return bossQueue[currentSpawnIndex];
+            for (int teamIndex = 1; teamIndex <= enemyTeamCount; teamIndex++)
+            {
+                yield return new WaitForSeconds(5f); // Wait 5 seconds between teams
+
+                string teamMarker = DeathMatchShared.GetTeamMarker(teamIndex);
+                SpawnTeamBots(teamMarker, enemySquad).ContinueWith(t => { });
+            }
+        }
+
+
+
+        public static void StartSquadMaintenance()
+        {
+            if (DeathMatchCore.Instance != null)
+            {
+                DeathMatchCore.Instance.StartCoroutine(SquadMaintenanceRoutine());
+            }
+        }
+
+        private static System.Collections.IEnumerator SquadMaintenanceRoutine()
+        {            
+            yield return new WaitForSeconds(180f); // Wait time before starting
+
+            while (DeathMatchCore.DeathMatchModeActive)
+            {
+                yield return new WaitForSeconds(180f); // interval
+
+                try
+                {
+                    MaintainSquadSizes();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"\x1b[31m[DeathMatch] Squad maintenance error: {ex.Message}\x1b[0m");
+                }
+            }
+        }
+
+        private static void MaintainSquadSizes()
+        {
+            if (!DeathMatchCore.DeathMatchModeActive) return;
+
+            var gameWorld = Singleton<GameWorld>.Instance;
+            if (gameWorld == null) return;
+
+            Dictionary<string, int> aliveCounts = new Dictionary<string, int>();
+            Dictionary<string, List<Player>> teamAlivePlayers = new Dictionary<string, List<Player>>();
+
+            foreach (var team in TeamMembers.Keys)
+            {
+                aliveCounts[team] = 0;
+                teamAlivePlayers[team] = new List<Player>();
+            }
+
+            if (gameWorld.AllAlivePlayersList != null)
+            {
+                foreach (Player player in gameWorld.AllAlivePlayersList)
+                {
+                    if (player.IsYourPlayer) continue;
+
+                    var botOwner = player.AIData?.BotOwner;
+                    if (botOwner == null) continue;
+
+                    var spawnData = botOwner.SpawnProfileData as BotProfileDataClass;
+                    string spawnId = spawnData?.SpawnParams?.Id_spawn;
+                    if (string.IsNullOrEmpty(spawnId)) continue;
+
+                    string teamMarker = spawnId.Split('|')[0];
+                    if (TeamMembers.ContainsKey(teamMarker))
+                    {
+                        aliveCounts[teamMarker]++;
+                        teamAlivePlayers[teamMarker].Add(player);
+                    }
+                }
+            }
+
+            Dictionary<string, int> teamsNeedingBots = new Dictionary<string, int>();
+
+            foreach (var team in TeamMembers.Keys)
+            {
+                int targetSquadSize = team == "jianghu_deathmatch_teammate"
+                    ? DeathMatchShared.GetOurSquadNumber()
+                    : DeathMatchShared.GetEnemySquadNumber();
+
+                int alive = aliveCounts[team];
+                int difference = targetSquadSize - alive;
+
+                if (difference > 0)
+                {
+                    teamsNeedingBots[team] = difference;
+                }
+                else if (difference < 0)
+                {
+                    int toRemove = -difference;
+                    var playersToRemove = teamAlivePlayers[team]
+                        .Take(toRemove)
+                        .ToList();
+
+                    foreach (var player in playersToRemove)
+                    {
+                        var botOwner = player.AIData?.BotOwner;
+                        if (botOwner != null)
+                        {
+                            botOwner.LeaveData.RemoveFromMap();
+                            UnityEngine.Object.Destroy(botOwner.gameObject);
+                        }
+                    }
+                }
+            }
+            if (teamsNeedingBots.Count > 0)
+            {
+                DeathMatchCore.Instance.StartCoroutine(StaggeredMaintenanceSpawn(teamsNeedingBots));
+            }
+        }
+
+        private static System.Collections.IEnumerator StaggeredMaintenanceSpawn(Dictionary<string, int> teamsToSpawn)
+        {
+            foreach (var kvp in teamsToSpawn)
+            {
+                string team = kvp.Key;
+                int count = kvp.Value;
+
+                SpawnBotForTeam(team).ContinueWith(t => { });
+
+                yield return new WaitForSeconds(5f);
+            }
+        }
+
+        public static void OnBotKilled(string teamMarker, string botId)
+        {
+            if (!DeathMatchCore.DeathMatchModeActive) return;
+
+            if (TeamMembers.ContainsKey(teamMarker))
+            {
+                TeamMembers[teamMarker].Remove(botId);
+            }
+
+            if (!teamDeaths.ContainsKey(teamMarker))
+                teamDeaths[teamMarker] = 0;
+            teamDeaths[teamMarker]++;
+
+            SpawnBotForTeam(teamMarker).ContinueWith(t => { });
+        }
+
+
+        public static string GetTeamMarkerFromSpawnId(string spawnId)
+        {
+            if (spawnId.StartsWith("jianghu_deathmatch_teammate"))
+                return "jianghu_deathmatch_teammate";
+
+            if (spawnId.StartsWith("jianghu_deathmatch_enemy_team"))
+            {
+                string marker = spawnId;
+                int pipeIndex = marker.IndexOf('|');
+                if (pipeIndex > 0)
+                {
+                    marker = marker.Substring(0, pipeIndex);
+                }
+                return marker;
+            }
+
             return null;
+        }
+
+        public static int GetTeamDeaths(string teamMarker)
+        {
+            if (teamDeaths.ContainsKey(teamMarker))
+                return teamDeaths[teamMarker];
+            return 0;
         }
     }
 
     [HarmonyPatch]
-    public class BossSpawnPatches
+    public class DeathMatchBotSpawnPatches
     {
         [HarmonyPatch(typeof(GameWorld), "OnGameStarted")]
-        class DeathMatchGameStartPatch
+        class DeathMatchBotSpawnGameStartPatch
         {
             static void Postfix()
             {
                 try
                 {
-                    if (DeathMatch.DeathMatchModeActive && !BossSpawnSystem.initialSpawnDone)
+                    if (DeathMatchCore.DeathMatchModeActive && !DeathMatchBotSpawn.InitialSpawnDone)
                     {
                         var gameWorld = Singleton<GameWorld>.Instance;
                         if (gameWorld != null)
                         {
-                            gameWorld.StartCoroutine(DelayedDirectSpawn());
+                            gameWorld.StartCoroutine(DelayedTeamSpawn());
                         }
                     }
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"🎮 [DeathMatch] Game start error: {ex.Message}");
-                }
+                catch { }
             }
 
-            private static System.Collections.IEnumerator DelayedDirectSpawn()
+            private static System.Collections.IEnumerator DelayedTeamSpawn()
             {
                 yield return new WaitForSeconds(1f);
 
-                if (!BossSpawnSystem.initialSpawnDone && DeathMatch.DeathMatchModeActive)
+                if (!DeathMatchBotSpawn.InitialSpawnDone && DeathMatchCore.DeathMatchModeActive)
                 {
-                    BossSpawnSystem.OnRaidStarted();
-
-                    int startingBots = DeathMatchButtonPatch.GetStartingBotsFromConfig();
-
-                    for (int i = 0; i < startingBots; i++)
-                    {
-                        BossSpawnSystem.SpawnNextBoss().ContinueWith(task =>
-                        {
-                            if (task.IsFaulted)
-                                Console.WriteLine($"🎮 [DeathMatch] Initial spawn failed: {task.Exception}");
-                        });
-                        yield return new WaitForSeconds(0.5f);
-                    }
+                    DeathMatchBotSpawn.OnRaidStarted();
+                    DeathMatchBotSpawn.SpawnInitialTeams();
                 }
             }
         }
 
         [HarmonyPatch(typeof(BotSpawner), "method_11")]
-        class FinalSpawnInterceptPatch
+        class DeathMatchBotSpawnInterceptPatch
         {
             static bool Prefix(BotOwner bot, BotCreationDataClass data, Action<BotOwner> callback,
                               bool shallBeGroup, Stopwatch stopWatch, BotSpawner __instance)
             {
-                if (!DeathMatch.DeathMatchModeActive &&
-                    !F12Manager.DisableVanillaBotSpawn.Value)
-                    return true;
+                if (!DeathMatchCore.DeathMatchModeActive) return true;
 
                 var spawnData = bot.SpawnProfileData as BotProfileDataClass;
 
-                bool isOurBot = spawnData?.SpawnParams?.Id_spawn != null &&
-                               spawnData.SpawnParams.Id_spawn.StartsWith("JiangHu_");
+                bool isOurBot = spawnData?.SpawnParams?.Id_spawn?.StartsWith("jianghu_") == true ||
+                                spawnData?.SpawnParams?.Id_spawn?.StartsWith("JiangHu_Bot|") == true;
 
                 if (!isOurBot)
                 {
                     bot.LeaveData.RemoveFromMap();
                     UnityEngine.Object.Destroy(bot.gameObject);
-                    return false; 
+                    return false;
                 }
-                return true; 
+                return true;
             }
         }
 
         [HarmonyPatch(typeof(BotSpawner), "BotDied")]
-        class SpawnNextBossOnDeathPatch
+        class DeathMatchBotSpawnOnDeathPatch
         {
-            private static HashSet<string> processedBotIds = new HashSet<string>();
+            private static HashSet<string> ProcessedBotIds = new HashSet<string>();
 
             static void Postfix(BotOwner bot)
             {
-                if (!DeathMatch.DeathMatchModeActive) return;
+                if (!DeathMatchCore.DeathMatchModeActive) return;
 
                 try
                 {
                     var spawnData = bot.SpawnProfileData as BotProfileDataClass;
 
-                    // 1. Must be OUR DeathMatch bot
-                    if (spawnData?.SpawnParams?.Id_spawn?.StartsWith("JiangHu_DeathMatch") != true)
+                    if (spawnData?.SpawnParams?.Id_spawn == null)
                         return;
 
-                    // 2. Must be a boss type
-                    var role = bot.Profile.Info.Settings.Role;
-                    if (!UniversalBotSpawner.allBosses.Contains(role))
+                    string spawnId = spawnData.SpawnParams.Id_spawn;
+
+                    if (!spawnId.StartsWith("jianghu_deathmatch_"))
                         return;
 
-                    // 3. Duplicate death protection
                     string botId = bot.Profile.Id;
-                    if (processedBotIds.Contains(botId))
+                    if (ProcessedBotIds.Contains(botId))
                         return;
 
-                    processedBotIds.Add(botId);
+                    ProcessedBotIds.Add(botId);
 
-                    // 4. Spawn next boss
-                    BossSpawnSystem.OnBossKilled(role);
+                    string teamMarker = DeathMatchBotSpawn.GetTeamMarkerFromSpawnId(spawnId);
+                    if (teamMarker != null)
+                    {
+                        DeathMatchBotSpawn.OnBotKilled(teamMarker, botId);
+                    }
                 }
                 catch { }
             }
         }
     }
+    #endregion
 
-    [HarmonyPatch(typeof(LocalGame), "Stop")]
-    class DeathMatchRaidEndPatch
+    #region UI Systems
+    public class DeathMatchUI : MonoBehaviour
     {
-        static void Postfix(string profileId, ExitStatus exitStatus, string exitName, float delay)
+        void Start()
         {
-            if (exitStatus != ExitStatus.Transit)
-            {
-                DeathMatch.DisableDeathMatchMode();
-            }
+            new DeathMatchUIButtonPatch().Enable();
         }
     }
 
-    internal class DeathMatchButtonPatch : ModulePatch
+    internal class DeathMatchUIButtonPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
         {
             return typeof(MenuScreen).GetMethod("Show", new[] {
-                typeof(Profile),
-                typeof(MatchmakerPlayerControllerClass),
-                typeof(ESessionMode)
-            });
+            typeof(Profile),
+            typeof(MatchmakerPlayerControllerClass),
+            typeof(ESessionMode)
+        });
         }
 
         [PatchPostfix]
@@ -607,7 +1123,7 @@ namespace JiangHu
 
             try
             {
-                DeathMatch.ValidateStateInMenu();
+                DeathMatchCore.ValidateStateInMenu();
                 var escapeField = typeof(MenuScreen).GetField("_playButton",
                     BindingFlags.NonPublic | BindingFlags.Instance);
                 var templateButton = (DefaultUIButton)escapeField.GetValue(menuScreen);
@@ -655,13 +1171,13 @@ namespace JiangHu
                 button.OnClick.RemoveAllListeners();
                 button.OnClick.AddListener(() =>
                 {
-                    DeathMatch.EnableDeathMatchMode();
+                    DeathMatchCore.EnableDeathMatchMode();
 
                     NotificationManagerClass.DisplayMessageNotification(
                         "Boss Death Match 头目对决",
                         ENotificationDurationType.Long,
                         ENotificationIconType.Default,
-                        new Color(1f, 0.8f, 0f) // Gold color
+                        new Color(1f, 0.8f, 0f)
                     );
 
                     if (!TarkovApplication.Exist(out var app))
@@ -669,11 +1185,10 @@ namespace JiangHu
                         return;
                     }
 
-                    List<string> enabledMaps = GetEnabledMapsFromConfig();
+                    List<string> enabledMaps = DeathMatchShared.GetEnabledMapsFromConfig();
 
                     if (enabledMaps.Count == 0)
                     {
-                        Console.WriteLine($"🎮 [Jiang Hu] No maps available!");
                         return;
                     }
 
@@ -681,130 +1196,465 @@ namespace JiangHu
                     app.InternalStartGame(randomMap, true, true);
                 });
             }
-            catch (Exception ex)
+            catch { }
+        }
+    }
+    #endregion
+
+    #region Teleport Command System
+    public class TeleportCommand : MonoBehaviour
+        {
+        private static BotOwner _selectedBot = null;
+        private static float _lastActionTime = 0f;
+        private const float MIN_PRESS_INTERVAL = 0.3f;
+
+        void Update()
+        {
+            if (!DeathMatchCore.DeathMatchModeActive) return;
+
+            if (F12Manager.TeleportBotHotkey != null &&
+                F12Manager.TeleportBotHotkey.Value.IsUp())
             {
-                Console.WriteLine($"🎮 [Jiang Hu] 乐园 button error: {ex.Message}\n{ex.StackTrace}");
+                var player = GamePlayerOwner.MyPlayer;
+                if (player != null && player.HealthController.IsAlive)
+                {
+                    Execute(player);
+                }
             }
         }
 
-        private static List<string> GetEnabledMapsFromConfig()
+        public bool Execute(Player requester)
         {
-            List<string> enabledMaps = new List<string>();
-
             try
             {
-                string modPath = Path.GetDirectoryName(Application.dataPath);
-                string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
-
-
-                if (File.Exists(configPath))
+                if (Time.time - _lastActionTime < MIN_PRESS_INTERVAL)
                 {
-                    string json = File.ReadAllText(configPath);
-                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                    return false;
+                }
+                _lastActionTime = Time.time;
 
-                    if (configDict != null)
+                if (_selectedBot != null && _selectedBot.HealthController.IsAlive)
+                {
+                    bool success = TeleportSelectedBot(requester);
+                    if (success)
                     {
-                        Dictionary<string, string> mapConfigKeys = new Dictionary<string, string>
-                        {
-                            { "Woods", "Enable_Woods" },
-                            { "factory4_day", "Enable_factoryday" },
-                            { "factory4_night", "Enable_factorynight" },
-                            { "bigmap", "Enable_bigmap" },
-                            { "Shoreline", "Enable_Shoreline" },
-                            { "Interchange", "Enable_Interchange" },
-                            { "RezervBase", "Enable_RezervBase" },
-                            { "laboratory", "Enable_laboratory" },
-                            { "Lighthouse", "Enable_Lighthouse" },
-                            { "TarkovStreets", "Enable_TarkovStreets" },
-                            { "Sandbox", "Enable_Sandbox" },
-                            { "Sandbox_high", "Enable_Sandboxhigh" },
-                            { "labyrinth", "Enable_labyrinth" }
-                        };
-
-                        foreach (var kvp in mapConfigKeys)
-                        {
-                            string mapName = kvp.Key;
-                            string configKey = kvp.Value;
-
-                            if (configDict.ContainsKey(configKey) && configDict[configKey] is bool && (bool)configDict[configKey])
-                            {
-                                enabledMaps.Add(mapName);
-                            }
-                        }
-
-                        if (enabledMaps.Count == 0)
-                        {
-                            enabledMaps.AddRange(mapConfigKeys.Keys);
-                        }
+                        _selectedBot = null;
                     }
-                    else
-                    {
-                        Console.WriteLine($"🎮 [Jiang Hu] Config dict is null");
-                    }
+                    return success;
                 }
                 else
                 {
-                    enabledMaps.AddRange(new[] {
-                        "Woods", "factory4_day", "factory4_night", "bigmap", "Shoreline",
-                        "Interchange", "RezervBase", "laboratory", "Lighthouse", "TarkovStreets",
-                        "Sandbox", "Sandbox_high", "labyrinth"
-                    });
+                    if (_selectedBot != null && !_selectedBot.HealthController.IsAlive)
+                    {
+                        NotificationManagerClass.DisplayMessageNotification(
+                            "Selected bot died 选中对象已凉凉",
+                            ENotificationDurationType.Default,
+                            ENotificationIconType.Alert,
+                            Color.red
+                        );
+                        _selectedBot = null;
+                    }
+
+                    return SelectNewBot(requester);
                 }
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private bool SelectNewBot(Player requester)
+        {
+            var bot = GetBotPlayerIsLookingAt(requester);
+
+            if (bot == null)
+            {
+                NotificationManagerClass.DisplayMessageNotification(
+                    "No bot in crosshair 未选中",
+                    ENotificationDurationType.Default,
+                    ENotificationIconType.Alert,
+                    Color.yellow
+                );
+                return false;
+            }
+
+            if (!bot.HealthController.IsAlive)
+            {
+                NotificationManagerClass.DisplayMessageNotification(
+                    "Bot is dead 该目标已凉凉",
+                    ENotificationDurationType.Default,
+                    ENotificationIconType.Alert,
+                    Color.red
+                );
+                return false;
+            }
+
+            _selectedBot = bot;
+
+            NotificationManagerClass.DisplayMessageNotification(
+                $"Selected {bot.Profile.Nickname}\nPress again to teleport 选中啦，再按一次放置",
+                ENotificationDurationType.Default,
+                ENotificationIconType.Quest,
+                Color.green
+            );
+
+            return true;
+        }
+
+        private bool TeleportSelectedBot(Player requester)
+        {
+            try
+            {
+                Vector3 teleportPos = GetCrosshairPosition(requester);
+
+                if (teleportPos == Vector3.zero)
+                {
+                    NotificationManagerClass.DisplayMessageNotification(
+                        "No valid teleport location 该地点无法放置",
+                        ENotificationDurationType.Default,
+                        ENotificationIconType.Alert,
+                        Color.yellow
+                    );
+                    return false;
+                }
+
+                bool success = ExecuteTeleport(_selectedBot, teleportPos);
+
+                string message = success ? $"Teleported {_selectedBot.Profile.Nickname} 已放置" : "Teleport failed 放置失败";
+
+                NotificationManagerClass.DisplayMessageNotification(
+                    message,
+                    ENotificationDurationType.Default,
+                    success ? ENotificationIconType.Quest : ENotificationIconType.Alert,
+                    success ? Color.green : Color.red
+                );
+
+                return success;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        private Vector3 GetCrosshairPosition(Player requester)
+        {
+            try
+            {
+                Vector3 eyePos;
+                Vector3 lookDir;
+
+                FreeCameraController freeCam = FreeCameraController.Instance;
+                if (freeCam != null && freeCam.IsInFreecam() && freeCam.GetVirtualCameraObject() != null)
+                {
+                    Transform virtualCam = freeCam.GetVirtualCameraObject().transform;
+                    eyePos = virtualCam.position;
+                    lookDir = virtualCam.forward;
+                }
+                else
+                {
+                    eyePos = requester.PlayerBones.Head.position;
+                    lookDir = requester.LookDirection;
+                }
+
+                float maxDistance = 100f;
+                LayerMask mask = LayerMaskClass.HighPolyWithTerrainMask;
+                Ray ray = new Ray(eyePos, lookDir);
+
+                if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, mask))
+                    return hit.point + Vector3.up * 0.5f;
+
+                return eyePos + lookDir * maxDistance;
+            }
+            catch (Exception)
+            {
+                return Vector3.zero;
+            }
+        }
+
+        private bool ExecuteTeleport(BotOwner bot, Vector3 teleportPos)
+        {
+            try
+            {
+                NavMeshHit hit;
+                if (!NavMesh.SamplePosition(teleportPos, out hit, 2f, -1))
+                {
+                    NotificationManagerClass.DisplayMessageNotification(
+                        "No navmesh at target location 该地点无人机路径",
+                        ENotificationDurationType.Default,
+                        ENotificationIconType.Alert,
+                        Color.yellow
+                    );
+                    return false;
+                }
+
+                Vector3 navmeshPos = hit.position + Vector3.up * 0.5f;
+
+                if (bot.Mover != null)
+                {
+                    bot.Mover.Stop();
+                    bot.Mover.AllowTeleport();
+                    bot.Mover.PrevSuccessLinkedFrom_1 = navmeshPos;
+                    bot.Mover.PrevPosLinkedTime_1 = Time.time;
+                    bot.Mover.LastGoodCastPoint = navmeshPos;
+                    bot.Mover.LastGoodCastPointTime = Time.time;
+                    bot.Mover.PositionOnWayInner = navmeshPos;
+                    bot.Mover.LinkedToNavmeshInitially = true;
+                    bot.Mover.PositionOnWayCasted = navmeshPos;
+                    bot.Mover.Next = Time.time + 2f;
+                    bot.Mover.PrevOffsetGoodCasted = Vector3.zero;
+                    bot.Mover.PrevOffsetGoodCastedTime = Time.time;
+                    bot.Mover.PrevLinkPos = navmeshPos;
+                    bot.Mover.SetPointOnWay(navmeshPos);
+                }
+
+                bot.GetPlayer.Teleport(navmeshPos, true);
+
+                NotificationManagerClass.DisplayMessageNotification(
+                    $"Teleported {bot.Profile.Nickname}",
+                    ENotificationDurationType.Default,
+                    ENotificationIconType.Quest,
+                    Color.green
+                );
+
+                return true;
             }
             catch (Exception ex)
             {
-                enabledMaps.AddRange(new[] {
-                    "Woods", "factory4_day", "factory4_night", "bigmap", "Shoreline",
-                    "Interchange", "RezervBase", "laboratory", "Lighthouse", "TarkovStreets",
-                    "Sandbox", "Sandbox_high", "labyrinth"
-                });
+                NotificationManagerClass.DisplayMessageNotification(
+                    $"Teleport failed: {ex.Message}",
+                    ENotificationDurationType.Default,
+                    ENotificationIconType.Alert,
+                    Color.red
+                );
+                return false;
             }
-
-            return enabledMaps;
         }
 
-        public static int GetDeathMatchLivesFromConfig()
+        private BotOwner GetBotPlayerIsLookingAt(Player player, float maxDistance = 50f)
         {
             try
             {
-                string modPath = Path.GetDirectoryName(Application.dataPath);
-                string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
+                FreeCameraController freeCam = FreeCameraController.Instance;
+                bool useFreecam = freeCam != null && freeCam.IsInFreecam();
 
-                if (File.Exists(configPath))
+                Vector3 eyePos;
+                Vector3 lookDir;
+
+                if (useFreecam && freeCam.GetVirtualCameraObject() != null)
                 {
-                    string json = File.ReadAllText(configPath);
-                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
+                    Transform virtualCam = freeCam.GetVirtualCameraObject().transform;
+                    eyePos = virtualCam.position;
+                    lookDir = virtualCam.forward;
+                }
+                else
+                {
+                    eyePos = player.PlayerBones.Head.position;
+                    lookDir = player.LookDirection;
+                }
 
-                    if (configDict != null && configDict.ContainsKey("DeathMatch_Lives"))
+                LayerMask shootMask = LayerMaskClass.HighPolyWithTerrainMask | (1 << LayerMaskClass.PlayerLayer);
+                Ray ray = new Ray(eyePos, lookDir);
+
+                if (Physics.Raycast(ray, out RaycastHit hit, maxDistance, shootMask))
+                {
+                    Player hitPlayer = hit.transform.GetComponentInParent<Player>();
+                    if (hitPlayer != null && hitPlayer.ProfileId != player.ProfileId)
                     {
-                        return Convert.ToInt32(configDict["DeathMatch_Lives"]);
+                        float distance = Vector3.Distance(eyePos, hitPlayer.Position);
+                        if (distance <= maxDistance)
+                        {
+                            BotOwner bot = hitPlayer.AIData?.BotOwner;
+                            if (bot != null && bot.HealthController.IsAlive)
+                            {
+                                return bot;
+                            }
+                        }
                     }
                 }
+                return null;
             }
-            catch { }
-            return 10;
-        }
-
-        public static int GetStartingBotsFromConfig()
-        {
-            try
+            catch (Exception)
             {
-                string modPath = Path.GetDirectoryName(Application.dataPath);
-                string configPath = Path.Combine(modPath, "SPT", "user", "mods", "JiangHu.Server", "config", "config.json");
-
-                if (File.Exists(configPath))
-                {
-                    string json = File.ReadAllText(configPath);
-                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json);
-
-                    if (configDict != null && configDict.ContainsKey("DeathMatch_Starting_Bot"))
-                    {
-                        return Convert.ToInt32(configDict["DeathMatch_Starting_Bot"]);
-                    }
-                }
+                return null;
             }
-            catch { }
-            return 5;
         }
     }
+    #endregion
+
+    #region Free Camera System
+    public class FreeCameraController : MonoBehaviour
+    {
+        private Camera _mainCamera;
+        private Player _player;
+        private EftGamePlayerOwner _playerOwner;
+        private GameObject _virtualCameraObject;
+        private FreeCamera _freeCameraComponent;
+        private bool _isInFreecam = false;
+
+        public float MoveSpeed = 7f;
+        public float FastMoveSpeed = 15f;
+        public float LookSpeed = 1.5f;
+        public float UpDownSpeed = 2f;
+
+        public bool IsInFreecam() => _isInFreecam;
+        public GameObject GetVirtualCameraObject() => _virtualCameraObject;
+        public static FreeCameraController Instance;
+
+        void Start()
+        {
+            StartCoroutine(WaitForCamera());
+            Instance = this;
+        }
+
+        private System.Collections.IEnumerator WaitForCamera()
+        {
+            while (CameraClass.Instance == null || CameraClass.Instance.Camera == null)
+                yield return new WaitForSeconds(0.1f);
+            _mainCamera = CameraClass.Instance.Camera;
+        }
+
+        void Update()
+        {
+            if (!DeathMatchCore.DeathMatchModeActive) return;
+            if (F12Manager.FreeCameraHotkey != null &&
+                F12Manager.FreeCameraHotkey.Value.IsUp())
+                ToggleFreeCamera();
+        }
+
+        void LateUpdate()
+        {
+            if (_isInFreecam && _mainCamera != null && _virtualCameraObject != null)
+            {
+                _mainCamera.transform.position = _virtualCameraObject.transform.position;
+                _mainCamera.transform.rotation = _virtualCameraObject.transform.rotation;
+                var camController = _player.GetComponent<PlayerCameraController>();
+                if (camController != null) camController.enabled = false;
+            }
+        }
+
+        private void ToggleFreeCamera()
+        {
+            _player = GamePlayerOwner.MyPlayer;
+            if (_player == null || _player.HealthController == null || !_player.HealthController.IsAlive)
+                return;
+
+            if (_mainCamera == null)
+            {
+                _mainCamera = CameraClass.Instance?.Camera;
+                if (_mainCamera == null) return;
+            }
+
+            _playerOwner = _player.GetComponent<EftGamePlayerOwner>();
+            if (_playerOwner == null) return;
+
+            if (!_isInFreecam)
+            {
+                _player.PointOfView = EPointOfView.FreeCamera;
+                StartOurFreecamSystem();
+            }
+            else
+            {
+                _player.PointOfView = EPointOfView.FirstPerson;
+                StopOurFreecamSystem();
+            }
+        }
+
+        private void StartOurFreecamSystem()
+        {
+            _isInFreecam = true;
+            CreateVirtualCamera();
+            if (_freeCameraComponent != null)
+                _freeCameraComponent.method_0();
+
+            if (_playerOwner != null)
+                _playerOwner.enabled = false;
+
+            NotificationManagerClass.DisplayMessageNotification(
+                "Free Camera Active 自由视角开启",
+                ENotificationDurationType.Default,
+                ENotificationIconType.Quest,
+                Color.green
+            );
+        }
+
+        private void StopOurFreecamSystem()
+        {
+            _isInFreecam = false;
+
+            var camController = _player.GetComponent<PlayerCameraController>();
+            if (camController != null)
+            {
+                camController.enabled = true;
+                camController.InitiateOperation<FirstPersonCameraOperationClass>();
+            }
+
+            if (_playerOwner != null) _playerOwner.enabled = true;
+
+            if (Singleton<CommonUI>.Instance != null &&
+                Singleton<CommonUI>.Instance.EftBattleUIScreen != null &&
+                Singleton<CommonUI>.Instance.EftBattleUIScreen.CanvasGroup != null)
+            {
+                Singleton<CommonUI>.Instance.EftBattleUIScreen.CanvasGroup.gameObject.SetActive(true);
+            }
+
+            if (_freeCameraComponent != null)
+            {
+                _freeCameraComponent.method_1();
+                Destroy(_freeCameraComponent);
+                _freeCameraComponent = null;
+            }
+
+            DestroyVirtualCamera();
+
+            NotificationManagerClass.DisplayMessageNotification(
+                "Returned to First Person 已回到正常视角",
+                ENotificationDurationType.Default,
+                ENotificationIconType.Quest,
+                Color.green
+            );
+        }
+
+        private void CreateVirtualCamera()
+        {
+            if (_mainCamera == null)
+            {
+                _mainCamera = CameraClass.Instance?.Camera;
+                if (_mainCamera == null) return;
+            }
+            _virtualCameraObject = new GameObject("FreeCamera_VirtualObject");
+            _virtualCameraObject.transform.position = _mainCamera.transform.position;
+            _virtualCameraObject.transform.rotation = _mainCamera.transform.rotation;
+
+            _freeCameraComponent = _virtualCameraObject.AddComponent<FreeCamera>();
+            _freeCameraComponent.enableInputCapture = true;
+            _freeCameraComponent.holdRightMouseCapture = true;
+            _freeCameraComponent.lookSpeed = LookSpeed;
+            _freeCameraComponent.moveSpeed = MoveSpeed;
+            _freeCameraComponent.sprintSpeed = FastMoveSpeed;
+        }
+
+        public void ResetFreeCamera()
+        {
+            _isInFreecam = false;
+        }
+
+        private void DestroyVirtualCamera()
+        {
+            if (_virtualCameraObject != null)
+            {
+                Destroy(_virtualCameraObject);
+                _virtualCameraObject = null;
+            }
+        }
+
+        void OnDestroy()
+        {
+            DestroyVirtualCamera();
+            if (Instance == this)
+                Instance = null;
+        }
+    }
+    #endregion
 }
