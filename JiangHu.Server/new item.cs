@@ -290,49 +290,17 @@ public class NewItemModule
                 MedUseTime = 3,
                 MaxHpResource = 3,
                 CanRequireOnRagfair = false,
-                StimulatorBuffs = "baiyao_buffs"
-            }
-        };
-
-        _CustomItemService.CreateItemFromClone(newItemFromCloneDetails);
-    }
-
-    private void CreateRepairKitItem()
-    {
-        NewItemFromCloneDetails newItemFromCloneDetails = new NewItemFromCloneDetails
-        {
-            ItemTplToClone = "60098af40accd37ef2175f27",
-            NewId = "e983002c4ab4d99999889003",
-            ParentId = "5448f3ac4bdc2dce718b4569",
-            FleaPriceRoubles = 150000,
-            HandbookPriceRoubles = 100000,
-            HandbookParentId = "5b47574386f77428ca22b339",
-            Locales = new Dictionary<string, LocaleDetails>
-            {
-                ["en"] = new LocaleDetails
+                EffectsDamage = new Dictionary<DamageEffectType, EffectsDamageProperties>
                 {
-                    Name = "1",
-                    ShortName = "1",
-                    Description = "1"
-                }
-            },
-            OverrideProperties = new TemplateItemProperties
-            {
-                Prefab = new Prefab
-                {
-                    Path = "assets/content/weapons/usable_items/item_meds_cat/item_meds_cat_loot.bundle",
-                    Rcid = ""
+                    [DamageEffectType.Fracture] = new EffectsDamageProperties
+                    {
+                        Delay = 0, 
+                        Duration = 0,
+                        FadeOut = 0,
+                        Value = 0
+                    }
                 },
-                DiscardLimit = -1,
-                Weight = 0.2,
-                BackgroundColor = "tracerGreen",
-                Height = 1,
-                Width = 1,
-                ItemSound = "med_medkit",
-                MedUseTime = 6,
-                MaxHpResource = 10,
-                HpResourceRate = 0,
-                CanRequireOnRagfair = false
+                StimulatorBuffs = "baiyao_buffs"
             }
         };
 
@@ -375,6 +343,48 @@ public class NewItemModule
                 MaxHpResource = 0,
                 CanRequireOnRagfair = false,
                 StimulatorBuffs = "maotai_buffs"
+            }
+        };
+
+        _CustomItemService.CreateItemFromClone(newItemFromCloneDetails);
+    }
+
+    private void CreateRepairKitItem()
+    {
+        NewItemFromCloneDetails newItemFromCloneDetails = new NewItemFromCloneDetails
+        {
+            ItemTplToClone = "60098af40accd37ef2175f27",
+            NewId = "e983002c4ab4d99999889003",
+            ParentId = "5448f3ac4bdc2dce718b4569",
+            FleaPriceRoubles = 150000,
+            HandbookPriceRoubles = 100000,
+            HandbookParentId = "5b47574386f77428ca22b339",
+            Locales = new Dictionary<string, LocaleDetails>
+            {
+                ["en"] = new LocaleDetails
+                {
+                    Name = "1",
+                    ShortName = "1",
+                    Description = "1"
+                }
+            },
+            OverrideProperties = new TemplateItemProperties
+            {
+                Prefab = new Prefab
+                {
+                    Path = "assets/content/weapons/usable_items/item_meds_cat/item_meds_cat_loot.bundle",
+                    Rcid = ""
+                },
+                DiscardLimit = -1,
+                Weight = 0.2,
+                BackgroundColor = "tracerGreen",
+                Height = 1,
+                Width = 1,
+                ItemSound = "med_medkit",
+                MedUseTime = 6,
+                MaxHpResource = 10,
+                HpResourceRate = 0,
+                CanRequireOnRagfair = false
             }
         };
 

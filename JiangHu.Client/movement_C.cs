@@ -17,7 +17,7 @@ namespace JiangHu
     {
         private Player player;
         private static bool EnableAll, EnableFastMovement, EnableFastLeaning, EnableFastPoseTransition,
-            EnableDoubleJump, EnableFastWeapon, EnableWiderFreelook, EnablePositionSwap;
+            EnableDoubleJump, Enable_UnlimitedDouble_Jump, EnableFastWeapon, EnableWiderFreelook, EnablePositionSwap;
         private Harmony harmony;
         private ConfigEntry<KeyboardShortcut> _swapHotkeyConfig;
         private float _lastSwapTime = 0f;
@@ -118,6 +118,7 @@ namespace JiangHu
             EnableFastLeaning = config["Enable_Fast_Leaning"]?.Value<bool>() ?? true;
             EnableFastPoseTransition = config["Enable_Fast_Pose_Transition"]?.Value<bool>() ?? true;
             EnableDoubleJump = config["Enable_Double_Jump"]?.Value<bool>() ?? true;
+            Enable_UnlimitedDouble_Jump = config["Enable_Unlimited_Double_Jump"]?.Value<bool>() ?? false;
             EnableFastWeapon = config["Enable_Fast_Weapon_Switching"]?.Value<bool>() ?? true;
             EnableWiderFreelook = config["Enable_Wider_Freelook_Angle"]?.Value<bool>() ?? true;
             EnablePositionSwap = config["Enable_Position_Swap"]?.Value<bool>() ?? true;
@@ -260,6 +261,7 @@ namespace JiangHu
         }
         #endregion
 
+
         #region Double Jump
         private static bool hasUsedMidAirJump = false;
         private static float lastMidAirJumpTime = 0f;
@@ -291,18 +293,29 @@ namespace JiangHu
 
         static bool StateJumpOverridePrefix(MovementState __instance)
         {
-            if (!EnableDoubleJump) return true;
-
-            if (!__instance.MovementContext.IsGrounded)
+            if (Enable_UnlimitedDouble_Jump)
             {
-                bool allowJump = CheckDoubleJump(__instance.MovementContext);
+                if (!__instance.MovementContext.IsGrounded)
+                {
+                    __instance.MovementContext.TryJump();
+                    return false;
+                }
+                return true;
+            }
 
-                if (!allowJump) return false;
+            if (EnableDoubleJump)
+            {
+                if (!__instance.MovementContext.IsGrounded)
+                {
+                    bool allowJump = CheckDoubleJump(__instance.MovementContext);
+                    if (!allowJump) return false;
 
-                hasUsedMidAirJump = true;
-                lastMidAirJumpTime = Time.time;
-                __instance.MovementContext.TryJump();
-                return false;
+                    hasUsedMidAirJump = true;
+                    lastMidAirJumpTime = Time.time;
+                    __instance.MovementContext.TryJump();
+                    return false;
+                }
+                return true;
             }
 
             return true;
@@ -310,48 +323,71 @@ namespace JiangHu
 
         static bool MovementStateJumpPrefix(MovementState __instance)
         {
-            if (!EnableDoubleJump) return true;
-
-            if (__instance is JumpStateClass)
+            if (Enable_UnlimitedDouble_Jump)
             {
-                bool allowJump = CheckDoubleJump(__instance.MovementContext);
-
-                if (allowJump)
+                if (!__instance.MovementContext.IsGrounded)
                 {
-                    var jumpState = __instance as JumpStateClass;
+                    if (__instance is JumpStateClass)
+                    {
+                        var jumpState = __instance as JumpStateClass;
+                        jumpState.Float_5 *= 1f;
+                        jumpState.Vector3_1 *= 1f;
+                        jumpState.Float_2 = 0f;
+                        jumpState.EjumpState_0 = JumpStateClass.EJumpState.PushingFromTheGround;
+                        jumpState.Float_3 = EFTHardSettings.Instance.JUMP_DELAY_BY_SPEED.Evaluate(jumpState.Float_1);
+                        jumpState.Float_9 = jumpState.MovementContext.TransformPosition.y;
+                        jumpState.Float_10 = 0f;
 
-                    jumpState.Float_5 *= 1f;
-                    jumpState.Vector3_1 *= 1f;
-                    jumpState.Float_2 = 0f;
-                    jumpState.EjumpState_0 = JumpStateClass.EJumpState.PushingFromTheGround;
-                    jumpState.Float_3 = EFTHardSettings.Instance.JUMP_DELAY_BY_SPEED.Evaluate(jumpState.Float_1);
-                    jumpState.Float_9 = jumpState.MovementContext.TransformPosition.y;
-                    jumpState.Float_10 = 0f;
-
-                    hasUsedMidAirJump = true;
-                    lastMidAirJumpTime = Time.time;
-
-                    __instance.MovementContext.method_2(1f);
-                    __instance.MovementContext.PlayerAnimatorEnableJump(true);
-
-                    return false;
+                        __instance.MovementContext.method_2(1f);
+                        __instance.MovementContext.PlayerAnimatorEnableJump(true);
+                        return false;
+                    }
+                    else
+                    {
+                        __instance.MovementContext.TryJump();
+                        return false;
+                    }
                 }
-
-                return false;
+                return true;
             }
-            else if (!__instance.MovementContext.IsGrounded)
-            {
-                bool allowJump = CheckDoubleJump(__instance.MovementContext);
 
-                if (allowJump)
+            if (EnableDoubleJump)
+            {
+                if (__instance is JumpStateClass)
                 {
-                    hasUsedMidAirJump = true;
-                    lastMidAirJumpTime = Time.time;
-                    __instance.MovementContext.TryJump();
+                    bool allowJump = CheckDoubleJump(__instance.MovementContext);
+                    if (allowJump)
+                    {
+                        var jumpState = __instance as JumpStateClass;
+                        jumpState.Float_5 *= 1f;
+                        jumpState.Vector3_1 *= 1f;
+                        jumpState.Float_2 = 0f;
+                        jumpState.EjumpState_0 = JumpStateClass.EJumpState.PushingFromTheGround;
+                        jumpState.Float_3 = EFTHardSettings.Instance.JUMP_DELAY_BY_SPEED.Evaluate(jumpState.Float_1);
+                        jumpState.Float_9 = jumpState.MovementContext.TransformPosition.y;
+                        jumpState.Float_10 = 0f;
+
+                        hasUsedMidAirJump = true;
+                        lastMidAirJumpTime = Time.time;
+                        __instance.MovementContext.method_2(1f);
+                        __instance.MovementContext.PlayerAnimatorEnableJump(true);
+                        return false;
+                    }
                     return false;
                 }
-
-                return false;
+                else if (!__instance.MovementContext.IsGrounded)
+                {
+                    bool allowJump = CheckDoubleJump(__instance.MovementContext);
+                    if (allowJump)
+                    {
+                        hasUsedMidAirJump = true;
+                        lastMidAirJumpTime = Time.time;
+                        __instance.MovementContext.TryJump();
+                        return false;
+                    }
+                    return false;
+                }
+                return true;
             }
 
             return true;
@@ -363,7 +399,6 @@ namespace JiangHu
 
             if (context.IsGrounded)
             {
-                hasUsedMidAirJump = false;
                 return true;
             }
 
@@ -372,7 +407,7 @@ namespace JiangHu
 
         static bool JumpMethod1Prefix(JumpStateClass __instance, ref float __state)
         {
-            if (!EnableDoubleJump) return true;
+            if (!EnableDoubleJump && !Enable_UnlimitedDouble_Jump) return true;
 
             __state = __instance.Float_5;
             return true;
@@ -388,6 +423,7 @@ namespace JiangHu
             }
         }
         #endregion
+
 
         #region Bot Position Swapper
         private Player FindVisibleBot(Player localPlayer)

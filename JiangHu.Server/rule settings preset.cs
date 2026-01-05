@@ -78,6 +78,7 @@ namespace JiangHu.Server
                     WriteConfigSetting("Enable_Fast_Aiming", false);
                     WriteConfigSetting("Enable_Wider_Freelook_Angle", false);
                     WriteConfigSetting("Enable_Position_Swap", false);
+                    WriteConfigSetting("Enable_Unlimited_Double_Jump", false);
 
                     // adjustable settings reset: Challenges
 
@@ -163,6 +164,11 @@ namespace JiangHu.Server
                     if (CheckQuestCompleted(pmc, "e983002c4ab4d229af885000")) // "Reaching The Oasis" 
                     {
                         WriteConfigSetting("Enable_Position_Swap", true);
+                    }
+
+                    if (CheckQuestCompleted(pmc, "e983002c4ab4d229af888000")) // "Long March" 
+                    {
+                        WriteConfigSetting("Enable_Unlimited_Double_Jump", true);
                     }
 
                     // Challenges

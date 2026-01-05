@@ -49,7 +49,7 @@ namespace JiangHu
         private bool unlockVanillaLockedCustomization = true;
         private float cashWipeCoefficiency = 0.1f;
         private bool enableXPMode = false; 
-        private bool restartXPMode = false; 
+        private bool restartArenaQuest = false; 
         private bool enableArenaQuest = false;
         private int deathMatchLives = 2;  
         private bool useDefaultMatchTime = true;
@@ -58,6 +58,7 @@ namespace JiangHu
         private float swapDistance = 30f;
         private float swapCooldown = 30f;
         private bool enableDoubleJump = true;
+        private bool enableUnlimitedDoubleJump = true;
         private float spawnCooldown = 5f;
         private bool enableFastMovementBot = false;
         private int ourSquadNumber = 2; 
@@ -240,6 +241,8 @@ namespace JiangHu
                     enableSlide = (bool)configDict["Enable_Slide"];
                 if (configDict.ContainsKey("Enable_Double_Jump") && configDict["Enable_Double_Jump"] is bool)
                     enableDoubleJump = (bool)configDict["Enable_Double_Jump"];
+                if (configDict.ContainsKey("Enable_Unlimited_Double_Jump") && configDict["Enable_Unlimited_Double_Jump"] is bool)
+                    enableUnlimitedDoubleJump = (bool)configDict["Enable_Unlimited_Double_Jump"];
                 if (configDict.ContainsKey("Enable_Fast_Weapon_Switching") && configDict["Enable_Fast_Weapon_Switching"] is bool)
                     enableFastWeapon = (bool)configDict["Enable_Fast_Weapon_Switching"];
                 if (configDict.ContainsKey("Enable_Minimal_Aimpunch") && configDict["Enable_Minimal_Aimpunch"] is bool)
@@ -256,8 +259,8 @@ namespace JiangHu
                     enableNewItem = (bool)configDict["Enable_New_Item"];
                 if (configDict.ContainsKey("Enable_XP_Mode") && configDict["Enable_XP_Mode"] is bool)
                     enableXPMode = (bool)configDict["Enable_XP_Mode"];
-                if (configDict.ContainsKey("Restart_XP_Mode") && configDict["Restart_XP_Mode"] is bool)
-                    restartXPMode = (bool)configDict["Restart_XP_Mode"];
+                if (configDict.ContainsKey("Restart_Arena_Quest") && configDict["Restart_Arena_Quest"] is bool)
+                    restartArenaQuest = (bool)configDict["Restart_Arena_Quest"];
                 if (configDict.ContainsKey("Enable_Arena_Quest") && configDict["Enable_Arena_Quest"] is bool)
                     enableArenaQuest = (bool)configDict["Enable_Arena_Quest"];
                 if (configDict.ContainsKey("Enable_Greeting_Log") && configDict["Enable_Greeting_Log"] is bool)
@@ -390,6 +393,7 @@ namespace JiangHu
                 configObj["Enable_Fast_Pose_Transition"] = enableFastPoseTransition;
                 configObj["Enable_Slide"] = enableSlide;
                 configObj["Enable_Double_Jump"] = enableDoubleJump;
+                configObj["Enable_Unlimited_Double_Jump"] = enableUnlimitedDoubleJump;
                 configObj["Enable_Fast_Weapon_Switching"] = enableFastWeapon;
                 configObj["Enable_Minimal_Aimpunch"] = enableMinimalAimpunch;
                 configObj["Enable_Fast_Aiming"] = enableFastAiming;
@@ -398,7 +402,7 @@ namespace JiangHu
                 configObj["Enable_New_Quest"] = enableNewQuest;
                 configObj["Enable_New_Item"] = enableNewItem;
                 configObj["Enable_XP_Mode"] = enableXPMode;
-                configObj["Restart_XP_Mode"] = restartXPMode;
+                configObj["Restart_Arena_Quest"] = restartArenaQuest;
                 configObj["Enable_Arena_Quest"] = enableArenaQuest;
                 configObj["Enable_Greeting_Log"] = enableGreetingLog;
                 configObj["Enable_Dogtag_Collection"] = enableDogtagCollection;
@@ -701,10 +705,10 @@ namespace JiangHu
             }
             GUILayout.Space(5);
 
-            bool restartRaidMode = GUILayout.Toggle(restartXPMode, " Restart Aporia Quests  重置向阳而生任务");
-            if (restartRaidMode != restartXPMode)
+            bool restartRaidMode = GUILayout.Toggle(restartArenaQuest, " Restart Aporia Quests  重置向阳而生任务");
+            if (restartRaidMode != restartArenaQuest)
             {
-                restartXPMode = restartRaidMode;
+                restartArenaQuest = restartRaidMode;
                 SaveSettingsToJson();
             }
 
@@ -874,13 +878,18 @@ namespace JiangHu
             if (newFastPose != enableFastPoseTransition) { enableFastPoseTransition = newFastPose; SaveSettingsToJson(); }
             GUILayout.Space(5);
 
+            bool newSlide = GUILayout.Toggle(enableSlide, " Sprint Slide  滑铲");
+            if (newSlide != enableSlide) { enableSlide = newSlide; SaveSettingsToJson(); }
+            GUILayout.Space(5);
+
             bool newDoubleJump = GUILayout.Toggle(enableDoubleJump, " Enable Mid Air Jump  梯云纵");
             if (newDoubleJump != enableDoubleJump) { enableDoubleJump = newDoubleJump; SaveSettingsToJson(); }
             GUILayout.Space(5);
 
-            bool newSlide = GUILayout.Toggle(enableSlide, " Sprint Slide  滑铲");
-            if (newSlide != enableSlide) { enableSlide = newSlide; SaveSettingsToJson(); }
+            bool newUnlimitedDoubleJump = GUILayout.Toggle(enableUnlimitedDoubleJump, " Unlimited Mid Air Jump  筋斗云");
+            if (newUnlimitedDoubleJump != enableUnlimitedDoubleJump) { enableUnlimitedDoubleJump = newUnlimitedDoubleJump; SaveSettingsToJson(); }
             GUILayout.Space(5);
+
             GUILayout.EndVertical();
             GUILayout.Space(5);
 

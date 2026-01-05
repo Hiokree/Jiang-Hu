@@ -1035,12 +1035,14 @@ namespace JiangHu
             static bool Prefix(BotOwner bot, BotCreationDataClass data, Action<BotOwner> callback,
                               bool shallBeGroup, Stopwatch stopWatch, BotSpawner __instance)
             {
-                if (!DeathMatchCore.DeathMatchModeActive) return true;
+                bool shouldIntercept = DeathMatchCore.DeathMatchModeActive || F12Manager.DisableVanillaBotSpawn.Value;
+
+                if (!shouldIntercept) return true;
 
                 var spawnData = bot.SpawnProfileData as BotProfileDataClass;
 
                 bool isOurBot = spawnData?.SpawnParams?.Id_spawn?.StartsWith("jianghu_") == true ||
-                                spawnData?.SpawnParams?.Id_spawn?.StartsWith("JiangHu_Bot|") == true;
+                                spawnData?.SpawnParams?.Id_spawn?.StartsWith("JiangHu_") == true;
 
                 if (!isOurBot)
                 {

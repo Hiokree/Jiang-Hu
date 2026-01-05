@@ -81,7 +81,7 @@ namespace JiangHu
                 if (File.Exists(configPath))
                 {
                     string json = File.ReadAllText(configPath);
-                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json); // Change to object
+                    var configDict = JsonConvert.DeserializeObject<Dictionary<string, object>>(json); 
                     if (configDict != null)
                     {
                         if (configDict.ContainsKey("Enable_Change_Background") && configDict["Enable_Change_Background"] is bool)

@@ -50,7 +50,6 @@ namespace JiangHu
             pluginObj.AddComponent<RaidStatusConditionManager>();
 
 
-
             pluginObj.AddComponent<BattleScreenPlugin>();
 
             pluginObj.AddComponent<DeathMatchUI>();

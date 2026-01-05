@@ -52,8 +52,6 @@ namespace JiangHu
             const string section5 = "Special 特殊";
             const string sectionDM = "- Wonderland 乐园 -";
 
-
-
             WorldShaperHotkey = config.Bind(
                 "",
                 "World Shaper 世界塑造器",

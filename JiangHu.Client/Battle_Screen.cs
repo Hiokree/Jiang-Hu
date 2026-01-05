@@ -558,7 +558,7 @@ namespace JiangHu
 
             // Title
             GUI.Label(new Rect(panelRect.x + 10f, panelRect.y + 10f, panelWidth - 20f, 25f),
-                     "Death Match Stats 混战数据", titleStyle);
+                     "Bot War Stats 混战数据", titleStyle);
 
             // Get alive counts
             var gameWorld = Singleton<GameWorld>.Instance;

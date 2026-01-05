@@ -393,10 +393,6 @@ namespace JiangHu.Patches
 
                     // Clean Random Raid state
                     JiangHu.ExfilRandomizer.RandomExfilDestinationPatch.ValidateStateInMenu();
-
-                    // Clean DeathMatch state (if DeathMatch class exists)
-                    // Note: You need to add DeathMatch.ValidateStateInMenu() too
-                    // DeathMatch.ValidateStateInMenu();
                 }
             }
             catch (Exception ex)
